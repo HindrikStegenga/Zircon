@@ -18,6 +18,7 @@ pub struct EngineGameloopTimer {
     pub negative_sleep_time: Duration,
     pub update_counter: u64,
     pub frame_counter: u64,
+    pub alpha: f32,
 
     pub total_sleep_time_last_second: Duration,
     pub total_frame_time_last_second: Duration,
@@ -34,10 +35,9 @@ impl EngineGameloopTimer {
             .duration_since(self.previous_frame_instant);
         self.accumulated_time += self.current_delta_time;
 
-        let mut alpha: f32 = 0.0;
         if self.frame_start_instant > self.last_fixed_update_instant {
             let delta = self.frame_start_instant - self.last_fixed_update_instant;
-            alpha =
+            self.alpha =
                 ((delta.as_nanos() as f64) / (fixed_update_step_duration.as_nanos() as f64)) as f32;
         }
 

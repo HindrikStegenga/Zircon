@@ -3,7 +3,7 @@ use crate::{engine::gameloop_timer::*, engine_stages::*, *};
 use magnetar_utils::dispatcher::Dispatcher;
 use std::time::{Duration, Instant};
 
-pub struct Uninitialized {}
+pub struct Uninitialized;
 
 impl EngineStateMachine<Uninitialized> {
     pub fn new(info: EngineCreateInfo) -> Self {
@@ -26,6 +26,7 @@ impl EngineStateMachine<Uninitialized> {
                     frame_counter: 0,
                     total_sleep_time_last_second: Duration::new(0, 0),
                     total_frame_time_last_second: Duration::new(0, 0),
+                    alpha: 0.0,
                 },
                 create_info: info,
                 dispatcher: Dispatcher::new(Some(1)),
