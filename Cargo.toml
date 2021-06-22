@@ -1,0 +1,6 @@
+[workspace]
+members = [
+    "magnetar_engine",
+    "magnetar_game",
+    "magnetar_utils"
+]
