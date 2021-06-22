@@ -97,17 +97,17 @@ macro_rules! debug_success {
 #[cfg(debug_assertions)]
 macro_rules! debug_failure {
     ($( $args:expr ),*) => {
-        $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
-        println!($($args), *);
-    };
+        { $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
+        panic!($($args), *) }
+    }
 }
 
 #[macro_export]
 macro_rules! failure {
     ($( $args:expr ),*) => {
-        $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
-        println!($($args), *);
-    };
+        { $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
+        panic!($($args), *) }
+    }
 }
 
 #[macro_export]

@@ -2,5 +2,6 @@
 members = [
     "magnetar_engine",
     "magnetar_game",
-    "magnetar_utils"
+    "magnetar_utils",
+    "magnetar_winit_platform"
 ]
