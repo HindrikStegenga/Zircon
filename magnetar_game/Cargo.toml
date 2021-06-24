@@ -8,3 +8,4 @@ edition = "2018"
 [dependencies]
 magnetar_engine = { path = "../magnetar_engine" }
 magnetar_winit_platform = { path = "../magnetar_winit_platform" }
+smol = "1.2.5"

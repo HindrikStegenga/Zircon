@@ -1,14 +1,12 @@
-// use super::AsyncTask;
-// use async_channel::Sender;
-// use async_executor::*;
-// use futures_lite::Future;
+use super::AsyncTask;
+use smol::{channel::Sender, future::Future, Executor};
+use std::{cmp::min, sync::Arc};
 
 use rayon::*;
 
 pub struct Dispatcher {
     thread_pool: rayon::ThreadPool,
-    //executor: Arc<Executor<'static>>,
-    // shutdown_sender: Sender<()>,
+    executor: Arc<Executor<'static>>,
 }
 
 impl Dispatcher {
@@ -16,42 +14,40 @@ impl Dispatcher {
         let num_cpus = num_cpus::get();
         let worker_threads = match max_worker_thread_count {
             Some(v) => v,
-            None => num_cpus,
+            None => num_cpus - 1,
         };
         let thread_pool = ThreadPoolBuilder::new()
             .num_threads(worker_threads)
             .build()
             .unwrap();
 
-        // let (shutdown_sender, shutdown_receiver) = async_channel::bounded::<()>(1);
-        // let executor = Arc::new(Executor::new());
-        // for _ in 0..(min(1, worker_threads / 2)) {
-        //     let shutdown_receiver = shutdown_receiver.clone();
-        //     let ex = Arc::clone(&executor);
-        //     thread_pool.spawn(move || {
-        //         ex.run(async { shutdown_receiver.recv().await });
-        //     })
-        // }
-
+        let executor = Arc::new(Executor::new());
         Self {
             thread_pool,
-            // executor,
-            // shutdown_sender,
+            executor,
         }
     }
 }
 
+unsafe impl Send for Dispatcher {}
+unsafe impl Sync for Dispatcher {}
+
 impl Dispatcher {
-    // pub fn dispatch_async<T: Send + 'static>(
-    //     &self,
-    //     future: impl Future<Output = T> + Send + 'static,
-    // ) -> AsyncTask<T> {
-    //     let (sender, receiver) = async_channel::bounded(1);
-    //     self.executor
-    //         .spawn(async move { sender.send(future.await).await })
-    //         .detach();
-    //     AsyncTask::new(receiver)
-    // }
+    pub fn run_async_executor(&self) -> bool {
+        let exec = Arc::clone(&self.executor);
+        self.thread_pool.install(move || exec.try_tick())
+    }
+
+    pub fn dispatch_async<T: Send + 'static>(
+        &self,
+        future: impl Future<Output = T> + Send + 'static,
+    ) -> AsyncTask<T> {
+        let (sender, receiver) = smol::channel::bounded(1);
+        self.executor
+            .spawn(async move { sender.send(future.await).await })
+            .detach();
+        AsyncTask::new(receiver)
+    }
 
     #[inline(always)]
     pub fn install<OP, R>(&self, op: OP) -> R
@@ -107,9 +103,3 @@ impl Dispatcher {
         self.thread_pool.spawn_fifo(op)
     }
 }
-
-// impl Drop for Dispatcher {
-//     fn drop(&mut self) {
-//         self.shutdown_sender.close();
-//     }
-// }

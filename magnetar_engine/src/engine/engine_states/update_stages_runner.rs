@@ -38,14 +38,14 @@ impl UpdateStagesRunner {
         if previous_message != EngineUpdateResult::Restart {
             // Enqueue new  update job!
             let state = Arc::clone(&self.threaded_state);
-
+            let dispatcher = Arc::clone(&shared_state.dispatcher);
             shared_state.dispatcher.spawn(move || {
                 let &(ref mtx, ref cnd) = &*state;
 
                 let mut guard = mtx.lock().unwrap();
                 let threaded_state = &mut guard.1;
 
-                let mut update_input = UpdateStageUpdateInput::default();
+                let mut update_input = UpdateStageUpdateInput::new(dispatcher);
 
                 // Update
                 for system in &mut threaded_state.stages {

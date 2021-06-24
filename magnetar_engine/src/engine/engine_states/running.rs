@@ -1,3 +1,5 @@
+use magnetar_utils::debug_log;
+
 use super::*;
 use crate::{engine::result::*, engine_stages::*};
 use std::time::*;
@@ -44,6 +46,9 @@ impl EngineStateMachine<Running> {
             self.shared.timings.last_fixed_update_instant = self.shared.timings.frame_start_instant;
         }
 
+        if self.shared.dispatcher.run_async_executor() {
+            debug_log!("Performed async tasks!");
+        }
         for stage in &mut self.state.render_stages {
             match stage.render(&mut RenderStageUpdateInput::default()) {
                 EngineUpdateResult::Ok => {}
