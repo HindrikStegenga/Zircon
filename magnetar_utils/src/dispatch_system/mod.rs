@@ -1,16 +1,22 @@
-use super::AsyncTask;
-use smol::{channel::Sender, future::Future, Executor};
-use std::{cmp::min, sync::Arc};
+mod async_task;
+
+pub use async_task::*;
+
+pub use rayon::prelude::*;
+
+use smol::{future::Future, Executor};
+use std::sync::Arc;
+use AsyncTask;
 
 use rayon::*;
 
-pub struct Dispatcher {
+pub struct DispatchSystem {
     thread_pool: rayon::ThreadPool,
     executor: Arc<Executor<'static>>,
 }
 
-impl Dispatcher {
-    pub fn new(max_worker_thread_count: Option<usize>) -> Dispatcher {
+impl DispatchSystem {
+    pub fn new(max_worker_thread_count: Option<usize>) -> DispatchSystem {
         let num_cpus = num_cpus::get();
         let worker_threads = match max_worker_thread_count {
             Some(v) => v,
@@ -29,10 +35,10 @@ impl Dispatcher {
     }
 }
 
-unsafe impl Send for Dispatcher {}
-unsafe impl Sync for Dispatcher {}
+unsafe impl Send for DispatchSystem {}
+unsafe impl Sync for DispatchSystem {}
 
-impl Dispatcher {
+impl DispatchSystem {
     pub fn run_async_executor(&self) -> bool {
         let exec = Arc::clone(&self.executor);
         self.thread_pool.install(move || exec.try_tick())

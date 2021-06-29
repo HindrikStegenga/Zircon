@@ -1,4 +1,4 @@
-use magnetar_utils::dispatcher::Dispatcher;
+use magnetar_utils::dispatch_system::DispatchSystem;
 
 use crate::engine::result::EngineUpdateResult;
 use std::{marker::PhantomData, sync::Arc};
@@ -43,18 +43,18 @@ impl<'a> Default for RenderStageUpdateInput<'a> {
 }
 
 pub struct UpdateStageUpdateInput<'a> {
-    dispatcher: Arc<Dispatcher>,
+    dispatcher: Arc<DispatchSystem>,
     _phantom: PhantomData<&'a ()>,
 }
 
 impl<'a> UpdateStageUpdateInput<'a> {
-    pub fn new(dispatcher: Arc<Dispatcher>) -> Self {
+    pub fn new(dispatcher: Arc<DispatchSystem>) -> Self {
         Self {
             dispatcher,
             _phantom: Default::default(),
         }
     }
-    pub fn dispatcher(&self) -> &Arc<Dispatcher> {
+    pub fn dispatcher(&self) -> &Arc<DispatchSystem> {
         &self.dispatcher
     }
 }

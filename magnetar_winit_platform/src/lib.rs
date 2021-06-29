@@ -8,6 +8,12 @@ use winit::{
 /// Platform using the `winit` windowing library.
 pub struct WinitPlatform {}
 
+impl Default for WinitPlatform {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
 impl Platform for WinitPlatform {
     fn run(&mut self, controller: EngineController) {
         let event_loop = EventLoop::new();

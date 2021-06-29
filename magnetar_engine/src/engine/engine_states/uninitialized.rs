@@ -1,6 +1,6 @@
 use super::*;
 use crate::{engine::gameloop_timer::*, engine_stages::*, *};
-use magnetar_utils::dispatcher::Dispatcher;
+use magnetar_utils::dispatch_system::DispatchSystem;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -32,7 +32,7 @@ impl EngineStateMachine<Uninitialized> {
                     alpha: 0.0,
                 },
                 create_info: info,
-                dispatcher: Arc::new(Dispatcher::new(Some(1))),
+                dispatcher: Arc::new(DispatchSystem::new(Some(1))),
             },
             state: Uninitialized {},
         }

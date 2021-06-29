@@ -1,5 +1,7 @@
+pub mod asset_system;
 pub mod engine;
 pub mod engine_stages;
+pub mod resource_system;
 
 pub use engine::{
     create_info::EngineCreateInfo, platform::Platform, result::EngineUpdateResult, Engine,

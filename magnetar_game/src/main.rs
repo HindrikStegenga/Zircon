@@ -19,21 +19,15 @@ impl UpdateStage for TestStage {
     }
 }
 
-fn test<'r, 's>(
-    _input: &'r mut UpdateStageConstructorInput<'s>,
-) -> Box<dyn AnyUpdateStage + 'static> {
-    Box::new(TestStage {})
-}
-
 fn main() {
     let create_info = EngineCreateInfo {
         update_tick_rate: 1,
         max_skipped_frames: 0,
         max_frame_rate: Some(60),
-        update_stages: vec![Box::from(test)],
+        update_stages: vec![Box::new(|_| Box::new(TestStage {}))],
         render_stages: vec![],
     };
     let engine = Engine::from(create_info);
-    let platform = WinitPlatform {};
+    let platform = WinitPlatform::default();
     engine.run(platform);
 }
