@@ -4,17 +4,17 @@ use termcolor::*;
 #[macro_export]
 #[cfg(debug_assertions)]
 macro_rules! debug_log {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Information);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
 #[macro_export]
 macro_rules! log {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Information);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
@@ -27,17 +27,17 @@ macro_rules! debug_log {
 #[macro_export]
 #[cfg(debug_assertions)]
 macro_rules! debug_warn {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Warning);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
 #[macro_export]
 macro_rules! warn {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Warning);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
@@ -50,17 +50,17 @@ macro_rules! debug_warn {
 #[macro_export]
 #[cfg(debug_assertions)]
 macro_rules! debug_error {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Error);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
 #[macro_export]
 macro_rules! error {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Error);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
@@ -73,17 +73,17 @@ macro_rules! debug_error {
 #[macro_export]
 #[cfg(debug_assertions)]
 macro_rules! debug_success {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Success);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
 #[macro_export]
 macro_rules! success {
-    ($( $args:expr ),*) => {
+    ($( $args:expr ),*) => {{
         $crate::logging::write_tag($crate::logging::LoggingLevel::Success);
-        println!($($args), *);
+        println!($($args), *)}
     };
 }
 
@@ -96,17 +96,17 @@ macro_rules! debug_success {
 #[macro_export]
 #[cfg(debug_assertions)]
 macro_rules! debug_failure {
-    ($( $args:expr ),*) => {
-        { $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
-        panic!($($args), *) }
+    ($( $args:expr ),*) => {{
+        $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
+        panic!($($args), *)}
     }
 }
 
 #[macro_export]
 macro_rules! failure {
-    ($( $args:expr ),*) => {
-        { $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
-        panic!($($args), *) }
+    ($( $args:expr ),*) => {{
+        $crate::logging::write_tag($crate::logging::LoggingLevel::Failure);
+        panic!($($args), *)}
     }
 }
 

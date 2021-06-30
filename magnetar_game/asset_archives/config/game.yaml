@@ -1,0 +1,12 @@
+application_name: magnetar
+engine_name: magnetar engine
+
+application_major_version: 0
+application_minor_version: 1
+application_version_patch: 0
+
+engine_major_version: 0
+engine_minor_version: 1
+engine_version_patch: 0
+
+startup_scene: basic scene
