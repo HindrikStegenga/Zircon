@@ -7,15 +7,17 @@ pub enum AssetArchiveError {
     Compress(CompressError),
     Decompress(DecompressError),
     DeserializeError(serde_cbor::Error),
+    InvalidMountPoint,
 }
 
 impl Display for AssetArchiveError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            AssetArchiveError::IO(e) => write!(f, "{}", e),
-            AssetArchiveError::Compress(e) => write!(f, "{}", e),
-            AssetArchiveError::Decompress(e) => write!(f, "{}", e),
-            AssetArchiveError::DeserializeError(e) => write!(f, "{}", e),
+            Self::IO(e) => write!(f, "{}", e),
+            Self::Compress(e) => write!(f, "{}", e),
+            Self::Decompress(e) => write!(f, "{}", e),
+            Self::DeserializeError(e) => write!(f, "{}", e),
+            Self::InvalidMountPoint => write!(f, "Invalid mount point."),
         }
     }
 }

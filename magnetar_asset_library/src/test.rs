@@ -32,18 +32,28 @@ fn test_archive_builder() {
     use crate::archive::AssetArchiveCompressionFormat::{None, LZ4};
 
     let result = builder
-        .write_blob(&random_data, None)
+        .add_mount_point("random.blobs", 0)
         .unwrap()
-        .write_blob(&random_data, LZ4)
+        .write_file("blob0", "blob", &random_data, None)
         .unwrap()
+        .finish()
+        .add_mount_point("random.blobs2", 1)
+        .unwrap()
+        .write_file("blob1", "blob", &random_data, LZ4)
+        .unwrap()
+        .finish()
         .finish();
     assert!(result.is_ok());
 
     let file = File::open(d).unwrap();
     let archive = AssetArchive::read_from_file(file).unwrap();
 
-    let first_blob = archive.read_blob(&archive.header().assets()[0]).unwrap();
-    let second_blob = archive.read_blob(&archive.header().assets()[1]).unwrap();
+    let first_blob = archive
+        .read_blob(&archive.header().mount_points()[0].assets()[0])
+        .unwrap();
+    let second_blob = archive
+        .read_blob(&archive.header().mount_points()[1].assets()[0])
+        .unwrap();
     assert_eq!(first_blob, random_data);
     assert_eq!(second_blob, random_data);
 }

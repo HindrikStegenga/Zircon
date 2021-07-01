@@ -42,4 +42,6 @@ impl VirtualFileSystem {
         }
         true
     }
+
+    pub fn read_file(&self, mount_point: impl AsRef<str>, file_id: impl AsRef<str>) {}
 }

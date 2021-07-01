@@ -1,9 +1,81 @@
 use super::*;
 use std::io::{BufWriter, Seek, SeekFrom, Write};
 
+pub struct AssetArchiveMountPointBuilder {
+    mount_point: String,
+    version: u64,
+    archive_builder: AssetArchiveBuilder,
+    written_files: Vec<AssetArchiveFileHeader>,
+}
+
+impl AssetArchiveMountPointBuilder {
+    fn new(
+        archive_builder: AssetArchiveBuilder,
+        mount_point: impl AsRef<str>,
+        version: u64,
+    ) -> Self {
+        Self {
+            archive_builder,
+            mount_point: mount_point.as_ref().into(),
+            version,
+            written_files: Vec::with_capacity(16),
+        }
+    }
+
+    pub fn write_file(
+        mut self,
+        identifier: impl AsRef<str>,
+        format: impl AsRef<str>,
+        uncompressed_blob: &[u8],
+        compression_format: AssetArchiveCompressionFormat,
+    ) -> Result<Self, AssetArchiveError> {
+        use AssetArchiveCompressionFormat::{None, LZ4};
+        match compression_format {
+            None => {
+                self.archive_builder.writer.write(uncompressed_blob)?;
+                self.written_files.push(AssetArchiveFileHeader::new(
+                    identifier.as_ref().into(),
+                    format.as_ref().into(),
+                    self.archive_builder.offset,
+                    uncompressed_blob.len() as u64,
+                    uncompressed_blob.len() as u64,
+                    None,
+                ));
+                self.archive_builder.offset += uncompressed_blob.len() as u64;
+                Ok(self)
+            }
+            LZ4 => {
+                let compressed = lz4_flex::compress(uncompressed_blob);
+                self.archive_builder.writer.write(&compressed)?;
+                self.written_files.push(AssetArchiveFileHeader::new(
+                    identifier.as_ref().into(),
+                    format.as_ref().into(),
+                    self.archive_builder.offset,
+                    compressed.len() as u64,
+                    uncompressed_blob.len() as u64,
+                    LZ4,
+                ));
+                self.archive_builder.offset += compressed.len() as u64;
+                Ok(self)
+            }
+        }
+    }
+
+    pub fn finish(mut self) -> AssetArchiveBuilder {
+        self.archive_builder
+            .written_mounts
+            .push(AssetArchiveMountPointHeader::new(
+                self.version,
+                self.mount_point,
+                self.written_files,
+            ));
+        self.archive_builder
+    }
+}
+
 pub struct AssetArchiveBuilder {
     writer: BufWriter<File>,
-    written_blobs: Vec<AssetArchiveFileHeader>,
+    written_mounts: Vec<AssetArchiveMountPointHeader>,
     offset: u64,
 }
 
@@ -12,46 +84,34 @@ impl AssetArchiveBuilder {
         file.seek(SeekFrom::Start(0))?;
         Ok(Self {
             writer: BufWriter::new(file),
-            written_blobs: Vec::with_capacity(16),
+            written_mounts: Vec::with_capacity(16),
             offset: 0,
         })
     }
 
-    pub fn write_blob(
-        mut self,
-        uncompressed_blob: &[u8],
-        compression_format: AssetArchiveCompressionFormat,
-    ) -> Result<Self, AssetArchiveError> {
-        use AssetArchiveCompressionFormat::{None, LZ4};
-        match compression_format {
-            None => {
-                self.writer.write(uncompressed_blob)?;
-                self.written_blobs.push(AssetArchiveFileHeader::new(
-                    self.offset,
-                    uncompressed_blob.len() as u64,
-                    uncompressed_blob.len() as u64,
-                    None,
-                ));
-                self.offset += uncompressed_blob.len() as u64;
-                Ok(self)
-            }
-            LZ4 => {
-                let compressed = lz4_flex::compress(uncompressed_blob);
-                self.writer.write(&compressed)?;
-                self.written_blobs.push(AssetArchiveFileHeader::new(
-                    self.offset,
-                    compressed.len() as u64,
-                    uncompressed_blob.len() as u64,
-                    LZ4,
-                ));
-                self.offset += compressed.len() as u64;
-                Ok(self)
-            }
+    pub fn add_mount_point(
+        self,
+        mount_point: impl AsRef<str>,
+        version: u64,
+    ) -> Result<AssetArchiveMountPointBuilder, AssetArchiveError> {
+        match self
+            .written_mounts
+            .iter()
+            .find(|e| e.mount_point() == mount_point.as_ref())
+        {
+            Some(_) => return Err(AssetArchiveError::InvalidMountPoint),
+            None => (),
         }
+
+        Ok(AssetArchiveMountPointBuilder::new(
+            self,
+            mount_point,
+            version,
+        ))
     }
 
     pub fn finish(self) -> Result<(), AssetArchiveError> {
-        let header = AssetArchiveHeader::new(self.written_blobs);
+        let header = AssetArchiveHeader::new(self.written_mounts);
         let mut writer = self.writer;
         let cbor_header = serde_cbor::to_vec(&header)?;
         let compressed_header = lz4_flex::compress(&cbor_header);
