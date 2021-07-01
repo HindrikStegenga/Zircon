@@ -22,13 +22,13 @@ impl AssetIndex {
     }
 }
 
-pub struct MtrVFSPhysicalMountPoint {
+pub struct VfsPhysicalMountPoint {
     mount_point: String,
     directory: PathBuf,
     index: Option<AssetIndex>,
 }
 
-impl MtrVFSPhysicalMountPoint {
+impl VfsPhysicalMountPoint {
     pub fn new(mount_point: &impl AsRef<str>, directory: &impl AsRef<Path>) -> Result<Self> {
         let mut mount = Self {
             mount_point: mount_point.as_ref().into(),
@@ -61,7 +61,7 @@ impl MtrVFSPhysicalMountPoint {
     }
 }
 
-impl MtrVFSMountPoint for MtrVFSPhysicalMountPoint {
+impl VfsMountPoint for VfsPhysicalMountPoint {
     fn identifier(&self) -> &str {
         &self.mount_point
     }

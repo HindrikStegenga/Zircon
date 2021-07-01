@@ -1,5 +1,4 @@
-pub(crate) use magnetar_engine::asset_system::*;
-pub(crate) use magnetar_utils::*;
+pub use magnetar_utils::*;
 
 #[cfg(test)]
 mod test;

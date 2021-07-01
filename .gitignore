@@ -21,3 +21,5 @@ Thumbs.db
 # Ignore IDE dirs.
 **/.vscode/
 **/.idea/
+
+/tmp/

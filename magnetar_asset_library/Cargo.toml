@@ -11,3 +11,8 @@ magnetar_utils = { path = "../magnetar_utils" }
 serde = { version = "1.0", features = ["derive"]}
 serde_yaml = "0.8"
 erased-serde = "0.3"
+serde_cbor = "0.11"
+lz4_flex = { version = "0.8.0", default-features = false }
+
+[dev-dependencies]
+rand = "0.8"
