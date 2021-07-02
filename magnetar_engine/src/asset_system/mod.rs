@@ -1,38 +1,72 @@
-pub mod asset_id;
-pub mod asset_loader;
-pub mod descriptor;
-pub mod error;
+use std::{error::Error, fs::read_dir, path::Path};
 
-use std::mem::MaybeUninit;
-
-use asset_loader::*;
+use magnetar_asset_library::{archive::*, vfs::*, *};
 
 pub struct AssetSystem {
-    loaders: Vec<(&'static str, Box<dyn ErasedAssetLoader>)>,
+    vfs: VirtualFileSystem,
 }
 
 impl Default for AssetSystem {
     fn default() -> Self {
         Self {
-            loaders: Vec::with_capacity(16),
+            vfs: Default::default(),
         }
     }
 }
 
 impl AssetSystem {
-    pub fn register_asset_loader<A: AssetLoader + 'static>(&mut self, loader: A) {
-        self.loaders.push((loader.asset_type(), Box::from(loader)));
-    }
-
-    pub fn load_asset<A: Asset>(&self, asset_type: &'static str, bytes: &[u8]) -> Option<Box<A>> {
-        for (a_type, loader) in &self.loaders {
-            if *a_type == asset_type {
-                let mut destination: Box<A> = unsafe { Box::from_raw(std::ptr::null_mut()) };
-                if loader.load_asset::<A>(bytes, &mut destination) {
-                    return Some(destination);
+    pub fn load_archives_from_directory(
+        &mut self,
+        directory: impl AsRef<Path>,
+        file_extension: impl AsRef<str>,
+    ) -> Result<(), Box<dyn Error>> {
+        let dir = read_dir(directory.as_ref())?;
+        let valid_dir_entries = dir
+            .filter_map(|d| match d {
+                Err(e) => {
+                    warn!("Invalid directory entry found: {}", e);
+                    None
                 }
-            }
+                Ok(v) => Some(v),
+            })
+            .collect::<Vec<_>>();
+        let valid_dir_entries = valid_dir_entries
+            .iter()
+            .filter_map(|d| match d.metadata() {
+                Ok(m) => match m.is_file() {
+                    true => match d.path().extension() {
+                        Some(extension) => match extension.to_str() {
+                            Some(s) => {
+                                if s == file_extension.as_ref() {
+                                    Some(d)
+                                } else {
+                                    None
+                                }
+                            }
+                            None => None,
+                        },
+                        None => None,
+                    },
+                    false => None,
+                },
+                Err(e) => {
+                    warn!("Could not retrieve file metadata: {}", e);
+                    None
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut counter = 0;
+        for dir_entry in valid_dir_entries {
+            let archive = AssetArchive::read_from_file(dir_entry.path())?;
+            counter += 1;
         }
-        None
+        log!(
+            "Loaded {} asset archives from: {:#?}",
+            counter,
+            directory.as_ref()
+        );
+
+        Ok(())
     }
 }

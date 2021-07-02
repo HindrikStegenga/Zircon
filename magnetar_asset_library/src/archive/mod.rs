@@ -1,6 +1,7 @@
 use std::{
     fs::*,
     io::{BufReader, Read, Seek, SeekFrom},
+    path::{Path, PathBuf},
 };
 
 pub mod builder;
@@ -15,15 +16,19 @@ pub use header::*;
 #[derive(Debug)]
 pub struct AssetArchive {
     header: AssetArchiveHeader,
-    file: File,
+    path: PathBuf,
 }
 
 impl AssetArchive {
     /// Reads an asset archive from a file. Only succeeds in case the provided file can be interpreted as an archive.
-    pub fn read_from_file(file: File) -> Result<AssetArchive, AssetArchiveError> {
+    pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<AssetArchive, AssetArchiveError> {
+        let file = File::open(path.as_ref())?;
         let reader = BufReader::new(&file);
         let header = Self::read_header(reader)?;
-        Ok(Self { header, file })
+        Ok(Self {
+            header,
+            path: PathBuf::from(path.as_ref()),
+        })
     }
 
     fn read_header(mut reader: BufReader<&File>) -> Result<AssetArchiveHeader, AssetArchiveError> {
@@ -55,7 +60,8 @@ impl AssetArchive {
 
     // Reads a blob from the current archive using the provided header.
     pub fn read_blob(&self, header: &AssetArchiveFileHeader) -> Result<Vec<u8>, AssetArchiveError> {
-        let mut reader = BufReader::new(&self.file);
+        let file = File::open(&self.path)?;
+        let mut reader = BufReader::new(file);
         reader.seek(SeekFrom::Start(*header.offset()))?;
         let mut buffer = Vec::with_capacity(*header.compressed_size() as usize);
         unsafe { buffer.set_len(*header.compressed_size() as usize) };

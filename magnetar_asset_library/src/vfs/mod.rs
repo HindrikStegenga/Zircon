@@ -1,16 +1,13 @@
-use std::{collections::HashMap, fs::*};
+use std::collections::HashMap;
+
+use crate::AssetDescriptor;
 
 pub mod physical_mount_point;
-
-pub trait VfsFile: 'static {
-    fn identifier(&self) -> &str;
-
-    fn load(&self) -> Vec<u8>;
-}
 
 pub trait VfsMountPoint: 'static {
     fn identifier(&self) -> &str;
     fn has_file(&self, identifier: &str) -> bool;
+    fn get_file_descriptor(&self, identifier: &str) -> Option<AssetDescriptor>;
     fn version(&self) -> usize;
 }
 

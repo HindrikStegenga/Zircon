@@ -38,8 +38,8 @@ impl UpdateStagesRunner {
         if previous_message != EngineUpdateResult::Restart {
             // Enqueue new  update job!
             let state = Arc::clone(&self.threaded_state);
-            let dispatcher = Arc::clone(&shared_state.dispatcher);
-            shared_state.dispatcher.spawn(move || {
+            let dispatcher = Arc::clone(&shared_state.resources.dispatcher);
+            shared_state.resources.dispatcher.spawn(move || {
                 let &(ref mtx, ref cnd) = &*state;
 
                 let mut guard = mtx.lock().unwrap();

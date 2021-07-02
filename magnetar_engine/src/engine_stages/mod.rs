@@ -1,6 +1,12 @@
 use magnetar_utils::dispatch_system::DispatchSystem;
 
-use crate::engine::result::EngineUpdateResult;
+use crate::{
+    asset_system::AssetSystem,
+    engine::{
+        engine_states::{EngineCoreResources, EngineSharedState},
+        result::EngineUpdateResult,
+    },
+};
 use std::{marker::PhantomData, sync::Arc};
 
 pub type UpdateStageConstructor =
@@ -9,13 +15,12 @@ pub type RenderStageConstructor =
     dyn Fn(&mut RenderStageConstructorInput) -> Box<dyn AnyRenderStage>;
 
 pub struct UpdateStageConstructorInput<'a> {
-    _phantom: PhantomData<&'a u8>,
+    pub resources: &'a mut EngineCoreResources,
 }
-impl Default for UpdateStageConstructorInput<'_> {
-    fn default() -> Self {
-        UpdateStageConstructorInput {
-            _phantom: PhantomData::default(),
-        }
+
+impl<'a> UpdateStageConstructorInput<'a> {
+    pub fn new(resources: &'a mut EngineCoreResources) -> Self {
+        Self { resources }
     }
 }
 

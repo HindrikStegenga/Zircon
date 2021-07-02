@@ -45,8 +45,7 @@ fn test_archive_builder() {
         .finish();
     assert!(result.is_ok());
 
-    let file = File::open(d).unwrap();
-    let archive = AssetArchive::read_from_file(file).unwrap();
+    let archive = AssetArchive::read_from_file(d).unwrap();
 
     let first_blob = archive
         .read_blob(&archive.header().mount_points()[0].assets()[0])

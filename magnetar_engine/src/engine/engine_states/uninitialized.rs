@@ -13,26 +13,29 @@ impl EngineStateMachine<Uninitialized> {
         let instant = Instant::now();
         Self {
             shared: EngineSharedState {
-                timings: EngineGameloopTimer {
-                    update_tick_rate: info.update_tick_rate,
-                    max_skipped_frames: info.max_skipped_frames,
-                    max_frame_rate: info.max_frame_rate.clone(),
-                    previous_frame_instant: instant,
-                    previous_second_instant: instant,
-                    last_fixed_update_instant: instant,
-                    frame_start_instant: instant,
-                    current_delta_time: Duration::new(0, 0),
-                    accumulated_time: Duration::new(0, 0),
-                    previous_sleep_time: Duration::new(0, 0),
-                    negative_sleep_time: Duration::new(0, 0),
-                    update_counter: 0,
-                    frame_counter: 0,
-                    total_sleep_time_last_second: Duration::new(0, 0),
-                    total_frame_time_last_second: Duration::new(0, 0),
-                    alpha: 0.0,
+                resources: EngineCoreResources {
+                    timings: EngineGameloopTimer {
+                        update_tick_rate: info.update_tick_rate,
+                        max_skipped_frames: info.max_skipped_frames,
+                        max_frame_rate: info.max_frame_rate.clone(),
+                        previous_frame_instant: instant,
+                        previous_second_instant: instant,
+                        last_fixed_update_instant: instant,
+                        frame_start_instant: instant,
+                        current_delta_time: Duration::new(0, 0),
+                        accumulated_time: Duration::new(0, 0),
+                        previous_sleep_time: Duration::new(0, 0),
+                        negative_sleep_time: Duration::new(0, 0),
+                        update_counter: 0,
+                        frame_counter: 0,
+                        total_sleep_time_last_second: Duration::new(0, 0),
+                        total_frame_time_last_second: Duration::new(0, 0),
+                        alpha: 0.0,
+                    },
+                    dispatcher: Arc::new(DispatchSystem::new(Some(1))),
+                    asset_system: Default::default(),
                 },
                 create_info: info,
-                dispatcher: Arc::new(DispatchSystem::new(Some(1))),
             },
             state: Uninitialized {},
         }
@@ -40,8 +43,8 @@ impl EngineStateMachine<Uninitialized> {
 }
 
 impl Into<EngineStateMachine<Initialized>> for EngineStateMachine<Uninitialized> {
-    fn into(self) -> EngineStateMachine<Initialized> {
-        let mut update_input = UpdateStageConstructorInput::default();
+    fn into(mut self) -> EngineStateMachine<Initialized> {
+        let mut update_input = UpdateStageConstructorInput::new(&mut self.shared.resources);
         let mut render_input = RenderStageConstructorInput::default();
 
         let update_stages: Vec<Box<dyn AnyUpdateStage>> = self

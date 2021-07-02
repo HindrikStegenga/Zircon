@@ -23,15 +23,15 @@ impl Into<EngineStateMachine<Suspended>> for EngineStateMachine<Running> {
 
 impl EngineStateMachine<Running> {
     pub fn tick(&mut self) -> EngineUpdateResult {
-        self.shared.timings.frame_start();
+        self.shared.resources.timings.frame_start();
 
         let fixed_update_step_duration =
-            Duration::from_millis(1000) / (self.shared.timings.update_tick_rate as u32);
+            Duration::from_millis(1000) / (self.shared.resources.timings.update_tick_rate as u32);
 
         let mut n_loops = 0;
 
-        while self.shared.timings.accumulated_time >= fixed_update_step_duration
-            && n_loops < (1 + self.shared.timings.max_skipped_frames)
+        while self.shared.resources.timings.accumulated_time >= fixed_update_step_duration
+            && n_loops < (1 + self.shared.resources.timings.max_skipped_frames)
         {
             match self.state.update_stages_runner.update(&mut self.shared) {
                 EngineUpdateResult::Ok => {}
@@ -40,13 +40,14 @@ impl EngineStateMachine<Running> {
                 }
             }
 
-            self.shared.timings.accumulated_time -= fixed_update_step_duration;
+            self.shared.resources.timings.accumulated_time -= fixed_update_step_duration;
             n_loops += 1;
-            self.shared.timings.update_counter += 1;
-            self.shared.timings.last_fixed_update_instant = self.shared.timings.frame_start_instant;
+            self.shared.resources.timings.update_counter += 1;
+            self.shared.resources.timings.last_fixed_update_instant =
+                self.shared.resources.timings.frame_start_instant;
         }
 
-        if self.shared.dispatcher.run_async_executor() {
+        if self.shared.resources.dispatcher.run_async_executor() {
             debug_log!("Performed async tasks!");
         }
         for stage in &mut self.state.render_stages {
@@ -58,7 +59,7 @@ impl EngineStateMachine<Running> {
             }
         }
 
-        self.shared.timings.frame_end();
+        self.shared.resources.timings.frame_end();
 
         EngineUpdateResult::Ok
     }

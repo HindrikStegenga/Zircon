@@ -24,7 +24,14 @@ fn main() {
         update_tick_rate: 1,
         max_skipped_frames: 0,
         max_frame_rate: Some(60),
-        update_stages: vec![Box::new(|_| Box::new(TestStage {}))],
+        update_stages: vec![Box::new(|input| {
+            input
+                .resources
+                .asset_system
+                .load_archives_from_directory("./tmp/", "mtra")
+                .unwrap();
+            Box::new(TestStage {})
+        })],
         render_stages: vec![],
     };
     let engine = Engine::from(create_info);

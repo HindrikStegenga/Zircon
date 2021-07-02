@@ -78,13 +78,17 @@ impl VfsMountPoint for VfsPhysicalMountPoint {
                     Ok(d) => d,
                     Err(e) => failure!("{:#?}", e),
                 };
-                for file in directory {
-                    match file {
-                        Ok(d) => {
-                            if d.file_name() == identifier {
-                                return true;
+
+                for dir_entry in directory {
+                    match dir_entry {
+                        Ok(d) => match d.metadata() {
+                            Ok(m) => {
+                                if m.is_file() && d.file_name() == identifier {
+                                    return true;
+                                }
                             }
-                        }
+                            _ => continue,
+                        },
                         Err(e) => warn!("Could not open file: {:#?}", e),
                     }
                 }
@@ -100,5 +104,9 @@ impl VfsMountPoint for VfsPhysicalMountPoint {
         } else {
             0
         }
+    }
+
+    fn get_file_descriptor(&self, identifier: &str) -> Option<AssetDescriptor> {
+        unimplemented!()
     }
 }
