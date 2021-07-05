@@ -9,9 +9,11 @@ fn test_vfs() {
     let mut vfs = VirtualFileSystem::default();
     let mut d = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
     d.push("test_files/physical");
-    let mut mount = VfsPhysicalMountPoint::new(&"test", &d).unwrap();
-    let index = mount.asset_index().as_ref().unwrap();
+    let mount = VfsPhysicalMountPoint::new(&"configs", &d).unwrap();
+    let _index = mount.asset_index().as_ref().unwrap();
     assert!(vfs.mount(mount));
+
+    vfs.read_file("configs", "test").unwrap();
 }
 
 #[test]
@@ -48,10 +50,10 @@ fn test_archive_builder() {
     let archive = AssetArchive::read_from_file(d).unwrap();
 
     let first_blob = archive
-        .read_blob(&archive.header().mount_points()[0].assets()[0])
+        .read_file_from(&archive.header().mount_points()[0].assets()[0])
         .unwrap();
     let second_blob = archive
-        .read_blob(&archive.header().mount_points()[1].assets()[0])
+        .read_file_from(&archive.header().mount_points()[1].assets()[0])
         .unwrap();
     assert_eq!(first_blob, random_data);
     assert_eq!(second_blob, random_data);

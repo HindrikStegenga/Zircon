@@ -1,11 +1,8 @@
 use magnetar_utils::dispatch_system::DispatchSystem;
 
-use crate::{
-    asset_system::AssetSystem,
-    engine::{
-        engine_states::{EngineCoreResources, EngineSharedState},
-        result::EngineUpdateResult,
-    },
+use crate::engine::{
+    engine_states::{EngineCoreResources, EngineSharedState},
+    result::EngineUpdateResult,
 };
 use std::{marker::PhantomData, sync::Arc};
 

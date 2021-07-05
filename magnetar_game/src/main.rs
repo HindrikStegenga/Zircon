@@ -9,11 +9,8 @@ impl UpdateStage for TestStage {
 
     fn update(&mut self, input: &mut UpdateStageUpdateInput) -> EngineUpdateResult {
         input.dispatcher().dispatch_async(async {
-            println!("Running async!");
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
-            println!("Still running async!");
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
-            println!("Finishing async!");
         });
         EngineUpdateResult::Ok
     }
@@ -29,6 +26,11 @@ fn main() {
                 .resources
                 .asset_system
                 .load_archives_from_directory("./tmp/", "mtra")
+                .unwrap();
+            input
+                .resources
+                .asset_system
+                .load_files_from_directory("./magnetar_game/asset_archives/config", "config")
                 .unwrap();
             Box::new(TestStage {})
         })],

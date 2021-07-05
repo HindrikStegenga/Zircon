@@ -11,6 +11,7 @@ pub mod header;
 pub use builder::*;
 pub use error::*;
 pub use header::*;
+use lz4_flex::decompress_into;
 
 // AssetArchive is a type storing multiple potentially compressed assets into a single archive.
 #[derive(Debug)]
@@ -59,19 +60,50 @@ impl AssetArchive {
     }
 
     // Reads a blob from the current archive using the provided header.
-    pub fn read_blob(&self, header: &AssetArchiveFileHeader) -> Result<Vec<u8>, AssetArchiveError> {
-        let file = File::open(&self.path)?;
+    pub fn read_file(
+        path: impl AsRef<Path>,
+        header: &AssetArchiveFileHeader,
+    ) -> Result<Vec<u8>, AssetArchiveError> {
+        let mut buf = Vec::new();
+        Self::read_file_into(path, header, &mut buf)?;
+        Ok(buf)
+    }
+
+    // Reads a blob from the current archive using the provided header.
+    pub fn read_file_from(
+        &self,
+        header: &AssetArchiveFileHeader,
+    ) -> Result<Vec<u8>, AssetArchiveError> {
+        let mut buf = Vec::new();
+        Self::read_file_into(&self.path, header, &mut buf)?;
+        Ok(buf)
+    }
+
+    pub fn read_file_into(
+        path: impl AsRef<Path>,
+        header: &AssetArchiveFileHeader,
+        mut buffer: &mut Vec<u8>,
+    ) -> Result<(), AssetArchiveError> {
+        let file = File::open(path.as_ref())?;
         let mut reader = BufReader::new(file);
         reader.seek(SeekFrom::Start(*header.offset()))?;
-        let mut buffer = Vec::with_capacity(*header.compressed_size() as usize);
-        unsafe { buffer.set_len(*header.compressed_size() as usize) };
-        reader.read_exact(&mut buffer)?;
+
         if *header.compression_format() == AssetArchiveCompressionFormat::None {
-            Ok(buffer)
+            buffer.resize(*header.compressed_size() as usize, 0);
+            reader.read_exact(&mut buffer)?;
+            Ok(())
         } else {
-            use lz4_flex::decompress;
-            let decompressed = decompress(&buffer, *header.uncompressed_size() as usize)?;
-            Ok(decompressed)
+            let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+            unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+            reader.read_exact(&mut temp_buffer)?;
+            buffer.resize(*header.uncompressed_size() as usize, 0);
+            decompress_into(&temp_buffer, &mut buffer, 0)?;
+            Ok(())
         }
+    }
+
+    /// Get a reference to the asset archive's path.
+    pub fn path(&self) -> &PathBuf {
+        &self.path
     }
 }

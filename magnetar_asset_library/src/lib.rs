@@ -6,6 +6,7 @@ mod test;
 pub(crate) mod basic_functions;
 
 pub mod archive;
+pub mod asset_system;
 pub mod vfs;
 
 pub mod format;

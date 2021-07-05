@@ -1,5 +1,6 @@
 use super::*;
 use crate::{engine::gameloop_timer::*, engine_stages::*, *};
+use magnetar_asset_library::asset_system::AssetSystem;
 use magnetar_utils::dispatch_system::DispatchSystem;
 use std::{
     sync::Arc,

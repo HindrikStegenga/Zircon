@@ -2,3 +2,4 @@ version: 0
 files:
   - identifier: test
     format: yaml
+    mount: "config"

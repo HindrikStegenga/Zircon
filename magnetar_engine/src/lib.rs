@@ -1,4 +1,3 @@
-pub mod asset_system;
 pub mod engine;
 pub mod engine_stages;
 pub mod resource_system;
@@ -6,6 +5,7 @@ pub mod resource_system;
 pub use engine::{
     create_info::EngineCreateInfo, platform::Platform, result::EngineUpdateResult, Engine,
 };
+pub use magnetar_asset_library::asset_system::AssetSystem;
 
 #[cfg(feature = "re_export_logging")]
 #[cfg(debug_assertions)]

@@ -1,6 +1,6 @@
 use serde::*;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetArchiveHeader {
     mount_points: Vec<AssetArchiveMountPointHeader>,
 }
@@ -16,7 +16,7 @@ impl AssetArchiveHeader {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetArchiveMountPointHeader {
     version: u64,
     mount_point: String,
@@ -48,7 +48,7 @@ impl AssetArchiveMountPointHeader {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetArchiveFileHeader {
     asset_identifier: String,
     asset_format: String,
