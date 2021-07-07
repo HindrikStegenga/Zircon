@@ -7,7 +7,7 @@ struct TestStage {}
 impl UpdateStage for TestStage {
     const IDENTIFIER: &'static str = "TestStage";
 
-    fn update(&mut self, input: &mut UpdateStageUpdateInput) -> EngineUpdateResult {
+    fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
         input.dispatcher().dispatch_async(async {
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
             smol::Timer::after(std::time::Duration::from_secs(1)).await;
@@ -18,10 +18,10 @@ impl UpdateStage for TestStage {
 
 fn main() {
     let create_info = EngineCreateInfo {
-        update_tick_rate: 1,
+        update_tick_rate: 20,
         max_skipped_frames: 0,
         max_frame_rate: Some(60),
-        update_stages: vec![Box::new(|input| {
+        update_stages: vec![Box::new(|input: UpdateStageConstructorInput<'_>| {
             input
                 .resources
                 .asset_system

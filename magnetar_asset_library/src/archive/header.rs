@@ -27,7 +27,7 @@ impl AssetArchiveMountPointHeader {
     pub fn new(version: u64, mount_point: String, assets: Vec<AssetArchiveFileHeader>) -> Self {
         Self {
             version,
-            mount_point,
+            mount_point: mount_point.to_lowercase(),
             assets,
         }
     }
@@ -68,8 +68,8 @@ impl AssetArchiveFileHeader {
         compression_format: AssetArchiveCompressionFormat,
     ) -> Self {
         Self {
-            asset_identifier,
-            asset_format,
+            asset_identifier: asset_identifier.to_lowercase(),
+            asset_format: asset_format.to_lowercase(),
             offset,
             compressed_size,
             uncompressed_size,

@@ -41,9 +41,15 @@ impl VirtualFileSystem {
             mountpoint.version()
         );
         match self.mounts.get_mut(mountpoint.identifier()) {
-            Some(v) => {
-                v.push(Box::new(mountpoint));
-            }
+            Some(v) => match v.binary_search_by_key(&mountpoint.version(), |e| e.version()) {
+                Ok(_) => {
+                    tagged_warn!("VFS", "Attempted to mount a mountpoint with identical version to the same mountpoint.");
+                    return false;
+                }
+                Err(insertion_idx) => {
+                    v.insert(insertion_idx, Box::from(mountpoint));
+                }
+            },
             None => {
                 let mut v: Vec<Box<dyn VfsMountPoint>> = Vec::with_capacity(4);
                 let key = mountpoint.identifier().into();
@@ -72,12 +78,12 @@ impl VirtualFileSystem {
         file_identifier: impl AsRef<str>,
         mut buffer: &mut Vec<u8>,
     ) -> Result<AssetDescriptor, VfsError> {
-        let mounts = match self.mounts.get(mount_point.as_ref()) {
+        let mounts = match self.mounts.get(&mount_point.as_ref().to_lowercase()) {
             Some(v) => v,
             None => return Err(VfsError::MountpointNotFound),
         };
-        for mount in mounts {
-            match mount.load_asset_into(file_identifier.as_ref(), &mut buffer) {
+        for mount in mounts.iter().rev() {
+            match mount.load_asset_into(&file_identifier.as_ref().to_lowercase(), &mut buffer) {
                 Ok(a) => return Ok(a),
                 Err(VfsError::FileNotFound) => continue,
                 Err(e) => {

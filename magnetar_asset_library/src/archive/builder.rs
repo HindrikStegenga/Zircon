@@ -16,7 +16,7 @@ impl AssetArchiveMountPointBuilder {
     ) -> Self {
         Self {
             archive_builder,
-            mount_point: mount_point.as_ref().into(),
+            mount_point: mount_point.as_ref().to_lowercase(),
             version,
             written_files: Vec::with_capacity(16),
         }
@@ -34,8 +34,8 @@ impl AssetArchiveMountPointBuilder {
             None => {
                 self.archive_builder.writer.write(uncompressed_blob)?;
                 self.written_files.push(AssetArchiveFileHeader::new(
-                    identifier.as_ref().into(),
-                    format.as_ref().into(),
+                    identifier.as_ref().to_lowercase(),
+                    format.as_ref().to_lowercase(),
                     self.archive_builder.offset,
                     uncompressed_blob.len() as u64,
                     uncompressed_blob.len() as u64,
@@ -48,8 +48,8 @@ impl AssetArchiveMountPointBuilder {
                 let compressed = lz4_flex::compress(uncompressed_blob);
                 self.archive_builder.writer.write(&compressed)?;
                 self.written_files.push(AssetArchiveFileHeader::new(
-                    identifier.as_ref().into(),
-                    format.as_ref().into(),
+                    identifier.as_ref().to_lowercase(),
+                    format.as_ref().to_lowercase(),
                     self.archive_builder.offset,
                     compressed.len() as u64,
                     uncompressed_blob.len() as u64,
@@ -97,7 +97,7 @@ impl AssetArchiveBuilder {
         match self
             .written_mounts
             .iter()
-            .find(|e| e.mount_point() == mount_point.as_ref())
+            .find(|e| e.mount_point() == mount_point.as_ref().to_lowercase())
         {
             Some(_) => return Err(AssetArchiveError::InvalidMountPoint),
             None => (),

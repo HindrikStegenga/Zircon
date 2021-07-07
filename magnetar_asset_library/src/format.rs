@@ -12,9 +12,9 @@ pub struct AssetDescriptor {
 impl AssetDescriptor {
     pub fn new(mount: String, identifier: String, format: String) -> Self {
         Self {
-            mount,
-            identifier,
-            format,
+            mount: mount.to_lowercase(),
+            identifier: identifier.to_lowercase(),
+            format: format.to_lowercase(),
         }
     }
 

@@ -6,6 +6,7 @@ use crate::{archive::AssetArchiveError, vfs::error::VfsError};
 pub enum AssetSystemError {
     Vfs(VfsError),
     Io(std::io::Error),
+    UnknownAssetFormat,
     Other(Box<dyn Error>),
     Archive(AssetArchiveError),
 }
@@ -17,6 +18,7 @@ impl Display for AssetSystemError {
             AssetSystemError::Io(e) => e.fmt(f),
             AssetSystemError::Other(e) => e.fmt(f),
             AssetSystemError::Archive(e) => e.fmt(f),
+            AssetSystemError::UnknownAssetFormat => write!(f, "Unknown asset format."),
         }
     }
 }

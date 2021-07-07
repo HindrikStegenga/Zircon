@@ -8,7 +8,7 @@ pub enum VfsError {
     MountpointNotFound,
     FileNotFound,
     Other(Box<dyn Error>),
-    IO(std::io::Error),
+    Io(std::io::Error),
 }
 
 impl Display for VfsError {
@@ -17,7 +17,7 @@ impl Display for VfsError {
             VfsError::Other(e) => write!(f, "{}", e),
             VfsError::FileNotFound => write!(f, "File not found."),
             VfsError::MountpointNotFound => write!(f, "Invalid mount point."),
-            VfsError::IO(err) => err.fmt(f),
+            VfsError::Io(err) => err.fmt(f),
         }
     }
 }
@@ -25,6 +25,6 @@ impl Error for VfsError {}
 
 impl From<std::io::Error> for VfsError {
     fn from(e: std::io::Error) -> Self {
-        VfsError::IO(e)
+        VfsError::Io(e)
     }
 }

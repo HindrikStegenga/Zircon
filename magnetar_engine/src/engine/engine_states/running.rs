@@ -1,5 +1,3 @@
-use magnetar_utils::debug_log;
-
 use super::*;
 use crate::{engine::result::*, engine_stages::*};
 use std::time::*;
@@ -49,7 +47,7 @@ impl EngineStateMachine<Running> {
 
         self.shared.resources.dispatcher.run_async_executor();
         for stage in &mut self.state.render_stages {
-            match stage.render(&mut RenderStageUpdateInput::default()) {
+            match stage.render(RenderStageUpdateInput::default()) {
                 EngineUpdateResult::Ok => {}
                 result => {
                     return result;

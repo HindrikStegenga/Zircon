@@ -45,11 +45,9 @@ impl UpdateStagesRunner {
                 let mut guard = mtx.lock().unwrap();
                 let threaded_state = &mut guard.1;
 
-                let mut update_input = UpdateStageUpdateInput::new(dispatcher);
-
                 // Update
                 for system in &mut threaded_state.stages {
-                    let msg = system.update(&mut update_input);
+                    let msg = system.update(UpdateStageUpdateInput::new(Arc::clone(&dispatcher)));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     }

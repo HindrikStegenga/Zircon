@@ -24,12 +24,51 @@ impl Default for AssetSystem {
 }
 
 impl AssetSystem {
-    pub fn load_asset_as<T: DeserializeOwned>(
+    /// Deserializes an asset into the provided type, allocates internal byte buffer temprorarily.
+    /// The asset system only supports YAML, CBOR, TOML and JSON formats.
+    // Might required specific features to be enabled.
+    pub fn load_asset_as_type<T: DeserializeOwned>(
         &self,
         mount_point: impl AsRef<str>,
         identifier: impl AsRef<str>,
     ) -> Result<T, AssetSystemError> {
-        unimplemented!()
+        let mut buffer = Vec::new();
+        self.load_asset_as_type_using_buffer(mount_point, identifier, &mut buffer)
+    }
+
+    /// Deserializes an asses into the provided type, using the provided buffer as intermediate.
+    pub fn load_asset_as_type_using_buffer<T: DeserializeOwned>(
+        &self,
+        mount_point: impl AsRef<str>,
+        identifier: impl AsRef<str>,
+        buffer: &mut Vec<u8>,
+    ) -> Result<T, AssetSystemError> {
+        let descriptor = self.load_asset_as_blob_into(&mount_point, &identifier, buffer)?;
+
+        match descriptor.format() {
+            "yaml" | "yml" => {
+                serde_yaml::from_slice(&buffer).map_err(|e| AssetSystemError::Other(Box::from(e)))
+            }
+            "cbor" => {
+                serde_cbor::from_slice(&buffer).map_err(|e| AssetSystemError::Other(Box::from(e)))
+            }
+            #[cfg(feature = "format_json")]
+            "json" => {
+                serde_json::from_slice(&buffer).map_err(|e| AssetSystemError::Other(Box::from(e)))
+            }
+            #[cfg(feature = "format_toml")]
+            "toml" => toml::from_slice(&buffer).map_err(|e| AssetSystemError::Other(Box::from(e))),
+            _ => {
+                tagged_warn!(
+                    "Asset System",
+                    "Tried to load asset {} with unknown format {} from {}.",
+                    identifier.as_ref(),
+                    descriptor.format(),
+                    mount_point.as_ref()
+                );
+                Err(AssetSystemError::UnknownAssetFormat)
+            }
+        }
     }
 
     pub fn load_asset_as_blob_into(

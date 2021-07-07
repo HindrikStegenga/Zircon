@@ -45,23 +45,21 @@ impl EngineStateMachine<Uninitialized> {
 
 impl Into<EngineStateMachine<Initialized>> for EngineStateMachine<Uninitialized> {
     fn into(mut self) -> EngineStateMachine<Initialized> {
-        let mut update_input = UpdateStageConstructorInput::new(&mut self.shared.resources);
-        let mut render_input = RenderStageConstructorInput::default();
+        let create_info = &self.shared.create_info;
+        let shared_resources = &mut self.shared.resources;
 
-        let update_stages: Vec<Box<dyn AnyUpdateStage>> = self
-            .shared
-            .create_info
+        let update_stages: Vec<Box<dyn AnyUpdateStage>> = create_info
             .update_stages
             .iter()
-            .map(|stage_constructor| stage_constructor(&mut update_input))
+            .map(|stage_constructor| {
+                stage_constructor(UpdateStageConstructorInput::new(shared_resources))
+            })
             .collect();
 
-        let render_stages: Vec<Box<dyn AnyRenderStage>> = self
-            .shared
-            .create_info
+        let render_stages: Vec<Box<dyn AnyRenderStage>> = create_info
             .render_stages
             .iter()
-            .map(|stage_constructor| stage_constructor(&mut render_input))
+            .map(|stage_constructor| stage_constructor(RenderStageConstructorInput::default()))
             .collect();
 
         EngineStateMachine {

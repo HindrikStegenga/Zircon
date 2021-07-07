@@ -1,15 +1,12 @@
 use magnetar_utils::dispatch_system::DispatchSystem;
 
-use crate::engine::{
-    engine_states::{EngineCoreResources, EngineSharedState},
-    result::EngineUpdateResult,
-};
+use crate::engine::{engine_states::EngineCoreResources, result::EngineUpdateResult};
 use std::{marker::PhantomData, sync::Arc};
 
 pub type UpdateStageConstructor =
-    dyn Fn(&mut UpdateStageConstructorInput) -> Box<dyn AnyUpdateStage>;
+    dyn Fn(UpdateStageConstructorInput) -> Box<dyn AnyUpdateStage> + 'static;
 pub type RenderStageConstructor =
-    dyn Fn(&mut RenderStageConstructorInput) -> Box<dyn AnyRenderStage>;
+    dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
 
 pub struct UpdateStageConstructorInput<'a> {
     pub resources: &'a mut EngineCoreResources,
@@ -66,7 +63,7 @@ impl<'a> UpdateStageUpdateInput<'a> {
 pub trait UpdateStage: Sized + Send + 'static {
     const IDENTIFIER: &'static str;
 
-    fn update(&mut self, input: &mut UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
 }
 
 /// Render stages run on the main thread. They cannot access regular game data during rendering.
@@ -74,21 +71,21 @@ pub trait UpdateStage: Sized + Send + 'static {
 pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
 
-    fn update(input: &mut UpdateStageUpdateInput) -> EngineUpdateResult;
-    fn render(&mut self, input: &mut RenderStageUpdateInput) -> EngineUpdateResult;
+    fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 
 /// TraitObject trait for Update Stages. Implemented for all T: UpdateStage.
 pub trait AnyUpdateStage: Send + 'static {
     fn identifier(&self) -> &'static str;
-    fn update(&mut self, input: &mut UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
 }
 
 /// TraitObject trait for Render Stages. Implemented for all T: RenderStage.
 pub trait AnyRenderStage: 'static {
     fn identifier(&self) -> &'static str;
-    fn update(&self, input: &mut UpdateStageUpdateInput) -> EngineUpdateResult;
-    fn render(&mut self, input: &mut RenderStageUpdateInput) -> EngineUpdateResult;
+    fn update(&self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 
 impl<T> AnyRenderStage for T
@@ -101,11 +98,11 @@ where
     }
 
     #[inline(always)]
-    fn render(&mut self, input: &mut RenderStageUpdateInput) -> EngineUpdateResult {
+    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
         <T as RenderStage>::render(self, input)
     }
     #[inline(always)]
-    fn update(&self, input: &mut UpdateStageUpdateInput<'_>) -> EngineUpdateResult {
+    fn update(&self, input: UpdateStageUpdateInput<'_>) -> EngineUpdateResult {
         <T as RenderStage>::update(input)
     }
 }
@@ -120,7 +117,7 @@ where
     }
 
     #[inline(always)]
-    fn update(&mut self, input: &mut UpdateStageUpdateInput) -> EngineUpdateResult {
+    fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
         <T as UpdateStage>::update(self, input)
     }
 }
