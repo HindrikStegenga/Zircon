@@ -12,6 +12,7 @@ format_toml = ["toml"]
 
 [dependencies]
 magnetar_utils = { path = "../magnetar_utils" }
+magnetar_resource_system = { path = "../magnetar_resource_system" }
 serde = { version = "1.0", features = ["derive"]}
 serde_yaml = "0.8"
 serde_cbor = "0.11"

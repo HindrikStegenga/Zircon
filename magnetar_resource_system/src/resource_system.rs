@@ -1,21 +1,48 @@
-pub mod error;
-
-use self::error::ResourceError;
+use crate::ResourceError;
 use anymap::AnyMap;
+use std::sync::Arc;
 
 pub trait UniqueResourceProvider<R: UniqueResource>: 'static {
     fn provide_resource(&mut self, info: R::ResourceRequestInfo) -> Result<R, ResourceError>;
 }
 pub trait Resource: Sized + 'static {
     type ResourceRequestInfo;
+    const IS_REMOVABLE: bool = true;
 }
 pub trait UniqueResource: Sized + 'static {
     type ResourceRequestInfo;
+    const IS_REMOVABLE: bool = true;
 }
+
+impl<T: Resource> Resource for Box<T> {
+    type ResourceRequestInfo = T::ResourceRequestInfo;
+}
+
+impl<T: Resource> Resource for Arc<T> {
+    type ResourceRequestInfo = T::ResourceRequestInfo;
+}
+
+impl<T: UniqueResource> UniqueResource for Box<T> {
+    type ResourceRequestInfo = T::ResourceRequestInfo;
+}
+
+impl<T: UniqueResource> UniqueResource for Arc<T> {
+    type ResourceRequestInfo = T::ResourceRequestInfo;
+}
+
 #[derive(Debug)]
 pub struct ResourceSystem {
     unique_resources: AnyMap,
     unique_resource_providers: AnyMap,
+}
+
+impl Default for ResourceSystem {
+    fn default() -> Self {
+        Self {
+            unique_resource_providers: AnyMap::new(),
+            unique_resources: AnyMap::new(),
+        }
+    }
 }
 
 impl ResourceSystem {
@@ -30,6 +57,9 @@ impl ResourceSystem {
 
     /// Removes a unique resource from the system.
     pub fn remove_unique_resource<R: UniqueResource>(&mut self) -> Result<R, ResourceError> {
+        if !R::IS_REMOVABLE {
+            return Err(ResourceError::UnremovableResource);
+        }
         return match self.unique_resources.remove::<R>() {
             Some(resource) => Ok(resource),
             None => Err(ResourceError::UnknownResourceKey),
@@ -79,5 +109,12 @@ impl ResourceSystem {
             Some(provider) => Ok(provider),
             None => Err(ResourceError::NoResourceProvider),
         }
+    }
+
+    pub fn get_unique_resource<R: UniqueResource>(&self) -> Option<&R> {
+        self.unique_resources.get::<R>()
+    }
+    pub fn get_unique_resource_mut<R: UniqueResource>(&mut self) -> Option<&mut R> {
+        self.unique_resources.get_mut::<R>()
     }
 }

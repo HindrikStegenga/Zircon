@@ -6,6 +6,7 @@ pub enum ResourceError {
     UnknownResourceKey,
     ResourceTypeAlreadyExists,
     NoResourceProvider,
+    UnremovableResource,
 }
 
 impl Error for ResourceError {}
@@ -21,6 +22,9 @@ impl Display for ResourceError {
                 f,
                 "There was no resource provider registered for the given resource type."
             ),
+            ResourceError::UnremovableResource => {
+                write!(f, "The specified resource cannot be removed.")
+            }
         }
     }
 }

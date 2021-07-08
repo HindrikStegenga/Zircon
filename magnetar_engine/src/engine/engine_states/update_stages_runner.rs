@@ -1,5 +1,6 @@
 use super::*;
 use crate::{engine::result::*, engine_stages::*};
+use magnetar_utils::dispatch_system::DispatchSystem;
 use std::sync::{Arc, Condvar, Mutex};
 
 pub(super) struct UpdateStagesThreadedState {
@@ -13,10 +14,11 @@ pub(super) struct UpdateStagesThreadedState {
 
 pub(super) struct UpdateStagesRunner {
     pub(super) threaded_state: Arc<(Mutex<(bool, UpdateStagesThreadedState)>, Condvar)>,
+    dispatch_system: Arc<DispatchSystem>,
 }
 
 impl UpdateStagesRunner {
-    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>) -> Self {
+    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>, dispatch_system: Arc<DispatchSystem>) -> Self {
         Self {
             threaded_state: Arc::new((
                 Mutex::new((
@@ -28,6 +30,7 @@ impl UpdateStagesRunner {
                 )),
                 Condvar::new(),
             )),
+            dispatch_system,
         }
     }
 
@@ -38,8 +41,8 @@ impl UpdateStagesRunner {
         if previous_message != EngineUpdateResult::Restart {
             // Enqueue new  update job!
             let state = Arc::clone(&self.threaded_state);
-            let dispatcher = Arc::clone(&shared_state.resources.dispatcher);
-            shared_state.resources.dispatcher.spawn(move || {
+            let dispatcher = Arc::clone(&self.dispatch_system);
+            self.dispatch_system.spawn(move || {
                 let &(ref mtx, ref cnd) = &*state;
 
                 let mut guard = mtx.lock().unwrap();

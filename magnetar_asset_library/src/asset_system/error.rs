@@ -1,6 +1,13 @@
-use std::{error::Error, fmt::Display};
+use std::{
+    error::Error,
+    fmt::{write, Display},
+    sync::{PoisonError, RwLockReadGuard},
+};
 
-use crate::{archive::AssetArchiveError, vfs::error::VfsError};
+use crate::{
+    archive::AssetArchiveError,
+    vfs::{error::VfsError, VirtualFileSystem},
+};
 
 #[derive(Debug)]
 pub enum AssetSystemError {
@@ -9,6 +16,8 @@ pub enum AssetSystemError {
     UnknownAssetFormat,
     Other(Box<dyn Error>),
     Archive(AssetArchiveError),
+    PoisonError,
+    NotMounted,
 }
 impl Error for AssetSystemError {}
 impl Display for AssetSystemError {
@@ -19,6 +28,11 @@ impl Display for AssetSystemError {
             AssetSystemError::Other(e) => e.fmt(f),
             AssetSystemError::Archive(e) => e.fmt(f),
             AssetSystemError::UnknownAssetFormat => write!(f, "Unknown asset format."),
+            AssetSystemError::PoisonError => write!(
+                f,
+                "Poisoning occured! A thread has paniced and killed the asset system."
+            ),
+            AssetSystemError::NotMounted => write!(f, "Mountpoint was not mounted."),
         }
     }
 }

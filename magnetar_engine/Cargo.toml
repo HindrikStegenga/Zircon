@@ -13,4 +13,4 @@ re_export_logging = []
 [dependencies]
 magnetar_utils = { path = "../magnetar_utils" }
 magnetar_asset_library = { path = "../magnetar_asset_library" }
-anymap = "0.12"
+magnetar_resource_system = { path = "../magnetar_resource_system" }

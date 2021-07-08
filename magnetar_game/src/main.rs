@@ -1,4 +1,4 @@
-use std::vec;
+use std::{sync::Arc, vec};
 
 use magnetar_engine::{engine_stages::*, *};
 use magnetar_winit_platform::WinitPlatform;
@@ -19,17 +19,23 @@ impl UpdateStage for TestStage {
 fn main() {
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
-        max_skipped_frames: 0,
-        max_frame_rate: Some(60),
+        max_skipped_frames: 1,
+        max_frame_rate: None,
         update_stages: vec![Box::new(|input: UpdateStageConstructorInput<'_>| {
-            input
-                .resources
-                .asset_system
+            let asset_system: &mut Arc<AssetSystem> = match input
+                .resource_system
+                .get_unique_resource_mut::<Arc<AssetSystem>>()
+            {
+                Some(v) => v,
+                None => {
+                    failure!("This system requires an asset system to be present!")
+                }
+            };
+
+            asset_system
                 .load_archives_from_directory("./tmp/", "mtra")
                 .unwrap();
-            input
-                .resources
-                .asset_system
+            asset_system
                 .load_files_from_directory("./magnetar_game/asset_archives/config", "config")
                 .unwrap();
             Box::new(TestStage {})

@@ -1,18 +1,18 @@
 mod async_task;
 
-pub use async_task::*;
+use magnetar_resource_system::*;
 
+pub use async_task::*;
 pub use rayon::prelude::*;
 
 use smol::{future::Future, Executor};
-use std::sync::Arc;
 use AsyncTask;
 
 use rayon::*;
 
 pub struct DispatchSystem {
     thread_pool: rayon::ThreadPool,
-    executor: Arc<Executor<'static>>,
+    executor: Executor<'static>,
 }
 
 impl DispatchSystem {
@@ -27,7 +27,7 @@ impl DispatchSystem {
             .build()
             .unwrap();
 
-        let executor = Arc::new(Executor::new());
+        let executor = Executor::new();
         Self {
             thread_pool,
             executor,
@@ -38,9 +38,14 @@ impl DispatchSystem {
 unsafe impl Send for DispatchSystem {}
 unsafe impl Sync for DispatchSystem {}
 
+impl UniqueResource for DispatchSystem {
+    const IS_REMOVABLE: bool = false;
+    type ResourceRequestInfo = ();
+}
+
 impl DispatchSystem {
-    pub fn run_async_executor(&self) -> bool {
-        let exec = Arc::clone(&self.executor);
+    pub fn tick_async_executor(&self) -> bool {
+        let exec = &self.executor;
         self.thread_pool.install(move || exec.try_tick())
     }
 

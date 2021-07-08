@@ -3,6 +3,7 @@ members = [
     "magnetar_engine",
     "magnetar_game",
     "magnetar_utils",
+    "magnetar_resource_system",
     "magnetar_winit_platform",
     "magnetar_asset_library"
 ]

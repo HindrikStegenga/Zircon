@@ -1,5 +1,6 @@
-use std::{fs::read_dir, path::Path};
+use std::{fs::read_dir, path::Path, sync::RwLock};
 mod error;
+use magnetar_resource_system::UniqueResource;
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -11,8 +12,15 @@ use crate::{
 
 use self::error::AssetSystemError;
 
+impl UniqueResource for AssetSystem {
+    const IS_REMOVABLE: bool = false;
+    type ResourceRequestInfo = ();
+}
+
+// TODO: Move the RwLock into the virtual file system!
+
 pub struct AssetSystem {
-    vfs: VirtualFileSystem,
+    vfs: RwLock<VirtualFileSystem>,
 }
 
 impl Default for AssetSystem {
@@ -77,24 +85,34 @@ impl AssetSystem {
         identifier: impl AsRef<str>,
         buffer: &mut Vec<u8>,
     ) -> Result<AssetDescriptor, AssetSystemError> {
-        self.vfs
-            .read_file_into(mount_point, identifier, buffer)
+        let vfs = self.vfs.read().map_err(|e| {
+            tagged_warn!("Asset System", "{}", e);
+            AssetSystemError::PoisonError
+        })?;
+
+        vfs.read_file_into(mount_point, identifier, buffer)
             .map_err(|e| e.into())
     }
 
     pub fn load_files_from_directory(
-        &mut self,
+        &self,
         directory: impl AsRef<Path>,
         mount_point: impl AsRef<str>,
     ) -> Result<(), AssetSystemError> {
         let mnt = VfsPhysicalMountPoint::new(&mount_point, &directory)?;
-        if !self.vfs.mount(mnt) {
+        let mut vfs = self.vfs.write().map_err(|e| {
+            tagged_warn!("Asset System", "{}", e);
+            AssetSystemError::PoisonError
+        })?;
+
+        if !vfs.mount(mnt) {
             tagged_warn!(
                 "Asset System",
                 "Directory mount point was not mounted: {:#?} mount point: {:#?}",
                 directory.as_ref(),
                 mount_point.as_ref()
             );
+            return Err(AssetSystemError::NotMounted);
         }
         tagged_success!(
             "Asset System",
@@ -106,7 +124,7 @@ impl AssetSystem {
     }
 
     pub fn load_archives_from_directory(
-        &mut self,
+        &self,
         directory: impl AsRef<Path>,
         file_extension: impl AsRef<str>,
     ) -> Result<(), AssetSystemError> {
@@ -147,12 +165,16 @@ impl AssetSystem {
             .collect::<Vec<_>>();
 
         let mut counter = 0;
+        let mut vfs = self.vfs.write().map_err(|e| {
+            tagged_warn!("Asset System", "{}", e);
+            AssetSystemError::PoisonError
+        })?;
         for dir_entry in valid_dir_entries {
             let archive = AssetArchive::read_from_file(dir_entry.path())?;
             for mount_point in archive.header().mount_points() {
                 let physical_mount =
                     ArchiveMountPoint::new(archive.path().into(), mount_point.clone());
-                if !self.vfs.mount(physical_mount) {
+                if !vfs.mount(physical_mount) {
                     tagged_warn!(
                         "Asset System",
                         "Archive mount point was not mounted: {:#?}",
