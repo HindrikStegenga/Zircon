@@ -35,22 +35,22 @@ impl AssetSystem {
     /// Deserializes an asset into the provided type, allocates internal byte buffer temprorarily.
     /// The asset system only supports YAML, CBOR, TOML and JSON formats.
     // Might required specific features to be enabled.
-    pub fn load_asset_as_type<T: DeserializeOwned>(
+    pub fn load_asset_as_type<T1: DeserializeOwned, T2: AsRef<str>, T3: AsRef<str>>(
         &self,
-        mount_point: impl AsRef<str>,
-        identifier: impl AsRef<str>,
-    ) -> Result<T, AssetSystemError> {
+        mount_point: T2,
+        identifier: T3,
+    ) -> Result<T1, AssetSystemError> {
         let mut buffer = Vec::new();
         self.load_asset_as_type_using_buffer(mount_point, identifier, &mut buffer)
     }
 
     /// Deserializes an asses into the provided type, using the provided buffer as intermediate.
-    pub fn load_asset_as_type_using_buffer<T: DeserializeOwned>(
+    pub fn load_asset_as_type_using_buffer<T1: DeserializeOwned, T2: AsRef<str>, T3: AsRef<str>>(
         &self,
-        mount_point: impl AsRef<str>,
-        identifier: impl AsRef<str>,
+        mount_point: T2,
+        identifier: T3,
         buffer: &mut Vec<u8>,
-    ) -> Result<T, AssetSystemError> {
+    ) -> Result<T1, AssetSystemError> {
         let descriptor = self.load_asset_as_blob_into(&mount_point, &identifier, buffer)?;
 
         match descriptor.format() {

@@ -10,10 +10,28 @@ use std::{
 pub struct Uninitialized;
 
 impl EngineStateMachine<Uninitialized> {
-    pub fn new(info: EngineCreateInfo) -> Self {
+    pub fn new(mut info: EngineCreateInfo) -> Self {
+        log!(
+            "Initializing {:#?} version {:#?}.{:#?}.{:#?}",
+            info.application_info.engine_name,
+            info.application_info.engine_major_version,
+            info.application_info.engine_minor_version,
+            info.application_info.engine_patch_version
+        );
+        log!(
+            "Executing application: {:#?} version {:#?}.{:#?}.{:#?}",
+            info.application_info.application_name,
+            info.application_info.application_major_version,
+            info.application_info.application_minor_version,
+            info.application_info.application_patch_version
+        );
+
         let instant = Instant::now();
         let dispatch_system = Arc::<DispatchSystem>::new(DispatchSystem::new(None));
-        let asset_system = Arc::<AssetSystem>::new(Default::default());
+        let asset_system = match info.asset_system.take() {
+            Some(v) => v,
+            None => Arc::<AssetSystem>::new(Default::default()),
+        };
         let mut resource_system: ResourceSystem = Default::default();
 
         resource_system
@@ -55,6 +73,7 @@ impl EngineStateMachine<Uninitialized> {
 
 impl Into<EngineStateMachine<Initialized>> for EngineStateMachine<Uninitialized> {
     fn into(mut self) -> EngineStateMachine<Initialized> {
+        log!("Initializing game engine...");
         let create_info = &self.shared.create_info;
         let resource_system = &mut self.shared.resource_system;
         let shared_resources = &mut self.shared.internal_resources;
@@ -63,19 +82,25 @@ impl Into<EngineStateMachine<Initialized>> for EngineStateMachine<Uninitialized>
             .update_stages
             .iter()
             .map(|stage_constructor| {
-                stage_constructor(UpdateStageConstructorInput::new(
+                let stage = stage_constructor(UpdateStageConstructorInput::new(
                     shared_resources,
                     resource_system,
-                ))
+                ));
+                success!("Constructed update stage: {}", stage.identifier());
+                stage
             })
             .collect();
 
         let render_stages: Vec<Box<dyn AnyRenderStage>> = create_info
             .render_stages
             .iter()
-            .map(|stage_constructor| stage_constructor(RenderStageConstructorInput::default()))
+            .map(|stage_constructor| {
+                let stage = stage_constructor(RenderStageConstructorInput::new(resource_system));
+                success!("Constructed render stage: {}", stage.identifier());
+                stage
+            })
             .collect();
-
+        success!("Initialized engine.");
         EngineStateMachine {
             shared: self.shared,
             state: Initialized {

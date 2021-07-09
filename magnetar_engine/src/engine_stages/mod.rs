@@ -27,13 +27,11 @@ impl<'a> UpdateStageConstructorInput<'a> {
 }
 
 pub struct RenderStageConstructorInput<'a> {
-    _phantom: PhantomData<&'a u8>,
+    pub resource_system: &'a mut ResourceSystem,
 }
-impl Default for RenderStageConstructorInput<'_> {
-    fn default() -> Self {
-        RenderStageConstructorInput {
-            _phantom: PhantomData::default(),
-        }
+impl<'a> RenderStageConstructorInput<'a> {
+    pub fn new(resource_system: &'a mut ResourceSystem) -> Self {
+        RenderStageConstructorInput { resource_system }
     }
 }
 
