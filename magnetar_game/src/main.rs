@@ -19,7 +19,7 @@ impl UpdateStage for TestStage {
 
 fn creage_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn AnyRenderStage> {
     let asset_system: &mut Arc<AssetSystem> = match input
-        .resource_system
+        .render_thread_resources
         .get_unique_resource_mut::<Arc<AssetSystem>>()
     {
         Some(v) => v,
@@ -39,6 +39,8 @@ fn creage_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
     let create_info = VkGraphicsSystemCreateInfo {
         graphics_options,
         application_info,
+        render_thread_resources: input.render_thread_resources,
+        platform_interface: input.platform_interface,
     };
 
     let system = VkGraphicsStage::new(create_info).expect("Could not create VkGraphicsSystem!");
@@ -60,7 +62,7 @@ fn main() {
         max_frame_rate: Some(60),
         update_stages: vec![Box::new(|input: UpdateStageConstructorInput<'_>| {
             let asset_system: &mut Arc<AssetSystem> = match input
-                .resource_system
+                .update_thread_resources
                 .get_unique_resource_mut::<Arc<AssetSystem>>()
             {
                 Some(v) => v,

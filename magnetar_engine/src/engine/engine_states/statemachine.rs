@@ -29,10 +29,10 @@ pub enum EngineState {
 }
 
 impl EngineState {
-    pub fn initialize(&mut self) {
+    pub fn initialize(&mut self, interface: &mut dyn PlatformInterface) {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Uninitialized(s) => {
-                let s = EngineState::Initialized(s.into());
+                let s = EngineState::Initialized((s, interface).into());
                 log!("EngineState changed: Initialized");
                 s
             }

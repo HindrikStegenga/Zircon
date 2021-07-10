@@ -6,12 +6,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
-#default = ["re_export_logging"]
-re_export_logging = []
-
+default = ["re_export_utils"]
+re_export_utils = []
 
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 magnetar_utils = { path = "../magnetar_utils" }
 magnetar_asset_library = { path = "../magnetar_asset_library" }
-magnetar_resource_system = { path = "../magnetar_resource_system" }

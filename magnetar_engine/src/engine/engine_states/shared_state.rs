@@ -1,8 +1,10 @@
+use std::sync::RwLock;
+
 use crate::{engine::gameloop_timer::EngineGameloopTimer, EngineCreateInfo};
-use magnetar_resource_system::*;
+use magnetar_utils::resource_system::*;
 
 pub struct EngineSharedState {
-    pub resource_system: ResourceSystem,
+    pub shared_resources: RwLock<SendableResourceSystem>,
     pub create_info: EngineCreateInfo,
     pub internal_resources: EngineInternalResources,
 }

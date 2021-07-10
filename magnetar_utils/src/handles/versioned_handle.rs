@@ -8,7 +8,6 @@ use std::{
 /// Opaque handle type storing both the actual integer value as well as versioning information.
 pub struct VersionedHandle<T, K = u32, G = K>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
@@ -20,11 +19,10 @@ where
 
 impl<T, K, G> VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
-    pub fn into<R: ?Sized>(self) -> VersionedHandle<R, K, G> {
+    pub fn into<R>(self) -> VersionedHandle<R, K, G> {
         VersionedHandle {
             value: self.value,
             version: self.version,
@@ -35,7 +33,6 @@ where
 
 impl<T, K, G> Clone for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
@@ -50,7 +47,6 @@ where
 
 impl<T, K> Hash for VersionedHandle<T, K>
 where
-    T: ?Sized,
     K: HandleType,
 {
     fn hash<H>(&self, h: &mut H)
@@ -80,7 +76,6 @@ where
 
 impl<T, K, G> Copy for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
@@ -88,7 +83,6 @@ where
 
 impl<T, K, G> From<(K, G)> for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
@@ -104,14 +98,12 @@ where
 
 impl<T, K, G> Eq for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
 }
 impl<T, K, G> PartialEq for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType,
     G: HandleType,
 {
@@ -122,14 +114,12 @@ where
 
 unsafe impl<T, K, G> Send for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType + Send,
     G: HandleType + Send,
 {
 }
 unsafe impl<T, K, G> Sync for VersionedHandle<T, K, G>
 where
-    T: ?Sized,
     K: HandleType + Sync,
     G: HandleType + Sync,
 {

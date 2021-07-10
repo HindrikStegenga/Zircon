@@ -1,7 +1,6 @@
 mod async_task;
 
-use magnetar_resource_system::*;
-
+use crate::resource_system::*;
 pub use async_task::*;
 pub use rayon::prelude::*;
 
@@ -10,6 +9,7 @@ use AsyncTask;
 
 use rayon::*;
 
+#[derive(Debug)]
 pub struct DispatchSystem {
     thread_pool: rayon::ThreadPool,
     executor: Executor<'static>,

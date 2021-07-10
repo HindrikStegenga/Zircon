@@ -8,6 +8,5 @@ edition = "2018"
 [dependencies]
 magnetar_engine = { path = "../magnetar_engine" }
 magnetar_utils = { path = "../magnetar_utils" }
-magnetar_resource_system = { path = "../magnetar_resource_system" }
 erupt = { version = "0.19", features = ["surface", "loading"] }
 serde = { version = "1.0", features = ["derive"] }

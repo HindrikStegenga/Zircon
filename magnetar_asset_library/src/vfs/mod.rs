@@ -7,7 +7,7 @@ use error::VfsError;
 use magnetar_utils::*;
 use std::collections::HashMap;
 
-pub trait VfsMountPoint: 'static {
+pub trait VfsMountPoint: Send + 'static {
     fn identifier(&self) -> &str;
     fn has_file(&self, identifier: &str) -> bool;
     fn get_asset_descriptor(&self, identifier: &str) -> Option<AssetDescriptor>;
@@ -20,7 +20,7 @@ pub trait VfsMountPoint: 'static {
 }
 
 pub struct VirtualFileSystem {
-    mounts: HashMap<String, Vec<Box<dyn VfsMountPoint>>>,
+    mounts: HashMap<String, Vec<Box<dyn VfsMountPoint + Send>>>,
 }
 
 impl Default for VirtualFileSystem {
@@ -51,7 +51,7 @@ impl VirtualFileSystem {
                 }
             },
             None => {
-                let mut v: Vec<Box<dyn VfsMountPoint>> = Vec::with_capacity(4);
+                let mut v: Vec<Box<dyn VfsMountPoint + Send>> = Vec::with_capacity(4);
                 let key = mountpoint.identifier().into();
                 v.push(Box::new(mountpoint));
                 self.mounts.insert(key, v);

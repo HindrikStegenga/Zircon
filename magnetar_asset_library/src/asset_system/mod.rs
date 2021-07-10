@@ -1,6 +1,6 @@
 use std::{fs::read_dir, path::Path, sync::RwLock};
 mod error;
-use magnetar_resource_system::UniqueResource;
+use magnetar_utils::resource_system::UniqueResource;
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -30,6 +30,8 @@ impl Default for AssetSystem {
         }
     }
 }
+
+unsafe impl Sync for AssetSystem {}
 
 impl AssetSystem {
     /// Deserializes an asset into the provided type, allocates internal byte buffer temprorarily.

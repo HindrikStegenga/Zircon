@@ -17,4 +17,8 @@ pub struct VkGraphicsOptions {
 
     pub instance_validation_layer_names: Vec<CString>,
     pub instance_validation_layer_names_debug: Vec<CString>,
+
+    pub default_window_title: String,
+    pub default_window_width: u32,
+    pub default_window_height: u32,
 }

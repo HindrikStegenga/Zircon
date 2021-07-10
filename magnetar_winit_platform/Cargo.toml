@@ -6,5 +6,7 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-magnetar_engine = { path = "../magnetar_engine", features = ["re_export_logging"] }
+magnetar_engine = { path = "../magnetar_engine" }
+magnetar_vk_graphics_stage = { path = "../magnetar_vk_graphics_stage" }
 winit = "0.24" # Update when https://github.com/rust-windowing/winit/issues/1950 is resolved.
+erupt = { version = "0.19", features = ["surface"] }

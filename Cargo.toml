@@ -4,7 +4,6 @@ members = [
     "magnetar_game",
     "magnetar_utils",
     "magnetar_vk_graphics_stage",
-    "magnetar_resource_system",
     "magnetar_winit_platform",
     "magnetar_asset_library"
 ]

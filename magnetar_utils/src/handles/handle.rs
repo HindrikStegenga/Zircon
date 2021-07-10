@@ -4,18 +4,17 @@ use std::{hash::Hasher, marker::PhantomData};
 /// Opaque handle type represented using integer values internally.
 pub struct Handle<T, K = u32>
 where
-    T: ?Sized,
+    T: Sized,
     K: HandleType,
-    Self: Sized,
 {
     pub value: K,
     /// Satisfy type check and drop check.
-    _phantom: PhantomData<fn(*const T)>,
+    _phantom: PhantomData<*const T>,
 }
 
 impl<T, K> Clone for Handle<T, K>
 where
-    T: ?Sized,
+    T: Sized,
     K: HandleType,
 {
     fn clone(&self) -> Self {
@@ -37,16 +36,10 @@ where
     }
 }
 
-impl<T, K> Copy for Handle<T, K>
-where
-    T: ?Sized,
-    K: HandleType,
-{
-}
+impl<T, K> Copy for Handle<T, K> where K: HandleType {}
 
 impl<T, K> From<K> for Handle<T, K>
 where
-    T: ?Sized,
     K: HandleType,
 {
     fn from(value: K) -> Self {
@@ -57,15 +50,9 @@ where
     }
 }
 
-impl<T, K> Eq for Handle<T, K>
-where
-    T: ?Sized,
-    K: HandleType,
-{
-}
+impl<T, K> Eq for Handle<T, K> where K: HandleType {}
 impl<T, K> PartialEq for Handle<T, K>
 where
-    T: ?Sized,
     K: HandleType,
 {
     fn eq(&self, other: &Self) -> bool {
@@ -75,7 +62,6 @@ where
 
 impl<T, K> Hash for Handle<T, K>
 where
-    T: ?Sized,
     K: HandleType,
 {
     fn hash<H>(&self, h: &mut H)
@@ -86,15 +72,5 @@ where
     }
 }
 
-unsafe impl<T, K> Send for Handle<T, K>
-where
-    T: ?Sized,
-    K: HandleType + Send,
-{
-}
-unsafe impl<T, K> Sync for Handle<T, K>
-where
-    T: ?Sized,
-    K: HandleType + Sync,
-{
-}
+unsafe impl<T, K> Send for Handle<T, K> where K: HandleType + Send {}
+unsafe impl<T, K> Sync for Handle<T, K> where K: HandleType + Sync {}

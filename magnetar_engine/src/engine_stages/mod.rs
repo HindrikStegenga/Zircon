@@ -1,7 +1,8 @@
-use magnetar_resource_system::ResourceSystem;
+use magnetar_asset_library::resource_system::SendableResourceSystem;
 use magnetar_utils::dispatch_system::DispatchSystem;
+use magnetar_utils::resource_system::ResourceSystem;
 
-use crate::engine::{engine_states::EngineInternalResources, result::EngineUpdateResult};
+use crate::{engine::result::EngineUpdateResult, PlatformInterface};
 use std::{marker::PhantomData, sync::Arc};
 
 pub type UpdateStageConstructor =
@@ -10,40 +11,51 @@ pub type RenderStageConstructor =
     dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
 
 pub struct UpdateStageConstructorInput<'a> {
-    pub resource_system: &'a mut ResourceSystem,
-    pub resources: &'a mut EngineInternalResources,
+    pub platform_interface: &'a mut dyn PlatformInterface,
+    pub update_thread_resources: &'a mut SendableResourceSystem,
+    pub shared_resources: &'a mut SendableResourceSystem,
 }
 
 impl<'a> UpdateStageConstructorInput<'a> {
     pub fn new(
-        resources: &'a mut EngineInternalResources,
-        resource_system: &'a mut ResourceSystem,
+        platform_interface: &'a mut dyn PlatformInterface,
+        update_thread_resources: &'a mut SendableResourceSystem,
+        shared_resources: &'a mut SendableResourceSystem,
     ) -> Self {
         Self {
-            resources,
-            resource_system,
+            platform_interface,
+            shared_resources,
+            update_thread_resources,
         }
     }
 }
 
 pub struct RenderStageConstructorInput<'a> {
-    pub resource_system: &'a mut ResourceSystem,
+    pub platform_interface: &'a mut dyn PlatformInterface,
+    pub render_thread_resources: &'a mut ResourceSystem,
+    pub shared_resources: &'a mut SendableResourceSystem,
 }
 impl<'a> RenderStageConstructorInput<'a> {
-    pub fn new(resource_system: &'a mut ResourceSystem) -> Self {
-        RenderStageConstructorInput { resource_system }
+    pub fn new(
+        platform_interface: &'a mut dyn PlatformInterface,
+        render_thread_resources: &'a mut ResourceSystem,
+        shared_resources: &'a mut SendableResourceSystem,
+    ) -> Self {
+        RenderStageConstructorInput {
+            platform_interface,
+            shared_resources,
+            render_thread_resources,
+        }
     }
 }
 
 pub struct RenderStageUpdateInput<'a> {
-    _phantom: PhantomData<&'a u8>,
+    pub platform: &'a mut dyn PlatformInterface,
 }
 
-impl<'a> Default for RenderStageUpdateInput<'a> {
-    fn default() -> Self {
-        Self {
-            _phantom: PhantomData::default(),
-        }
+impl<'a> RenderStageUpdateInput<'a> {
+    pub fn new(platform: &'a mut dyn PlatformInterface) -> Self {
+        Self { platform }
     }
 }
 

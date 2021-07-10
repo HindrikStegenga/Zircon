@@ -6,16 +6,14 @@ preferred_frames_in_flight: 2
 use_transfer_queues: true
 requires_platform_swapchain_extensions: true
 
-instance_extension_names: [
-  ""
-]
-instance_extension_names_debug: [
-  ""
+instance_extension_names: []
+instance_extension_names_debug: []
+
+instance_validation_layer_names: []
+instance_validation_layer_names_debug: [
+  "VK_LAYER_KHRONOS_validation"
 ]
 
-instance_validation_layer_names: [
-  ""
-]
-instance_validation_layer_names_debug: [
-  ""
-]
+default_window_title: "Magnetar - Vulkan Renderer"
+default_window_width: 800
+default_window_height: 600

@@ -1,12 +1,13 @@
 use super::*;
 use crate::{engine::result::*, engine_stages::*};
+use magnetar_asset_library::resource_system::SendableResourceSystem;
 use magnetar_utils::dispatch_system::DispatchSystem;
 use std::sync::{Arc, Condvar, Mutex};
 
 pub(super) struct UpdateStagesThreadedState {
     /// The update stages.
     stages: Vec<Box<dyn AnyUpdateStage>>,
-
+    update_thread_resources: SendableResourceSystem,
     /// Last result of the threaded loop.
     /// If None, it has not yet been executed.
     last_result: Option<EngineUpdateResult>,
@@ -18,7 +19,11 @@ pub(super) struct UpdateStagesRunner {
 }
 
 impl UpdateStagesRunner {
-    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>, dispatch_system: Arc<DispatchSystem>) -> Self {
+    pub fn new(
+        stages: Vec<Box<dyn AnyUpdateStage>>,
+        update_thread_resources: SendableResourceSystem,
+        dispatch_system: Arc<DispatchSystem>,
+    ) -> Self {
         Self {
             threaded_state: Arc::new((
                 Mutex::new((
@@ -26,6 +31,7 @@ impl UpdateStagesRunner {
                     UpdateStagesThreadedState {
                         stages: stages,
                         last_result: None,
+                        update_thread_resources,
                     },
                 )),
                 Condvar::new(),
