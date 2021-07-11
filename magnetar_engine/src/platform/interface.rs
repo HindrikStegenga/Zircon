@@ -1,9 +1,12 @@
 use magnetar_asset_library::handles::*;
 
-pub trait PlatformWindow {
+pub use raw_window_handle::*;
+
+pub trait PlatformWindow: HasRawWindowHandle {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
     fn id(&self) -> PlatformWindowHandle;
+    //fn raw_window_handle(&self) -> RawWindowHandle;
 }
 
 pub type PlatformWindowHandle = Handle<*const dyn PlatformWindow, u16>;

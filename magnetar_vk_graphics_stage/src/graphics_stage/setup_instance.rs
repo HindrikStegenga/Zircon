@@ -1,12 +1,15 @@
 use std::{ffi::CStr, os::raw::c_char};
 
-use crate::{VkGraphicsSystemCreateInfo, VkGraphicsSystemError};
+use crate::{config::VkGraphicsOptions, VkGraphicsSystemError};
 use erupt::*;
-use magnetar_engine::tagged_log;
+use magnetar_engine::{engine::create_info::ApplicationInfo, tagged_log};
+
+//TODO: Add render path feature instance support check.
 
 pub(crate) fn setup_instance(
     library_loader: &EntryLoader,
-    create_info: &mut VkGraphicsSystemCreateInfo,
+    graphics_options: &VkGraphicsOptions,
+    application_info: &ApplicationInfo,
 ) -> Result<InstanceLoader, VkGraphicsSystemError> {
     let mut required_platform_extensions = get_possible_vulkan_surface_extensions();
     filter_unsupported_surface_instance_extensions(
@@ -16,19 +19,19 @@ pub(crate) fn setup_instance(
 
     let application_info = vk::ApplicationInfoBuilder::new()
         .api_version(vk::make_api_version(0, 1, 0, 0))
-        .application_name(&create_info.application_info.application_name)
+        .application_name(&application_info.application_name)
         .application_version(vk::make_api_version(
             0,
-            create_info.application_info.application_major_version,
-            create_info.application_info.application_minor_version,
-            create_info.application_info.application_patch_version,
+            application_info.application_major_version,
+            application_info.application_minor_version,
+            application_info.application_patch_version,
         ))
-        .engine_name(&create_info.application_info.engine_name)
+        .engine_name(&application_info.engine_name)
         .engine_version(vk::make_api_version(
             0,
-            create_info.application_info.engine_major_version,
-            create_info.application_info.engine_minor_version,
-            create_info.application_info.engine_patch_version,
+            application_info.engine_major_version,
+            application_info.engine_minor_version,
+            application_info.engine_patch_version,
         ));
 
     let mut required_extension_pointers: Vec<*const c_char> = required_platform_extensions
@@ -37,15 +40,13 @@ pub(crate) fn setup_instance(
         .collect();
     required_extension_pointers.append(&mut {
         if cfg!(debug_assertions) {
-            create_info
-                .graphics_options
+            graphics_options
                 .instance_extension_names_debug
                 .iter()
                 .map(|e| e.as_ptr())
                 .collect()
         } else {
-            create_info
-                .graphics_options
+            graphics_options
                 .instance_extension_names
                 .iter()
                 .map(|e| e.as_ptr())
@@ -55,15 +56,13 @@ pub(crate) fn setup_instance(
 
     let required_validation_layer_pointers: Vec<*const c_char> = {
         if cfg!(debug_assertions) {
-            create_info
-                .graphics_options
+            graphics_options
                 .instance_validation_layer_names_debug
                 .iter()
                 .map(|e| e.as_ptr())
                 .collect()
         } else {
-            create_info
-                .graphics_options
+            graphics_options
                 .instance_validation_layer_names
                 .iter()
                 .map(|e| e.as_ptr())
@@ -79,7 +78,7 @@ pub(crate) fn setup_instance(
     required_validation_layer_pointers
         .iter()
         .map(|e| unsafe { std::ffi::CStr::from_ptr(*e) })
-        .for_each(|e| tagged_log!("VkGraphics Stage", "Enabled instance layers: {:#?}", e));
+        .for_each(|e| tagged_log!("VkGraphics Stage", "Enabled instance layer: {:#?}", e));
 
     let instance_info = vk::InstanceCreateInfoBuilder::new()
         .application_info(&application_info)

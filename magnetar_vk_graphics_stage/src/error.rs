@@ -1,10 +1,14 @@
 use erupt::{utils::loading::EntryLoaderError, *};
 use std::{error::Error, fmt::Display};
 
+use crate::device::{DeviceConfiguration, DeviceConfigurationError};
+
 #[derive(Debug)]
 pub enum VkGraphicsSystemError {
     EntryLoaderError(EntryLoaderError),
     LoaderError(LoaderError),
+    VulkanError(erupt::vk::Result),
+    DeviceConfigurationError(DeviceConfigurationError),
 }
 
 impl Error for VkGraphicsSystemError {}
@@ -14,7 +18,21 @@ impl Display for VkGraphicsSystemError {
         match self {
             VkGraphicsSystemError::EntryLoaderError(e) => e.fmt(f),
             VkGraphicsSystemError::LoaderError(e) => e.fmt(f),
+            VkGraphicsSystemError::VulkanError(e) => e.fmt(f),
+            VkGraphicsSystemError::DeviceConfigurationError(e) => e.fmt(f),
         }
+    }
+}
+
+impl From<DeviceConfigurationError> for VkGraphicsSystemError {
+    fn from(e: DeviceConfigurationError) -> Self {
+        Self::DeviceConfigurationError(e)
+    }
+}
+
+impl From<erupt::vk::Result> for VkGraphicsSystemError {
+    fn from(e: erupt::vk::Result) -> Self {
+        Self::VulkanError(e)
     }
 }
 

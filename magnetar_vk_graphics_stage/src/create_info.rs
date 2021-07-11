@@ -8,5 +8,5 @@ pub struct VkGraphicsSystemCreateInfo<'a> {
     pub graphics_options: VkGraphicsOptions,
     pub application_info: ApplicationInfo,
     pub render_thread_resources: &'a mut ResourceSystem,
-    pub platform_interface: &'a mut PlatformInterface,
+    pub platform_interface: &'a mut dyn PlatformInterface,
 }

@@ -1,3 +1,5 @@
+pub mod device_features;
+
 use serde::Deserialize;
 use std::ffi::CString;
 
@@ -10,7 +12,6 @@ pub struct VkGraphicsOptions {
     pub preferred_frames_in_flight: u32,
 
     pub use_transfer_queues: bool,
-    pub requires_platform_swapchain_extensions: bool,
 
     pub instance_extension_names: Vec<CString>,
     pub instance_extension_names_debug: Vec<CString>,
