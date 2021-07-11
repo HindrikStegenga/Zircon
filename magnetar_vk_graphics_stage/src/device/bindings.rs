@@ -1,16 +1,33 @@
-use crate::{render_paths::ForwardRenderPath, render_target_output::RenderTargetOutput, *};
+use magnetar_engine::PlatformWindowHandle;
 
-use super::VkDevice;
+use crate::{
+    config::VkGraphicsOptions, render_paths::RenderPathDescriptor,
+    render_target_bindings::WindowRenderTargetBinding, *,
+};
 
-pub struct ForwardRenderTargetOutputBinding {
-    render_path: ForwardRenderPath,
-    output: RenderTargetOutput,
-}
-pub struct DeferredRenderTargetOutputBinding {
-    output: RenderTargetOutput,
-}
-
+use super::VkInitializedDevice;
+use erupt::*;
 pub struct VkDeviceBindingSet {
-    device: VkDevice,
-    forward_bindings: Vec<ForwardRenderTargetOutputBinding>,
+    pub(crate) device: VkInitializedDevice,
+    pub(crate) paths: Vec<RenderPathDescriptor>,
+    pub(crate) window_bindings: Vec<WindowRenderTargetBinding>,
+}
+
+impl VkDeviceBindingSet {
+    pub fn add_window_render_target_binding(
+        &mut self,
+        instance: VkInstance,
+        graphics_options: &VkGraphicsOptions,
+        window_handle: PlatformWindowHandle,
+        surface: vk::SurfaceKHR,
+    ) {
+        let v = WindowRenderTargetBinding::new(
+            instance,
+            graphics_options,
+            &self.device,
+            window_handle,
+            surface,
+        );
+        self.window_bindings.push(v.unwrap());
+    }
 }

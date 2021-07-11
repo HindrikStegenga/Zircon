@@ -4,27 +4,37 @@ use std::{
 };
 
 use crate::{
-    config::{device_features::meets_required_features, VkGraphicsOptions},
+    config::{
+        device_features::{combine_features, meets_required_features},
+        VkGraphicsOptions,
+    },
     render_paths::RenderPathDescriptor,
 };
 
-use super::{raw_window_handle_wrapper::RawWindowHandleWrapper, VkDevice};
+use super::{VkInitializedDevice, VkDeviceError, raw_window_handle_wrapper::RawWindowHandleWrapper};
 use erupt::{
     vk::{ExtensionProperties, PhysicalDeviceType, QueueFamilyProperties},
     *,
 };
-use magnetar_engine::{tagged_debug_log, tagged_log, PlatformWindow};
+use magnetar_engine::{tagged_debug_log, PlatformWindow};
 
 #[derive(Debug)]
 pub enum DeviceConfigurationError {
     VkResultFailure(vk::Result),
+    VkDeviceError(VkDeviceError)
 }
 impl std::error::Error for DeviceConfigurationError {}
 impl Display for DeviceConfigurationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DeviceConfigurationError::VkResultFailure(v) => Debug::fmt(&v, f),
+            DeviceConfigurationError::VkDeviceError(v) => Debug::fmt(&v, f),
         }
+    }
+}
+impl From<VkDeviceError> for DeviceConfigurationError {
+    fn from(e: VkDeviceError) -> Self {
+        Self::VkDeviceError(e)
     }
 }
 impl From<vk::Result> for DeviceConfigurationError {
@@ -35,23 +45,25 @@ impl From<vk::Result> for DeviceConfigurationError {
 
 #[derive(Clone)]
 pub struct DeviceQueueFamilyDesignation {
-    graphics_family_config: usize,
-    compute_only_family_indices: Vec<usize>,
-    transfer_only_family_indices: Vec<usize>,
+    pub(crate) graphics_family: u32,
+    pub(crate) compute_only_family_indices: Vec<u32>,
+    pub(crate) transfer_only_family_indices: Vec<u32>,
 }
 
 #[derive(Clone)]
 pub(crate) struct PhysicalDeviceRenderPathSupportDescriptor {
-    device: vk::PhysicalDevice,
-    properties: vk::PhysicalDeviceProperties,
-    supported_paths: Vec<RenderPathDescriptor>,
-    queue_family_properties: Vec<QueueFamilyProperties>,
-    queue_family_designations: DeviceQueueFamilyDesignation,
+    pub(crate) device: vk::PhysicalDevice,
+    pub(crate) properties: vk::PhysicalDeviceProperties,
+    pub(crate) supported_paths: Vec<RenderPathDescriptor>,
+    pub(crate) enabled_extensions: Vec<CString>,
+    pub(crate) queue_family_properties: Vec<QueueFamilyProperties>,
+    pub(crate) queue_family_designations: DeviceQueueFamilyDesignation,
 }
 
 pub(crate) struct DeviceConfiguration {
-    created_devices: Vec<VkDevice>,
-    default_render_surface: vk::SurfaceKHR,
+    pub(crate) created_devices: Vec<VkInitializedDevice>,
+    pub(crate) render_path_support: Vec<(vk::PhysicalDevice, RenderPathDescriptor)>,
+    pub(crate) default_render_surface: vk::SurfaceKHR,
 }
 
 pub(crate) unsafe fn setup_devices(
@@ -87,16 +99,28 @@ pub(crate) unsafe fn setup_devices(
                 "Checking device support: {:#?}",
                 CStr::from_ptr(device_properties.device_name.as_ptr())
             );
-
+            let mut enabled_extensions = Vec::new();
             let supported_paths = paths
                 .iter()
                 .filter_map(|render_path| {
-                    let required_extensions = (render_path.required_device_extensions)();
+                    let mut required_extensions = (render_path.required_device_extensions)();
+
+                    if required_extensions.iter().find(|e| e.as_c_str() == unsafe { CStr::from_ptr(erupt::extensions::khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME) }).is_none() {
+                        required_extensions.push(unsafe { CStr::from_ptr(erupt::extensions::khr_swapchain::KHR_SWAPCHAIN_EXTENSION_NAME) }.to_owned())
+                    }
+
                     let required_features = (render_path.required_features)();
 
                     if !meets_required_extension_names(&required_extensions, &device_extensions) {
                         return None;
                     }
+
+                    for elem in &required_extensions {
+                        if !enabled_extensions.contains(elem) {
+                            enabled_extensions.push(elem.clone());
+                        }
+                    }
+
                     if !meets_required_features(required_features, device_features) {
                         return None;
                     }
@@ -116,7 +140,7 @@ pub(crate) unsafe fn setup_devices(
 
             // We have checked render path requirements. Now we need to check support for device queues and surface support.
             let config = DeviceQueueFamilyDesignation {
-                graphics_family_config: {
+                graphics_family: {
                     if let Some(family_idx) = queue_family_properties
                         .iter()
                         .enumerate()
@@ -141,7 +165,7 @@ pub(crate) unsafe fn setup_devices(
                         })
                         .map(|(e, _)| e)
                     {
-                        family_idx
+                        family_idx as u32
                     } else {
                         return None;
                     }
@@ -154,7 +178,7 @@ pub(crate) unsafe fn setup_devices(
                             if qf.queue_flags.contains(vk::QueueFlags::COMPUTE)
                                 && !qf.queue_flags.contains(vk::QueueFlags::GRAPHICS)
                             {
-                                Some(idx)
+                                Some(idx as u32)
                             } else {
                                 None
                             }
@@ -170,7 +194,7 @@ pub(crate) unsafe fn setup_devices(
                                 && !qf.queue_flags.contains(vk::QueueFlags::GRAPHICS)
                                 && !qf.queue_flags.contains(vk::QueueFlags::GRAPHICS)
                             {
-                                Some(idx)
+                                Some(idx as u32)
                             } else {
                                 None
                             }
@@ -180,6 +204,13 @@ pub(crate) unsafe fn setup_devices(
                     Vec::with_capacity(0)
                 },
             };
+            
+            let mut vk_portability_device_requirements = vec![
+                CStr::from_ptr(erupt::extensions::khr_portability_subset::KHR_PORTABILITY_SUBSET_EXTENSION_NAME).to_owned(),
+            ];
+            if meets_required_extension_names(&vk_portability_device_requirements, &device_extensions) {
+                enabled_extensions.push(vk_portability_device_requirements.pop().unwrap());
+            }
 
             Some(PhysicalDeviceRenderPathSupportDescriptor {
                 device: *device,
@@ -187,6 +218,7 @@ pub(crate) unsafe fn setup_devices(
                 queue_family_properties: queue_family_properties,
                 queue_family_designations: config,
                 properties: device_properties,
+                enabled_extensions,
             })
         })
         .collect::<Vec<_>>();
@@ -286,9 +318,47 @@ pub(crate) unsafe fn setup_devices(
         );
     });
 
+    let mut render_path_support = vec![];
+    let devices = devices_to_be_constructed
+        .into_iter()
+        .map(|d| {
+            let required_features = d
+                .supported_paths
+                .iter()
+                .map(|e| (e.required_features)())
+                .reduce(|left, right| combine_features(left, right))
+                .unwrap();
+
+            let device = VkInitializedDevice::new(
+                &instance,
+                d.device,
+                d.enabled_extensions,
+                required_features,
+                d.queue_family_properties,
+                d.queue_family_designations,
+            );
+
+            for path in d.supported_paths {
+                render_path_support.push((d.device, path));
+            }
+
+            device
+        })
+        .collect::<Vec<_>>();
+    
+    let mut devices2 = vec![];
+    for device in devices.into_iter() {
+        let d = match device {
+            Ok(v) => v,
+            Err(e) => return Err(e.into())
+        };
+        devices2.push(d);
+    }
+
     Ok(DeviceConfiguration {
-        created_devices: vec![],
+        created_devices: devices2,
         default_render_surface: default_render_window_surface,
+        render_path_support
     })
 }
 

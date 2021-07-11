@@ -38,14 +38,3 @@ impl RenderPathDescriptor {
         }
     }
 }
-
-impl<T: RenderPath> From<T> for RenderPathDescriptor {
-    fn from(path: T) -> Self {
-        RenderPathDescriptor {
-            name: T::name,
-            required_instance_extensions: T::required_instance_extensions,
-            required_device_extensions: T::required_device_extensions,
-            required_features: T::required_device_features,
-        }
-    }
-}

@@ -1,6 +1,6 @@
 use std::{ffi::CStr, os::raw::c_char};
 
-use crate::{config::VkGraphicsOptions, VkGraphicsSystemError};
+use crate::{VkGraphicsSystemError, config::VkGraphicsOptions, device::meets_required_extension_names, vk_instance::VkInstance};
 use erupt::*;
 use magnetar_engine::{engine::create_info::ApplicationInfo, tagged_log};
 
@@ -10,7 +10,7 @@ pub(crate) fn setup_instance(
     library_loader: &EntryLoader,
     graphics_options: &VkGraphicsOptions,
     application_info: &ApplicationInfo,
-) -> Result<InstanceLoader, VkGraphicsSystemError> {
+) -> Result<VkInstance, VkGraphicsSystemError> {
     let mut required_platform_extensions = get_possible_vulkan_surface_extensions();
     filter_unsupported_surface_instance_extensions(
         &library_loader,
@@ -27,12 +27,21 @@ pub(crate) fn setup_instance(
             application_info.application_patch_version,
         ))
         .engine_name(&application_info.engine_name)
+        .api_version(vk::make_api_version(0, 1, 0, 0))
         .engine_version(vk::make_api_version(
             0,
             application_info.engine_major_version,
             application_info.engine_minor_version,
             application_info.engine_patch_version,
         ));
+    
+    let supported_extensions = unsafe { library_loader.enumerate_instance_extension_properties(None, None).result()? };
+    let mut vk_portability_instance_requirements = unsafe { vec![
+        CStr::from_ptr(erupt::extensions::khr_get_physical_device_properties2::KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME).to_owned(), 
+    ] };
+    if meets_required_extension_names(&vk_portability_instance_requirements, &supported_extensions) {
+        required_platform_extensions.push(vk_portability_instance_requirements.pop().unwrap());
+    }
 
     let mut required_extension_pointers: Vec<*const c_char> = required_platform_extensions
         .iter()
@@ -85,7 +94,7 @@ pub(crate) fn setup_instance(
         .enabled_extension_names(&required_extension_pointers)
         .enabled_layer_names(&required_validation_layer_pointers);
 
-    Ok(unsafe { InstanceLoader::new(&library_loader, &instance_info, None)? })
+    Ok(VkInstance::from(unsafe { InstanceLoader::new(&library_loader, &instance_info, None)? }))
 }
 
 fn get_possible_vulkan_surface_extensions() -> Vec<std::ffi::CString> {
