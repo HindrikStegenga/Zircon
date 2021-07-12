@@ -1,43 +1,16 @@
-use std::{
-    ffi::CString,
-    fmt::Display,
-    ops::{Deref, DerefMut},
-};
+use std::{ffi::CString, fmt::Display, ops::Deref};
 
 use erupt::*;
+use magnetar_engine::tagged_log;
 
 pub mod bindings;
 pub mod device_selection;
+pub mod error;
 pub mod raw_window_handle_wrapper;
+use crate::VkDevice;
 pub use bindings::*;
 pub use device_selection::*;
-
-use crate::VkDevice;
-
-#[derive(Debug)]
-pub enum VkDeviceError {
-    LoaderError(LoaderError),
-    VkResultFailure(vk::Result),
-}
-impl std::error::Error for VkDeviceError {}
-impl Display for VkDeviceError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            VkDeviceError::LoaderError(e) => e.fmt(f),
-            VkDeviceError::VkResultFailure(e) => e.fmt(f),
-        }
-    }
-}
-impl From<LoaderError> for VkDeviceError {
-    fn from(e: LoaderError) -> Self {
-        Self::LoaderError(e)
-    }
-}
-impl From<vk::Result> for VkDeviceError {
-    fn from(e: vk::Result) -> Self {
-        Self::VkResultFailure(e)
-    }
-}
+use error::*;
 
 pub(crate) struct VkQueue {
     pub(crate) queue: vk::Queue,
@@ -52,6 +25,7 @@ pub(crate) struct VkInitializedDevice {
     queue_family_properties: Vec<vk::QueueFamilyProperties>,
     enabled_extensions: Vec<CString>,
     enabled_features: vk::PhysicalDeviceFeatures,
+    properties: vk::PhysicalDeviceProperties,
     physical_device: vk::PhysicalDevice,
     device: VkDevice,
 }
@@ -68,6 +42,7 @@ impl VkInitializedDevice {
     pub fn new(
         instance: &InstanceLoader,
         physical_device: vk::PhysicalDevice,
+        properties: vk::PhysicalDeviceProperties,
         required_extension_names: Vec<CString>,
         required_features: vk::PhysicalDeviceFeatures,
         device_queue_family_properties: Vec<vk::QueueFamilyProperties>,
@@ -113,6 +88,15 @@ impl VkInitializedDevice {
                 queue_info.push(transfer_info);
             }
         }
+
+        for extension in &required_extension_names {
+            tagged_log!(
+                "VkGraphics Stage",
+                "Enabled device extension: {:#?}",
+                &extension
+            );
+        }
+
         let extension_names = required_extension_names
             .iter()
             .map(|e| e.as_ptr())
@@ -183,6 +167,7 @@ impl VkInitializedDevice {
             graphics_queue: graphics_queue,
             compute_only_queues: compute_queues,
             transfer_only_queues: transfer_queues,
+            properties: properties,
         })
     }
 
@@ -219,5 +204,10 @@ impl VkInitializedDevice {
     /// Get a reference to the vk device's transfer only queues.
     pub fn transfer_only_queues(&self) -> &[VkQueue] {
         self.transfer_only_queues.as_slice()
+    }
+
+    /// Get a reference to the vk initialized device's properties.
+    pub(crate) fn properties(&self) -> &vk::PhysicalDeviceProperties {
+        &self.properties
     }
 }

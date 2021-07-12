@@ -117,6 +117,10 @@ impl RenderStage for VkGraphicsStage {
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        for device_binding in &self.device_bindings {
+            for window_binding in &device_binding.window_bindings {}
+        }
+
         EngineUpdateResult::Ok
     }
 }

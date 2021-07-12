@@ -16,7 +16,7 @@ use erupt::{
     vk::{ExtensionProperties, PhysicalDeviceType, QueueFamilyProperties},
     *,
 };
-use magnetar_engine::{tagged_debug_log, PlatformWindow};
+use magnetar_engine::{PlatformWindow, tagged_debug_log, tagged_success};
 
 #[derive(Debug)]
 pub enum DeviceConfigurationError {
@@ -332,6 +332,7 @@ pub(crate) unsafe fn setup_devices(
             let device = VkInitializedDevice::new(
                 &instance,
                 d.device,
+                d.properties,
                 d.enabled_extensions,
                 required_features,
                 d.queue_family_properties,
@@ -352,6 +353,7 @@ pub(crate) unsafe fn setup_devices(
             Ok(v) => v,
             Err(e) => return Err(e.into())
         };
+        tagged_success!("VkGraphics Stage", "Succesfully acquired logical device: {:#?}.", CStr::from_ptr(d.properties().device_name.as_ptr()));
         devices2.push(d);
     }
 
