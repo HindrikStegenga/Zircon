@@ -1,15 +1,14 @@
 use std::{ffi::CStr, os::raw::c_char};
 
-use crate::{VkGraphicsSystemError, config::VkGraphicsOptions, device::meets_required_extension_names, vk_instance::VkInstance};
+use crate::{VkGraphicsSystemError, config::VkGraphicsOptions, device::meets_required_extension_names, render_paths::RenderPathDescriptor, vk_instance::VkInstance};
 use erupt::*;
 use magnetar_engine::{engine::create_info::ApplicationInfo, tagged_log};
-
-//TODO: Add render path feature instance support check.
 
 pub(crate) fn setup_instance(
     library_loader: &EntryLoader,
     graphics_options: &VkGraphicsOptions,
     application_info: &ApplicationInfo,
+    render_path_descriptors: &mut Vec<RenderPathDescriptor>
 ) -> Result<VkInstance, VkGraphicsSystemError> {
     let mut required_platform_extensions = get_possible_vulkan_surface_extensions();
     filter_unsupported_surface_instance_extensions(
@@ -36,6 +35,11 @@ pub(crate) fn setup_instance(
         ));
     
     let supported_extensions = unsafe { library_loader.enumerate_instance_extension_properties(None, None).result()? };
+    
+    render_path_descriptors.retain(|e| {
+        meets_required_extension_names(e.required_instance_extensions(), &supported_extensions)
+    });
+    
     let mut vk_portability_instance_requirements = unsafe { vec![
         CStr::from_ptr(erupt::extensions::khr_get_physical_device_properties2::KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME).to_owned(), 
     ] };

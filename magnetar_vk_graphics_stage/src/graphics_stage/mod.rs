@@ -1,9 +1,10 @@
 use std::{ops::Deref, sync::Arc};
 
 use crate::{
+    components::{Camera, CameraTargetBinding, CameraType, PerspectiveCamera},
     config::VkGraphicsOptions,
     device::{setup_devices, VkDeviceBindingSet},
-    render_paths::{ForwardRenderPath, RenderPathDescriptor},
+    render_paths::{ForwardRenderPath, RenderPathDescriptor, RenderPathType},
     VkGraphicsSystemCreateInfo, VkGraphicsSystemError, *,
 };
 use erupt::*;
@@ -39,7 +40,7 @@ impl VkGraphicsStage {
                 .expect("Requires a window!"),
         };
 
-        let render_path_descriptors = vec![RenderPathDescriptor::new::<ForwardRenderPath>()];
+        let mut render_path_descriptors = vec![RenderPathDescriptor::new::<ForwardRenderPath>()];
 
         // Initialize library.
         let library_loader = EntryLoader::new()?;
@@ -50,6 +51,7 @@ impl VkGraphicsStage {
             &library_loader,
             &create_info.graphics_options,
             &create_info.application_info,
+            &mut render_path_descriptors,
         )?;
         tagged_success!("VkGraphics Stage", "Created Vulkan Instance.");
 
@@ -87,15 +89,16 @@ impl VkGraphicsStage {
 
         // All devices have surface support for the first window.
         // Requires at least one path.
-        let first_binding = bindings
-            .iter_mut()
-            .find(|e| {
-                e.compatible_paths()
-                    .iter()
-                    .find(|p| p.name() == "Forward")
-                    .is_some()
-            })
-            .unwrap();
+        let first_binding = if let Some(b) = bindings.iter_mut().find(|e| {
+            e.compatible_paths()
+                .iter()
+                .find(|p| p.name() == "Forward")
+                .is_some()
+        }) {
+            b
+        } else {
+            bindings.first_mut().unwrap()
+        };
 
         // Add initial binding
         first_binding.add_window_render_target_binding(
@@ -104,6 +107,13 @@ impl VkGraphicsStage {
             default_window.id(),
             device_config.default_render_surface,
         );
+
+        // Bind testing camera
+        first_binding.bind_camera_to_first_available_binding(Camera::new(
+            CameraType::Perspective(PerspectiveCamera {}),
+            CameraTargetBinding::Window(default_window.id()),
+            RenderPathType::Forward,
+        ));
 
         Ok(Self {
             graphics_options: create_info.graphics_options,
@@ -123,7 +133,9 @@ impl RenderStage for VkGraphicsStage {
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
-        for device_binding in &self.device_bindings {}
+        for device_binding in &self.device_bindings {
+            for binding in device_binding.bindings() {}
+        }
 
         EngineUpdateResult::Ok
     }

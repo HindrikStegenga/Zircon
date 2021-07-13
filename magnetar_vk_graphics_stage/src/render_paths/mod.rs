@@ -6,8 +6,10 @@ pub mod forward;
 
 pub use forward::*;
 
+use crate::device::RenderPathInstance;
+
 #[repr(u8)]
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
 pub enum RenderPathType {
     Forward = 0,
     Deferred = 1,
@@ -19,15 +21,24 @@ pub(crate) struct RenderPathDescriptor {
     required_instance_extensions: Vec<CString>,
     required_device_extensions: Vec<CString>,
     required_features: vk::PhysicalDeviceFeatures,
+    render_path_type: RenderPathType,
 }
 
 impl RenderPathDescriptor {
+    pub fn create_instance(&self) -> RenderPathInstance {
+        match self.render_path_type() {
+            RenderPathType::Forward => RenderPathInstance::Forward(ForwardRenderPath::new()),
+            RenderPathType::Deferred => todo!(),
+        }
+    }
+
     pub fn new<T: RenderPath>() -> Self {
         Self {
             name: T::name(),
             required_instance_extensions: T::required_instance_extensions(),
             required_device_extensions: T::required_device_extensions(),
             required_features: T::required_device_features(),
+            render_path_type: T::render_path_type(),
         }
     }
 
@@ -50,10 +61,16 @@ impl RenderPathDescriptor {
     pub(crate) fn required_features(&self) -> &vk::PhysicalDeviceFeatures {
         &self.required_features
     }
+
+    /// Get the render path descriptor's render path type.
+    pub(crate) fn render_path_type(&self) -> RenderPathType {
+        self.render_path_type
+    }
 }
 
 pub trait RenderPath {
     fn name() -> String;
+    fn render_path_type() -> RenderPathType;
     fn required_instance_extensions() -> Vec<CString>;
     fn required_device_extensions() -> Vec<CString>;
     fn required_device_features() -> vk::PhysicalDeviceFeatures;

@@ -9,6 +9,7 @@ pub enum VkGraphicsSystemError {
     LoaderError(LoaderError),
     VulkanError(erupt::vk::Result),
     NoSuitableDevicesError,
+    NoSuitableRenderPaths,
     DeviceConfigurationError(DeviceConfigurationError),
 }
 
@@ -21,6 +22,9 @@ impl Display for VkGraphicsSystemError {
             VkGraphicsSystemError::LoaderError(e) => e.fmt(f),
             VkGraphicsSystemError::VulkanError(e) => e.fmt(f),
             VkGraphicsSystemError::DeviceConfigurationError(e) => e.fmt(f),
+            VkGraphicsSystemError::NoSuitableRenderPaths => {
+                write!(f, "No suitable render paths found.")
+            }
             VkGraphicsSystemError::NoSuitableDevicesError => {
                 write!(f, "No suitable Vulkan devices found.")
             }
