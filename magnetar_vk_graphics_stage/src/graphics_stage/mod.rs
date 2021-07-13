@@ -19,7 +19,7 @@ use vk_instance::*;
 
 pub struct VkGraphicsStage {
     device_bindings: Vec<VkDeviceBindingSet>,
-    instance_loader: VkInstance,
+    instance: VkInstance,
     library_loader: EntryLoader,
     application_info: ApplicationInfo,
     graphics_options: VkGraphicsOptions,
@@ -103,7 +103,7 @@ impl VkGraphicsStage {
             graphics_options: create_info.graphics_options,
             application_info: create_info.application_info,
             library_loader,
-            instance_loader: instance,
+            instance,
             device_bindings: bindings,
         })
     }

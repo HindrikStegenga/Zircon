@@ -18,7 +18,6 @@ pub enum CameraTargetBinding {
 pub struct Camera {
     camera_type: CameraType,
     binding: CameraTargetBinding,
-    render_path: RenderPathType,
 }
 
 impl Camera {
@@ -26,7 +25,6 @@ impl Camera {
         Self {
             camera_type,
             binding,
-            render_path: (),
         }
     }
 
