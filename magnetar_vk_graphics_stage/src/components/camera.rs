@@ -18,13 +18,19 @@ pub enum CameraTargetBinding {
 pub struct Camera {
     camera_type: CameraType,
     binding: CameraTargetBinding,
+    preferred_render_path: RenderPathType,
 }
 
 impl Camera {
-    pub fn new(camera_type: CameraType, binding: CameraTargetBinding) -> Self {
+    pub fn new(
+        camera_type: CameraType,
+        binding: CameraTargetBinding,
+        preferred_render_path: RenderPathType,
+    ) -> Self {
         Self {
             camera_type,
             binding,
+            preferred_render_path,
         }
     }
 
@@ -36,5 +42,10 @@ impl Camera {
     /// Get a reference to the camera's binding.
     pub fn binding(&self) -> &CameraTargetBinding {
         &self.binding
+    }
+
+    /// Get a reference to the camera's preferred render path.
+    pub fn preferred_render_path(&self) -> &RenderPathType {
+        &self.preferred_render_path
     }
 }

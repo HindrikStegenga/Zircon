@@ -26,7 +26,7 @@ pub struct VkGraphicsStage {
 }
 
 impl VkGraphicsStage {
-    pub fn new(mut create_info: VkGraphicsSystemCreateInfo) -> Result<Self, VkGraphicsSystemError> {
+    pub fn new(create_info: VkGraphicsSystemCreateInfo) -> Result<Self, VkGraphicsSystemError> {
         // TODO: Remove this part here when events and such are finished.
         let default_window = match create_info.platform_interface.get_windows().first() {
             Some(handle) => create_info
@@ -39,10 +39,13 @@ impl VkGraphicsStage {
                 .expect("Requires a window!"),
         };
 
-        let render_path_descriptors = vec![RenderPathDescriptor::from_path::<ForwardRenderPath>()];
+        let render_path_descriptors = vec![RenderPathDescriptor::new::<ForwardRenderPath>()];
 
+        // Initialize library.
         let library_loader = EntryLoader::new()?;
         tagged_success!("VkGraphics Stage", "Loaded Vulkan library.");
+
+        // Set up vulkan instance.
         let instance = setup_instance(
             &library_loader,
             &create_info.graphics_options,
@@ -63,35 +66,38 @@ impl VkGraphicsStage {
             return Err(VkGraphicsSystemError::NoSuitableDevicesError);
         }
 
-        let mut bindings: Vec<VkDeviceBindingSet> = device_config
-            .created_devices
-            .into_iter()
-            .map(|d| VkDeviceBindingSet {
-                device: d,
-                paths: vec![],
-                window_bindings: vec![],
-            })
-            .collect();
-        device_config
-            .render_path_support
-            .into_iter()
-            .for_each(|(dev, path)| {
-                if let Some(d) = bindings
-                    .iter_mut()
-                    .find(|e| e.device.physical_device() == dev)
-                {
-                    d.paths.push(path);
-                }
-            });
+        // Assign devices to bindings and add path support to each binding.
+        let mut bindings: Vec<VkDeviceBindingSet> = {
+            let devices = device_config.created_devices;
+            let render_path_support = device_config.render_path_support;
+            devices
+                .into_iter()
+                .map(|d| {
+                    let mut compatible_paths = vec![];
+                    render_path_support.iter().for_each(|(dev, path)| {
+                        if *dev == d.physical_device() {
+                            compatible_paths.push(path.clone());
+                        }
+                    });
+
+                    VkDeviceBindingSet::new(d, compatible_paths)
+                })
+                .collect()
+        };
 
         // All devices have surface support for the first window.
-        // Forward Shading must always be supported.
-        // TODO: write code to enforce forward shading.
+        // Requires at least one path.
         let first_binding = bindings
             .iter_mut()
-            .find(|e| e.paths.iter().find(|p| &(p.name)() == "Forward").is_some())
+            .find(|e| {
+                e.compatible_paths()
+                    .iter()
+                    .find(|p| p.name() == "Forward")
+                    .is_some()
+            })
             .unwrap();
 
+        // Add initial binding
         first_binding.add_window_render_target_binding(
             instance.clone(),
             &create_info.graphics_options,
@@ -117,9 +123,7 @@ impl RenderStage for VkGraphicsStage {
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
-        for device_binding in &self.device_bindings {
-            for window_binding in &device_binding.window_bindings {}
-        }
+        for device_binding in &self.device_bindings {}
 
         EngineUpdateResult::Ok
     }
