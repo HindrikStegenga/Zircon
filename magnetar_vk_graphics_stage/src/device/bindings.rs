@@ -1,9 +1,9 @@
-use magnetar_engine::PlatformWindowHandle;
+use magnetar_engine::{engine_stages::RenderStageUpdateInput, PlatformWindowHandle};
 
 use crate::{
     components::Camera,
     config::VkGraphicsOptions,
-    render_paths::{ForwardRenderPath, RenderPathDescriptor},
+    render_paths::{ForwardRenderPath, RenderPath, RenderPathDescriptor},
     render_target_bindings::WindowRenderTargetBinding,
     *,
 };
@@ -15,7 +15,6 @@ pub(crate) struct CameraRenderPathBinding {
     //TODO: Abstract camera concept later when adding the ECS.
     camera: Camera,
     path: RenderPathInstance,
-    window_binding: WindowRenderTargetBinding,
 }
 
 pub(crate) enum RenderPathInstance {
@@ -33,10 +32,10 @@ impl RenderPathInstance {
 }
 
 pub(crate) struct VkDeviceBindingSet {
-    device: VkInitializedDevice,
     bindings: Vec<CameraRenderPathBinding>,
-    compatible_paths: Vec<RenderPathDescriptor>,
     available_window_bindings: Vec<WindowRenderTargetBinding>,
+    compatible_paths: Vec<RenderPathDescriptor>,
+    device: VkInitializedDevice,
 }
 
 impl VkDeviceBindingSet {
@@ -75,17 +74,28 @@ impl VkDeviceBindingSet {
             .compatible_paths()
             .iter()
             .find(|e| &e.render_path_type() == camera.preferred_render_path())
+            .cloned()
         {
             v
         } else {
-            self.compatible_paths().first().unwrap()
+            self.compatible_paths().first().unwrap().clone()
         };
-        let instance = path.create_instance();
-        let binding = CameraRenderPathBinding {
-            camera,
-            path: instance,
-            window_binding: self.available_window_bindings.pop().unwrap(),
+        let render_target = self.available_window_bindings.pop().unwrap();
+
+        let path = match path.create_instance(self.device(), render_target) {
+            Ok(v) => v,
+            Err(e) => {
+                tagged_warn!(
+                    "VkGraphics Stage",
+                    "Error creating render path instance: {:#?}",
+                    e.1
+                );
+                self.available_window_bindings.push(e.0);
+                return false;
+            }
         };
+
+        let binding = CameraRenderPathBinding { camera, path };
         self.bindings.push(binding);
 
         true
@@ -114,5 +124,12 @@ impl VkDeviceBindingSet {
     /// Get a reference to the vk device binding set's bindings.
     pub(crate) fn bindings(&self) -> &[CameraRenderPathBinding] {
         self.bindings.as_slice()
+    }
+
+    pub(crate) fn render(&mut self, input: &mut RenderStageUpdateInput) {
+        self.bindings.iter_mut().for_each(|b| match &mut b.path {
+            RenderPathInstance::Forward(path) => path.render(input, &b.camera),
+            RenderPathInstance::Deferred() => todo!(),
+        });
     }
 }

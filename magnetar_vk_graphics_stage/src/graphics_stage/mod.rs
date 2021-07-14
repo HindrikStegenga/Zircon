@@ -132,9 +132,9 @@ impl RenderStage for VkGraphicsStage {
         EngineUpdateResult::Ok
     }
 
-    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
-        for device_binding in &self.device_bindings {
-            for binding in device_binding.bindings() {}
+    fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
+        for device_binding in &mut self.device_bindings {
+            device_binding.render(&mut input);
         }
 
         EngineUpdateResult::Ok

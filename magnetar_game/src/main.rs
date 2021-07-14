@@ -59,7 +59,7 @@ fn main() {
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
         max_skipped_frames: 1,
-        max_frame_rate: Some(60),
+        max_frame_rate: None,
         update_stages: vec![Box::new(|input: UpdateStageConstructorInput<'_>| {
             let asset_system: &mut Arc<AssetSystem> = match input
                 .update_thread_resources

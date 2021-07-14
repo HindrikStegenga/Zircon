@@ -1,4 +1,5 @@
 use erupt::*;
+use magnetar_engine::engine_stages::RenderStageUpdateInput;
 use serde::*;
 use std::ffi::CString;
 
@@ -6,7 +7,12 @@ pub mod forward;
 
 pub use forward::*;
 
-use crate::device::RenderPathInstance;
+use crate::{
+    components::Camera,
+    device::{RenderPathInstance, VkInitializedDevice},
+    render_target_bindings::WindowRenderTargetBinding,
+    vk_device::VkDevice,
+};
 
 #[repr(u8)]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]
@@ -25,11 +31,17 @@ pub(crate) struct RenderPathDescriptor {
 }
 
 impl RenderPathDescriptor {
-    pub fn create_instance(&self) -> RenderPathInstance {
-        match self.render_path_type() {
-            RenderPathType::Forward => RenderPathInstance::Forward(ForwardRenderPath::new()),
+    pub fn create_instance(
+        &self,
+        device: &VkInitializedDevice,
+        render_target: WindowRenderTargetBinding,
+    ) -> Result<RenderPathInstance, (WindowRenderTargetBinding, vk::Result)> {
+        Ok(match self.render_path_type() {
+            RenderPathType::Forward => {
+                RenderPathInstance::Forward(ForwardRenderPath::new(device, render_target)?)
+            }
             RenderPathType::Deferred => todo!(),
-        }
+        })
     }
 
     pub fn new<T: RenderPath>() -> Self {
@@ -68,10 +80,12 @@ impl RenderPathDescriptor {
     }
 }
 
-pub trait RenderPath {
+pub(crate) trait RenderPath {
     fn name() -> String;
     fn render_path_type() -> RenderPathType;
     fn required_instance_extensions() -> Vec<CString>;
     fn required_device_extensions() -> Vec<CString>;
     fn required_device_features() -> vk::PhysicalDeviceFeatures;
+
+    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera);
 }

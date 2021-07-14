@@ -13,6 +13,7 @@ pub use bindings::*;
 pub use device_selection::*;
 use error::*;
 
+#[derive(Debug, Clone)]
 pub(crate) struct VkQueue {
     pub(crate) queue: vk::Queue,
     pub(crate) family_index: u32,

@@ -1,5 +1,3 @@
-use std::os::raw::c_char;
-
 use crate::*;
 use magnetar_engine::*;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};

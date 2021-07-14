@@ -1,26 +1,37 @@
 use std::ops::Deref;
 
-use erupt::*;
+use erupt::{vk::CommandBuffer, *};
 use magnetar_engine::{tagged_success, PlatformWindowHandle};
 
 use crate::{
-    config::VkGraphicsOptions, device::VkInitializedDevice, vk_device::VkDevice,
+    config::VkGraphicsOptions,
+    device::{VkInitializedDevice, VkQueue},
+    vk_device::VkDevice,
     vk_instance::VkInstance,
 };
 pub(crate) struct WindowRenderTargetBinding {
-    // swapchain, etc.
-    instance: VkInstance,
-    device: VkDevice,
-    swapchain: vk::SwapchainKHR,
-    images: Vec<vk::Image>,
+    in_flight_fences: Vec<vk::Fence>,
+    images_in_flight: Vec<vk::Fence>,
+    current_frame_index: u32,
+    image_available_semaphores: Vec<vk::Semaphore>,
+    render_finished_semaphores: Vec<vk::Semaphore>,
     image_views: Vec<vk::ImageView>,
+    images: Vec<vk::Image>,
+    surface_extent: vk::Extent2D,
+    surface_format: vk::SurfaceFormatKHR,
     window_handle: PlatformWindowHandle,
+    swapchain: vk::SwapchainKHR,
     surface: vk::SurfaceKHR,
+    device: VkDevice,
+    instance: VkInstance,
 }
 
 impl Drop for WindowRenderTargetBinding {
     fn drop(&mut self) {
         unsafe {
+            Self::destroy_fences(&self.device, &mut self.in_flight_fences);
+            Self::destroy_semaphores(&self.device, &mut self.image_available_semaphores);
+            Self::destroy_semaphores(&self.device, &mut self.render_finished_semaphores);
             Self::destroy_image_views(&self.device, &mut self.image_views);
             self.images.clear();
             self.device
@@ -41,7 +52,99 @@ impl From<vk::Result> for WindowRenderTargetBindingError {
     }
 }
 
+pub struct FrameSyncInfo {
+    pub current_frame_index: u32,
+    pub image_index: u32,
+}
+
 impl WindowRenderTargetBinding {
+    pub fn sync_gpu_and_acquire_next_image(&mut self) -> FrameSyncInfo {
+        unsafe {
+            let fence = [self.in_flight_fences[self.current_frame_index as usize]];
+            self.device
+                .wait_for_fences(&fence, true, std::u64::MAX)
+                .result()
+                .unwrap();
+        };
+
+        let image_index = unsafe {
+            self.device
+                .acquire_next_image_khr(
+                    self.swapchain,
+                    std::u64::MAX,
+                    Some(self.image_available_semaphores[self.current_frame_index as usize]),
+                    None,
+                )
+                .result()
+                .unwrap()
+        };
+
+        if self.images_in_flight[image_index as usize] != vk::Fence::null() {
+            unsafe {
+                let fence = [self.images_in_flight[image_index as usize]];
+                self.device
+                    .wait_for_fences(&fence, true, std::u64::MAX)
+                    .result()
+                    .unwrap();
+            }
+        }
+        self.images_in_flight[image_index as usize] =
+            self.in_flight_fences[self.current_frame_index as usize];
+
+        FrameSyncInfo {
+            current_frame_index: self.current_frame_index,
+            image_index,
+        }
+    }
+
+    pub fn submit_cmd_buf_and_present_image(
+        &mut self,
+        graphics_queue: VkQueue,
+        frame_sync_info: FrameSyncInfo,
+        command_buffer: CommandBuffer,
+    ) {
+        let (image_index, current_frame_index) = (
+            frame_sync_info.image_index,
+            frame_sync_info.current_frame_index,
+        );
+
+        let wait_semaphores = [self.image_available_semaphores[current_frame_index as usize]];
+        let wait_stages = [vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT];
+        let command_buffers = [command_buffer];
+        let signal_semaphores = [self.render_finished_semaphores[current_frame_index as usize]];
+
+        let submit_info = vk::SubmitInfoBuilder::new()
+            .wait_semaphores(&wait_semaphores)
+            .wait_dst_stage_mask(&wait_stages)
+            .command_buffers(&command_buffers)
+            .signal_semaphores(&signal_semaphores);
+
+        unsafe {
+            let fences = [self.in_flight_fences[current_frame_index as usize]];
+            self.device.reset_fences(&fences).unwrap();
+            let info: [vk::SubmitInfoBuilder; 1] = [submit_info];
+            self.device
+                .queue_submit(graphics_queue.queue, &info, Some(fences[0]))
+                .result()
+                .unwrap();
+        }
+
+        let image_indices = [image_index];
+        let swapchains = [self.swapchain];
+        let present_info = vk::PresentInfoKHRBuilder::new()
+            .wait_semaphores(&signal_semaphores)
+            .swapchains(&swapchains)
+            .image_indices(&image_indices);
+        unsafe {
+            self.device
+                .queue_present_khr(graphics_queue.queue, &present_info)
+                .result()
+                .unwrap()
+        };
+        self.current_frame_index = (current_frame_index + 1) % self.in_flight_fences.len() as u32;
+    }
+
+    /// Creates a new window render target binding. Creates swapchain, images and sync objects. Takes ownership of the provided surface.
     pub fn new(
         instance: VkInstance,
         graphics_options: &VkGraphicsOptions,
@@ -51,7 +154,7 @@ impl WindowRenderTargetBinding {
     ) -> Result<Self, WindowRenderTargetBindingError> {
         let physical_device = device.physical_device();
 
-        let (swapchain, surface_format) = Self::create_swapchain(
+        let (caps, swapchain, surface_format) = Self::create_swapchain(
             &instance,
             device,
             physical_device,
@@ -60,18 +163,54 @@ impl WindowRenderTargetBinding {
             None,
         )?;
 
+        let frames_in_flight = std::cmp::max(graphics_options.preferred_frames_in_flight, 1);
+
         tagged_success!("VkGraphics Stage", "Succesfully built Swapchain.");
 
-        let (images, views) = Self::create_images_and_views(device, swapchain, surface_format)?;
+        let (mut images, mut image_views) =
+            Self::create_images_and_views(device, swapchain, surface_format).map_err(
+                |e| unsafe {
+                    device.destroy_swapchain_khr(Some(swapchain), None);
+                    instance.destroy_surface_khr(Some(surface), None);
+                    e
+                },
+            )?;
+
+        let (mut image_available_semaphores, mut render_finished_semaphores) =
+            Self::create_semaphores(device, frames_in_flight).map_err(|e| unsafe {
+                Self::destroy_image_views(device, &mut image_views);
+                images.clear();
+                device.destroy_swapchain_khr(Some(swapchain), None);
+                instance.destroy_surface_khr(Some(surface), None);
+                e
+            })?;
+
+        let in_flight_fences =
+            Self::create_fences(device, frames_in_flight).map_err(|e| unsafe {
+                Self::destroy_semaphores(device, &mut image_available_semaphores);
+                Self::destroy_semaphores(device, &mut render_finished_semaphores);
+                Self::destroy_image_views(device, &mut image_views);
+                images.clear();
+                device.destroy_swapchain_khr(Some(swapchain), None);
+                instance.destroy_surface_khr(Some(surface), None);
+                e
+            })?;
 
         return Ok(Self {
-            instance: instance,
+            current_frame_index: 0,
+            images_in_flight: (0..images.len()).map(|_| vk::Fence::null()).collect(),
+            instance,
             device: device.deref().clone(),
-            swapchain: swapchain,
-            images: images,
-            image_views: views,
-            window_handle: window_handle,
-            surface: surface,
+            swapchain,
+            images,
+            image_views,
+            window_handle,
+            surface,
+            surface_format,
+            surface_extent: caps.current_extent,
+            image_available_semaphores,
+            render_finished_semaphores,
+            in_flight_fences,
         });
     }
 
@@ -82,6 +221,20 @@ impl WindowRenderTargetBinding {
         image_views.clear();
     }
 
+    fn destroy_semaphores(device: &VkDevice, semaphores: &mut Vec<vk::Semaphore>) {
+        semaphores
+            .iter()
+            .for_each(|s| unsafe { device.destroy_semaphore(Some(*s), None) });
+        semaphores.clear();
+    }
+
+    fn destroy_fences(device: &VkDevice, fences: &mut Vec<vk::Fence>) {
+        fences
+            .iter()
+            .for_each(|s| unsafe { device.destroy_fence(Some(*s), None) });
+        fences.clear();
+    }
+
     fn create_swapchain(
         instance: &VkInstance,
         device: &VkDevice,
@@ -89,7 +242,14 @@ impl WindowRenderTargetBinding {
         surface: vk::SurfaceKHR,
         graphics_options: &VkGraphicsOptions,
         old_swap_chain: Option<vk::SwapchainKHR>,
-    ) -> Result<(vk::SwapchainKHR, vk::SurfaceFormatKHR), WindowRenderTargetBindingError> {
+    ) -> Result<
+        (
+            vk::SurfaceCapabilitiesKHR,
+            vk::SwapchainKHR,
+            vk::SurfaceFormatKHR,
+        ),
+        WindowRenderTargetBindingError,
+    > {
         let (surface_caps, image_count) =
             Self::get_surface_capibilities_and_image_count(&instance, physical_device, surface)?;
 
@@ -113,6 +273,7 @@ impl WindowRenderTargetBinding {
             .old_swapchain(old_swap_chain.unwrap_or(vk::SwapchainKHR::null()));
 
         Ok((
+            surface_caps,
             unsafe { device.create_swapchain_khr(&swapchain_info, None) }.result()?,
             surface_format,
         ))
@@ -218,6 +379,62 @@ impl WindowRenderTargetBinding {
         .unwrap_or(vk::PresentModeKHR::FIFO_KHR))
     }
 
+    fn create_semaphores(
+        device: &VkDevice,
+        frames_in_flight: u32,
+    ) -> Result<(Vec<vk::Semaphore>, Vec<vk::Semaphore>), vk::Result> {
+        let frames_in_flight = std::cmp::max(frames_in_flight, 1);
+        let create_info = vk::SemaphoreCreateInfoBuilder::new();
+        let mut image_available_semaphores: Vec<vk::Semaphore> =
+            Vec::with_capacity(frames_in_flight as usize);
+        let mut render_finished_semaphores: Vec<vk::Semaphore> =
+            Vec::with_capacity(frames_in_flight as usize);
+
+        for _ in 0..frames_in_flight {
+            let semaphore = match unsafe { device.create_semaphore(&create_info, None).result() } {
+                Ok(v) => v,
+                Err(e) => {
+                    Self::destroy_semaphores(device, &mut image_available_semaphores);
+                    return Err(e);
+                }
+            };
+            image_available_semaphores.push(semaphore);
+        }
+        for _ in 0..frames_in_flight {
+            let semaphore = match unsafe { device.create_semaphore(&create_info, None).result() } {
+                Ok(v) => v,
+                Err(e) => {
+                    Self::destroy_semaphores(device, &mut image_available_semaphores);
+                    Self::destroy_semaphores(device, &mut render_finished_semaphores);
+                    return Err(e);
+                }
+            };
+            render_finished_semaphores.push(semaphore);
+        }
+
+        Ok((image_available_semaphores, render_finished_semaphores))
+    }
+
+    fn create_fences(
+        device: &VkDevice,
+        frames_in_flight: u32,
+    ) -> Result<Vec<vk::Fence>, vk::Result> {
+        let frames_in_flight = std::cmp::max(frames_in_flight, 1);
+        let mut fences = Vec::with_capacity(frames_in_flight as usize);
+        let create_info = vk::FenceCreateInfoBuilder::new().flags(vk::FenceCreateFlags::SIGNALED);
+        for _ in 0..frames_in_flight {
+            let fence = match unsafe { device.create_fence(&create_info, None).result() } {
+                Ok(v) => v,
+                Err(e) => {
+                    Self::destroy_fences(device, &mut fences);
+                    return Err(e);
+                }
+            };
+            fences.push(fence);
+        }
+        Ok(fences)
+    }
+
     /// Get a reference to the window render target binding's surface.
     pub(crate) fn surface(&self) -> vk::SurfaceKHR {
         self.surface
@@ -226,5 +443,29 @@ impl WindowRenderTargetBinding {
     /// Get a reference to the window render target binding's window handle.
     pub(crate) fn window_handle(&self) -> PlatformWindowHandle {
         self.window_handle
+    }
+
+    /// Get a the window render target binding's surface format.
+    pub(crate) fn surface_format(&self) -> vk::SurfaceFormatKHR {
+        self.surface_format
+    }
+
+    /// Get a the window render target binding's surface extent.
+    pub(crate) fn surface_extent(&self) -> vk::Extent2D {
+        self.surface_extent
+    }
+
+    pub(crate) fn image_count(&self) -> u32 {
+        self.images.len() as u32
+    }
+
+    /// Get a reference to the window render target binding's image views.
+    pub(crate) fn image_views(&self) -> &[vk::ImageView] {
+        self.image_views.as_slice()
+    }
+
+    /// Get a reference to the window render target binding's images.
+    pub(crate) fn images(&self) -> &[vk::Image] {
+        self.images.as_slice()
     }
 }
