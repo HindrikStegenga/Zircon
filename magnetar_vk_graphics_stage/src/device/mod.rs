@@ -8,6 +8,7 @@ pub mod commandpool;
 pub mod device_selection;
 pub mod error;
 pub mod raw_window_handle_wrapper;
+pub mod shader;
 use crate::VkDevice;
 pub use bindings::*;
 pub use device_selection::*;

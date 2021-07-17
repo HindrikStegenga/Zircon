@@ -1,9 +1,9 @@
-use std::ops::Deref;
+use std::{collections::HashMap, ops::Deref, sync::Arc};
 
 use crate::{
     components::Camera,
     config::device_features::disabled_device_features,
-    device::{commandpool::VkCommandPool, VkInitializedDevice, VkQueue},
+    device::{commandpool::VkCommandPool, shader::VkShaderModule, VkInitializedDevice, VkQueue},
     render_target_bindings::WindowRenderTargetBinding,
     vk_device::VkDevice,
 };
@@ -24,6 +24,7 @@ pub(crate) struct ForwardRenderPath {
 
 impl ForwardRenderPath {
     pub fn new(
+        asset_system: Arc<AssetSystem>,
         device: &VkInitializedDevice,
         render_target: WindowRenderTargetBinding,
     ) -> Result<Self, (WindowRenderTargetBinding, vk::Result)> {
@@ -52,7 +53,7 @@ impl ForwardRenderPath {
             };
 
         tagged_success!(
-            "VkGraphicsStage",
+            "VkGraphics Stage",
             "Successfully created Forward render path."
         );
 
@@ -155,59 +156,7 @@ impl RenderPath for ForwardRenderPath {
         super::RenderPathType::Forward
     }
 
-    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera) {
-        let frame_sync_info = self.render_target.sync_gpu_and_acquire_next_image();
-
-        let command_buffer = self.command_buffers[frame_sync_info.image_index as usize];
-        unsafe {
-            self.device
-                .reset_command_buffer(command_buffer, None)
-                .result()
-                .unwrap()
-        };
-
-        unsafe {
-            let begin_info = vk::CommandBufferBeginInfoBuilder::new()
-                .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
-            self.device
-                .begin_command_buffer(command_buffer, &begin_info)
-                .result()
-                .unwrap();
-
-            let mut clear_values = [vk::ClearValue::default()];
-            clear_values[0].color = vk::ClearColorValue {
-                float32: [1.0f32, 0.0f32, 0.0f32, 1.0f32],
-            };
-
-            let mut render_area = vk::Rect2D::default();
-            render_area.offset.x = 0;
-            render_area.offset.y = 0;
-            render_area.extent = self.render_target.surface_extent();
-            let render_pass_begin = vk::RenderPassBeginInfoBuilder::new()
-                .clear_values(&clear_values)
-                .render_pass(self.render_pass)
-                .render_area(render_area)
-                .framebuffer(self.frame_buffers[frame_sync_info.image_index as usize]);
-
-            self.device.cmd_begin_render_pass(
-                command_buffer,
-                &render_pass_begin,
-                vk::SubpassContents::INLINE,
-            );
-
-            self.device.cmd_end_render_pass(command_buffer);
-            self.device
-                .end_command_buffer(command_buffer)
-                .result()
-                .unwrap();
-        };
-
-        self.render_target.submit_cmd_buf_and_present_image(
-            self.graphics_queue.clone(),
-            frame_sync_info,
-            command_buffer,
-        );
-    }
+    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera) {}
 }
 
 impl Drop for ForwardRenderPath {

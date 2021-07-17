@@ -1,4 +1,6 @@
-use magnetar_engine::{engine_stages::RenderStageUpdateInput, PlatformWindowHandle};
+use std::{collections::HashMap, sync::Arc};
+
+use magnetar_engine::{engine_stages::RenderStageUpdateInput, AssetSystem, PlatformWindowHandle};
 
 use crate::{
     components::Camera,
@@ -8,7 +10,7 @@ use crate::{
     *,
 };
 
-use super::VkInitializedDevice;
+use super::{shader::VkShaderModule, VkInitializedDevice};
 use erupt::*;
 
 pub(crate) struct CameraRenderPathBinding {
@@ -32,6 +34,8 @@ impl RenderPathInstance {
 }
 
 pub(crate) struct VkDeviceBindingSet {
+    asset_system: Arc<AssetSystem>,
+    loaded_shader_modules: HashMap<String, VkShaderModule>,
     bindings: Vec<CameraRenderPathBinding>,
     available_window_bindings: Vec<WindowRenderTargetBinding>,
     compatible_paths: Vec<RenderPathDescriptor>,
@@ -39,13 +43,19 @@ pub(crate) struct VkDeviceBindingSet {
 }
 
 impl VkDeviceBindingSet {
-    pub fn new(device: VkInitializedDevice, compatible_paths: Vec<RenderPathDescriptor>) -> Self {
+    pub fn new(
+        device: VkInitializedDevice,
+        compatible_paths: Vec<RenderPathDescriptor>,
+        asset_system: Arc<AssetSystem>,
+    ) -> Self {
         assert!(!compatible_paths.is_empty());
         Self {
             device,
             bindings: vec![],
             compatible_paths,
             available_window_bindings: vec![],
+            asset_system,
+            loaded_shader_modules: HashMap::default(),
         }
     }
 
@@ -82,7 +92,11 @@ impl VkDeviceBindingSet {
         };
         let render_target = self.available_window_bindings.pop().unwrap();
 
-        let path = match path.create_instance(self.device(), render_target) {
+        let path = match path.create_instance(
+            Arc::clone(&self.asset_system),
+            self.device(),
+            render_target,
+        ) {
             Ok(v) => v,
             Err(e) => {
                 tagged_warn!(

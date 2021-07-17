@@ -15,7 +15,6 @@ pub mod vk_device;
 pub mod vk_instance;
 
 use setup_instance::*;
-use vk_device::*;
 use vk_instance::*;
 
 pub struct VkGraphicsStage {
@@ -28,6 +27,7 @@ pub struct VkGraphicsStage {
 
 impl VkGraphicsStage {
     pub fn new(create_info: VkGraphicsSystemCreateInfo) -> Result<Self, VkGraphicsSystemError> {
+        let asset_system = Arc::clone(&create_info.asset_system);
         // TODO: Remove this part here when events and such are finished.
         let default_window = match create_info.platform_interface.get_windows().first() {
             Some(handle) => create_info
@@ -82,7 +82,7 @@ impl VkGraphicsStage {
                         }
                     });
 
-                    VkDeviceBindingSet::new(d, compatible_paths)
+                    VkDeviceBindingSet::new(d, compatible_paths, Arc::clone(&asset_system))
                 })
                 .collect()
         };

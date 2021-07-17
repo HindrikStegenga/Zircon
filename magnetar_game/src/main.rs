@@ -27,6 +27,7 @@ fn creage_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
             failure!("This system requires an asset system to be present!")
         }
     };
+    let asset_system = Arc::clone(asset_system);
 
     let graphics_options: VkGraphicsOptions = asset_system
         .load_asset_as_type::<VkGraphicsOptions, _, _>("config", "vulkan")
@@ -41,6 +42,7 @@ fn creage_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
         application_info,
         render_thread_resources: input.render_thread_resources,
         platform_interface: input.platform_interface,
+        asset_system,
     };
 
     let system = VkGraphicsStage::new(create_info).expect("Could not create VkGraphicsSystem!");
@@ -70,10 +72,6 @@ fn main() {
                     failure!("This system requires an asset system to be present!")
                 }
             };
-
-            asset_system
-                .load_archives_from_directory("./tmp/", "mtra")
-                .unwrap();
             Box::new(TestStage {})
         })],
         render_stages: vec![Box::new(creage_graphics_stage)],

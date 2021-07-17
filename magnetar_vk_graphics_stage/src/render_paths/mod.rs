@@ -1,7 +1,7 @@
 use erupt::*;
-use magnetar_engine::engine_stages::RenderStageUpdateInput;
+use magnetar_engine::{engine_stages::RenderStageUpdateInput, AssetSystem};
 use serde::*;
-use std::ffi::CString;
+use std::{ffi::CString, sync::Arc};
 
 pub mod forward;
 
@@ -33,13 +33,16 @@ pub(crate) struct RenderPathDescriptor {
 impl RenderPathDescriptor {
     pub fn create_instance(
         &self,
+        asset_system: Arc<AssetSystem>,
         device: &VkInitializedDevice,
         render_target: WindowRenderTargetBinding,
     ) -> Result<RenderPathInstance, (WindowRenderTargetBinding, vk::Result)> {
         Ok(match self.render_path_type() {
-            RenderPathType::Forward => {
-                RenderPathInstance::Forward(ForwardRenderPath::new(device, render_target)?)
-            }
+            RenderPathType::Forward => RenderPathInstance::Forward(ForwardRenderPath::new(
+                asset_system,
+                device,
+                render_target,
+            )?),
             RenderPathType::Deferred => todo!(),
         })
     }
