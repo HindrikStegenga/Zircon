@@ -1,4 +1,12 @@
+use std::fmt::{Debug, Formatter};
+
 pub struct VkDevice(std::sync::Arc<erupt::DeviceLoader>);
+
+impl Debug for VkDevice {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:#?}", self.0)
+    }
+}
 
 impl Clone for VkDevice {
     fn clone(&self) -> Self {

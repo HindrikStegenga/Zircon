@@ -9,9 +9,11 @@ use crate::{
     vk_device::VkDevice,
     vk_instance::VkInstance,
 };
+use crate::device::fence::VkFence;
+use erupt::utils::VulkanResult;
+
 pub(crate) struct WindowRenderTargetBinding {
-    in_flight_fences: Vec<vk::Fence>,
-    images_in_flight: Vec<vk::Fence>,
+    fences: Vec<VkFence>,
     current_frame_index: u32,
     image_available_semaphores: Vec<vk::Semaphore>,
     render_finished_semaphores: Vec<vk::Semaphore>,
@@ -29,7 +31,7 @@ pub(crate) struct WindowRenderTargetBinding {
 impl Drop for WindowRenderTargetBinding {
     fn drop(&mut self) {
         unsafe {
-            Self::destroy_fences(&self.device, &mut self.in_flight_fences);
+            self.fences.clear();
             Self::destroy_semaphores(&self.device, &mut self.image_available_semaphores);
             Self::destroy_semaphores(&self.device, &mut self.render_finished_semaphores);
             Self::destroy_image_views(&self.device, &mut self.image_views);
@@ -52,7 +54,99 @@ impl From<vk::Result> for WindowRenderTargetBindingError {
     }
 }
 
+pub struct AcquiredImageInfo {
+    pub image_index: u32,
+    pub cmd_submission_fence: vk::Fence,
+    pub render_finished_semaphore: vk::Semaphore,
+    pub image_available_semaphore: vk::Semaphore
+}
+
+pub enum PresentImageInfo {
+    Acquired(AcquiredImageInfo),
+    SubOptimal(AcquiredImageInfo),
+    OutOfDate
+}
+
+pub enum PresentResult {
+    Success,
+    SubOptimal,
+    OutOfDate
+}
+
 impl WindowRenderTargetBinding {
+
+    pub fn acquire_next_image(&mut self) -> Result<PresentImageInfo, vk::Result> {
+        let mut fence = &self.fences[self.current_frame_index as usize];
+        fence.wait()?;
+        fence.reset()?;
+
+        let acq_result = unsafe { self.device.acquire_next_image_khr(self.swapchain, u64::MAX, Some(self.image_available_semaphores[self.current_frame_index as usize]), None) };
+        match acq_result {
+            VulkanResult {
+                value: Some(image_index),
+                raw: vk::Result::SUCCESS | vk::Result::SUBOPTIMAL_KHR
+            } => {
+                Ok(PresentImageInfo::Acquired(AcquiredImageInfo {
+                    image_index,
+                    cmd_submission_fence: fence.handle(),
+                    render_finished_semaphore: self.render_finished_semaphores[self.current_frame_index as usize],
+                    image_available_semaphore: self.image_available_semaphores[self.current_frame_index as usize]
+                }))
+            },
+            VulkanResult {
+                value: _,
+                raw: vk::Result::ERROR_OUT_OF_DATE_KHR
+            } => {
+                Ok(PresentImageInfo::OutOfDate)
+            },
+            VulkanResult {
+                value: _,
+                raw,
+            } => {
+                return Err(raw)
+            }
+        }
+    }
+
+    pub fn present_image(&mut self, image_info: AcquiredImageInfo, queue: VkQueue) -> Result<PresentResult, vk::Result> {
+        let render_finished = &self.render_finished_semaphores[self.current_frame_index as usize..self.current_frame_index as usize + 1];
+        let image_indices = [image_info.image_index];
+        let swapchain = [self.swapchain];
+        let present_info = vk::PresentInfoKHRBuilder::new()
+            .wait_semaphores(&render_finished)
+            .image_indices(&image_indices)
+            .swapchains(&swapchain);
+
+        // Determine semaphore to use and fence to wait on for next frame.
+        self.current_frame_index = (self.current_frame_index + 1) % self.fences.len() as u32;
+
+        let result = unsafe { self.device.queue_present_khr(queue.queue, &present_info) };
+        return match result {
+            VulkanResult {
+                value,
+                raw: vk::Result::SUCCESS,
+            } => {
+                Ok(PresentResult::Success)
+            }
+            VulkanResult {
+                value,
+                raw: vk::Result::SUBOPTIMAL_KHR,
+            } => {
+                Ok(PresentResult::SubOptimal)
+            }
+            VulkanResult {
+                value,
+                raw: vk::Result::ERROR_OUT_OF_DATE_KHR
+            } => {
+                Ok(PresentResult::OutOfDate)
+            },
+            VulkanResult {
+                value,
+                raw
+            } => { Err(raw) }
+        }
+    }
+
     /// Creates a new window render target binding. Creates swapchain, images and sync objects. Takes ownership of the provided surface.
     pub fn new(
         instance: VkInstance,
@@ -107,7 +201,6 @@ impl WindowRenderTargetBinding {
 
         return Ok(Self {
             current_frame_index: 0,
-            images_in_flight: (0..images.len()).map(|_| vk::Fence::null()).collect(),
             instance,
             device: device.deref().clone(),
             swapchain,
@@ -119,7 +212,7 @@ impl WindowRenderTargetBinding {
             surface_extent: caps.current_extent,
             image_available_semaphores,
             render_finished_semaphores,
-            in_flight_fences,
+            fences: in_flight_fences,
         });
     }
 
@@ -135,13 +228,6 @@ impl WindowRenderTargetBinding {
             .iter()
             .for_each(|s| unsafe { device.destroy_semaphore(Some(*s), None) });
         semaphores.clear();
-    }
-
-    fn destroy_fences(device: &VkDevice, fences: &mut Vec<vk::Fence>) {
-        fences
-            .iter()
-            .for_each(|s| unsafe { device.destroy_fence(Some(*s), None) });
-        fences.clear();
     }
 
     fn create_swapchain(
@@ -160,7 +246,7 @@ impl WindowRenderTargetBinding {
         WindowRenderTargetBindingError,
     > {
         let (surface_caps, image_count) =
-            Self::get_surface_capibilities_and_image_count(&instance, physical_device, surface)?;
+            Self::select_surface_caps_image_count(&instance, physical_device, surface)?;
 
         let present_mode =
             Self::select_present_mode(&instance, physical_device, surface, graphics_options)?;
@@ -224,7 +310,7 @@ impl WindowRenderTargetBinding {
         Ok((swapchain_images, swapchain_image_views))
     }
 
-    fn get_surface_capibilities_and_image_count(
+    fn select_surface_caps_image_count(
         instance: &VkInstance,
         physical_device: vk::PhysicalDevice,
         surface: vk::SurfaceKHR,
@@ -327,19 +413,11 @@ impl WindowRenderTargetBinding {
     fn create_fences(
         device: &VkDevice,
         frames_in_flight: u32,
-    ) -> Result<Vec<vk::Fence>, vk::Result> {
+    ) -> Result<Vec<VkFence>, vk::Result> {
         let frames_in_flight = std::cmp::max(frames_in_flight, 1);
         let mut fences = Vec::with_capacity(frames_in_flight as usize);
-        let create_info = vk::FenceCreateInfoBuilder::new().flags(vk::FenceCreateFlags::SIGNALED);
         for _ in 0..frames_in_flight {
-            let fence = match unsafe { device.create_fence(&create_info, None).result() } {
-                Ok(v) => v,
-                Err(e) => {
-                    Self::destroy_fences(device, &mut fences);
-                    return Err(e);
-                }
-            };
-            fences.push(fence);
+            fences.push(VkFence::new(device.clone(), true)?);
         }
         Ok(fences)
     }

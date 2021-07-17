@@ -3,6 +3,7 @@ use std::{ffi::CString, fmt::Display, ops::Deref};
 use erupt::*;
 use magnetar_engine::tagged_log;
 
+pub mod fence;
 pub mod bindings;
 pub mod commandpool;
 pub mod device_selection;

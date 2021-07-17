@@ -82,7 +82,7 @@ impl ForwardRenderPath {
         let color_attach = [vk::AttachmentDescriptionBuilder::new()
             .format(format.format)
             .samples(vk::SampleCountFlagBits::_1)
-            .load_op(vk::AttachmentLoadOp::DONT_CARE)
+            .load_op(vk::AttachmentLoadOp::CLEAR)
             .store_op(vk::AttachmentStoreOp::STORE)
             .stencil_load_op(vk::AttachmentLoadOp::DONT_CARE)
             .stencil_store_op(vk::AttachmentStoreOp::DONT_CARE)
@@ -97,9 +97,19 @@ impl ForwardRenderPath {
             .pipeline_bind_point(vk::PipelineBindPoint::GRAPHICS)
             .color_attachments(&color_attach_ref)];
 
+        // let dependencies = [vk::SubpassDependencyBuilder::new()
+        //     .src_subpass(vk::SUBPASS_EXTERNAL)
+        //     .dst_subpass(0)
+        //     .src_stage_mask(vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
+        //     .src_access_mask(vk::AccessFlags::empty())
+        //     .dst_stage_mask(vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT)
+        //     .dst_access_mask(vk::AccessFlags::empty())
+        // ];
+
         let create_info = vk::RenderPassCreateInfoBuilder::new()
             .attachments(&color_attach)
             .subpasses(&subpass);
+            //.dependencies(&dependencies);
 
         Ok(unsafe { device.create_render_pass(&create_info, None).result()? })
     }
@@ -156,7 +166,72 @@ impl RenderPath for ForwardRenderPath {
         super::RenderPathType::Forward
     }
 
-    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera) {}
+    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera) {
+        let image_info = match self.render_target.acquire_next_image() {
+            Ok(v) => match v {
+                crate::render_target_bindings::PresentImageInfo::Acquired(e) => e,
+                crate::render_target_bindings::PresentImageInfo::SubOptimal(e) => e,
+                crate::render_target_bindings::PresentImageInfo::OutOfDate => return,
+            },
+            Err(e) => { warn!("Image acquire error: {}", e); return; }
+        };
+
+        let command_buffer = self.command_buffers[image_info.image_index as usize];
+        unsafe {
+            self.device
+                .reset_command_buffer(command_buffer, None)
+                .result()
+                .unwrap()
+        };
+
+        unsafe {
+            let begin_info = vk::CommandBufferBeginInfoBuilder::new()
+                .flags(vk::CommandBufferUsageFlags::ONE_TIME_SUBMIT);
+            self.device
+                .begin_command_buffer(command_buffer, &begin_info)
+                .result()
+                .unwrap();
+
+            let mut clear_values = [vk::ClearValue::default()];
+            clear_values[0].color = vk::ClearColorValue {
+                float32: [1.0f32, 0.0f32, 0.0f32, 1.0f32],
+            };
+
+            let mut render_area = vk::Rect2D::default();
+            render_area.offset.x = 0;
+            render_area.offset.y = 0;
+            render_area.extent = self.render_target.surface_extent();
+            let render_pass_begin = vk::RenderPassBeginInfoBuilder::new()
+                .clear_values(&clear_values)
+                .render_pass(self.render_pass)
+                .render_area(render_area)
+                .framebuffer(self.frame_buffers[image_info.image_index as usize]);
+
+            self.device.cmd_begin_render_pass(
+                command_buffer,
+                &render_pass_begin,
+                vk::SubpassContents::INLINE,
+            );
+
+            self.device.cmd_end_render_pass(command_buffer);
+            self.device
+                .end_command_buffer(command_buffer)
+                .result()
+                .unwrap();
+        };
+        let cbufs = [command_buffer];
+        let wait_semas = [image_info.image_available_semaphore];
+        let signal_semas = [image_info.render_finished_semaphore];
+
+        let submit_info = [vk::SubmitInfoBuilder::new()
+        .command_buffers(&cbufs)
+        .wait_semaphores(&wait_semas)
+        .signal_semaphores(&signal_semas)
+        .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])];
+
+        unsafe { self.device.queue_submit(self.graphics_queue.queue, &submit_info, Some(image_info.cmd_submission_fence)) };
+        self.render_target.present_image(image_info, self.graphics_queue.clone());
+    }
 }
 
 impl Drop for ForwardRenderPath {
