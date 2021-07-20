@@ -10,7 +10,7 @@ pub use forward::*;
 use crate::{
     components::Camera,
     device::{RenderPathInstance, VkInitializedDevice},
-    render_target_bindings::WindowRenderTargetBinding,
+    render_target_bindings::{PresentResult, WindowRenderTargetBinding},
     vk_device::VkDevice,
 };
 
@@ -89,6 +89,14 @@ pub(crate) trait RenderPath {
     fn required_instance_extensions() -> Vec<CString>;
     fn required_device_extensions() -> Vec<CString>;
     fn required_device_features() -> vk::PhysicalDeviceFeatures;
+    fn on_resized_render_target(&mut self, width: u32, height: u32) -> Result<(), vk::Result>;
 
-    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera);
+    fn window_render_target_binding(&self) -> &WindowRenderTargetBinding;
+    fn window_render_target_binding_mut(&mut self) -> &mut WindowRenderTargetBinding;
+
+    fn render(
+        &mut self,
+        input: &mut RenderStageUpdateInput,
+        camera: &Camera,
+    ) -> Result<PresentResult, vk::Result>;
 }

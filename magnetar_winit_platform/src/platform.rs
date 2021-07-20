@@ -42,6 +42,20 @@ impl Platform for WinitPlatform {
                     controller.resume();
                 }
                 Event::WindowEvent {
+                    event: WindowEvent::Resized(size),
+                    window_id,
+                } => {
+                    if let Some(window_idx) = self
+                        .windows
+                        .iter()
+                        .enumerate()
+                        .find(|(_, e)| window_id == e.window.id())
+                        .map(|(idx, _)| idx)
+                    {
+                        self.windows[window_idx].was_resized = Some((size.width, size.height))
+                    }
+                }
+                Event::WindowEvent {
                     event: WindowEvent::CloseRequested,
                     window_id,
                 } => {
@@ -108,6 +122,7 @@ impl Platform for WinitPlatform {
                         }
                         _ => {}
                     }
+                    self.windows.iter_mut().for_each(|e| e.was_resized = None)
                 }
                 _ => {}
             }

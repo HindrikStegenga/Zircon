@@ -29,15 +29,13 @@ impl VkGraphicsStage {
     pub fn new(create_info: VkGraphicsSystemCreateInfo) -> Result<Self, VkGraphicsSystemError> {
         let asset_system = Arc::clone(&create_info.asset_system);
         // TODO: Remove this part here when events and such are finished.
-        let default_window = match create_info.platform_interface.get_windows().first() {
-            Some(handle) => create_info
-                .platform_interface
-                .get_window(*handle)
-                .expect("Requires a window!"),
+        let default_window_handle = match create_info.platform_interface.get_windows().first() {
+            Some(handle) => *handle,
             None => create_info
                 .platform_interface
                 .request_window(800, 600, "Vulkan Default Window")
-                .expect("Requires a window!"),
+                .expect("Requires a window!")
+                .handle(),
         };
 
         let mut render_path_descriptors = vec![RenderPathDescriptor::new::<ForwardRenderPath>()];
@@ -57,7 +55,10 @@ impl VkGraphicsStage {
 
         let device_config = unsafe {
             setup_devices(
-                default_window,
+                create_info
+                    .platform_interface
+                    .get_window(default_window_handle)
+                    .unwrap(),
                 &render_path_descriptors,
                 &create_info.graphics_options,
                 &instance,
@@ -104,14 +105,15 @@ impl VkGraphicsStage {
         first_binding.add_window_render_target_binding(
             instance.clone(),
             &create_info.graphics_options,
-            default_window.id(),
+            create_info.platform_interface,
+            default_window_handle,
             device_config.default_render_surface,
         );
 
         // Bind testing camera
         first_binding.bind_camera_to_first_available_binding(Camera::new(
             CameraType::Perspective(PerspectiveCamera {}),
-            CameraTargetBinding::Window(default_window.id()),
+            CameraTargetBinding::Window(default_window_handle),
             RenderPathType::Forward,
         ));
 

@@ -3,7 +3,7 @@ pub mod device_features;
 use serde::Deserialize;
 use std::ffi::CString;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct VkGraphicsOptions {
     pub preferred_gpu: Option<CString>,
     pub prefer_integrated_gpu: bool,

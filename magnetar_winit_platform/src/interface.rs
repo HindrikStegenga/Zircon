@@ -19,11 +19,11 @@ impl<'a> WinitPlatformInterface<'a> {
 
 impl PlatformInterface for WinitPlatformInterface<'_> {
     fn get_windows(&self) -> Vec<PlatformWindowHandle> {
-        self.platform.windows.iter().map(|e| e.id()).collect()
+        self.platform.windows.iter().map(|e| e.handle()).collect()
     }
 
     fn get_window(&self, handle: PlatformWindowHandle) -> Option<&dyn PlatformWindow> {
-        if let Some(window) = self.platform.windows.iter().find(|e| e.id == handle) {
+        if let Some(window) = self.platform.windows.iter().find(|e| e.handle == handle) {
             Some(window)
         } else {
             None
@@ -31,7 +31,12 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
     }
 
     fn get_window_mut(&mut self, handle: PlatformWindowHandle) -> Option<&mut dyn PlatformWindow> {
-        if let Some(window) = self.platform.windows.iter_mut().find(|e| e.id == handle) {
+        if let Some(window) = self
+            .platform
+            .windows
+            .iter_mut()
+            .find(|e| e.handle == handle)
+        {
             Some(window)
         } else {
             None
@@ -55,7 +60,8 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                 self.platform.window_id_counter += 1;
                 let window = WinitPlatformWindow {
                     window,
-                    id: PlatformWindowHandle::from(id),
+                    handle: PlatformWindowHandle::from(id),
+                    was_resized: None,
                 };
                 self.platform.windows.push(window);
                 return Some(self.platform.windows.last_mut().unwrap());

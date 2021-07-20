@@ -1,12 +1,15 @@
 use std::{collections::HashMap, sync::Arc};
 
-use magnetar_engine::{engine_stages::RenderStageUpdateInput, AssetSystem, PlatformWindowHandle};
+use magnetar_engine::{
+    engine_stages::RenderStageUpdateInput, AssetSystem, EngineUpdateResult, PlatformInterface,
+    PlatformWindowHandle,
+};
 
 use crate::{
     components::Camera,
     config::VkGraphicsOptions,
     render_paths::{ForwardRenderPath, RenderPath, RenderPathDescriptor},
-    render_target_bindings::WindowRenderTargetBinding,
+    render_target_bindings::{WindowRenderTargetBinding, WindowRenderTargetBindingError},
     *,
 };
 
@@ -25,12 +28,40 @@ pub(crate) enum RenderPathInstance {
 }
 
 impl RenderPathInstance {
+    #[inline(always)]
+    fn on_resized_render_target(&mut self, width: u32, height: u32) -> Result<(), vk::Result> {
+        match self {
+            RenderPathInstance::Forward(v) => v.on_resized_render_target(width, height),
+            RenderPathInstance::Deferred() => todo!(),
+        }
+    }
+    #[inline(always)]
+    pub fn window_render_target_binding(&self) -> &WindowRenderTargetBinding {
+        match self {
+            RenderPathInstance::Forward(v) => v.window_render_target_binding(),
+            RenderPathInstance::Deferred() => todo!(),
+        }
+    }
+    #[inline(always)]
+    pub fn window_render_target_binding_mut(&mut self) -> &mut WindowRenderTargetBinding {
+        match self {
+            RenderPathInstance::Forward(v) => v.window_render_target_binding_mut(),
+            RenderPathInstance::Deferred() => todo!(),
+        }
+    }
+    #[inline(always)]
     pub fn descriptor(&self) -> RenderPathDescriptor {
         match self {
             RenderPathInstance::Forward(_) => RenderPathDescriptor::new::<ForwardRenderPath>(),
             RenderPathInstance::Deferred() => todo!(),
         }
     }
+}
+
+enum ResizeError {
+    VkResult(vk::Result),
+    WindowWasDestroyed,
+    WRTBError(WindowRenderTargetBindingError),
 }
 
 pub(crate) struct VkDeviceBindingSet {
@@ -63,6 +94,7 @@ impl VkDeviceBindingSet {
         &mut self,
         instance: VkInstance,
         graphics_options: &VkGraphicsOptions,
+        platform_interface: &dyn PlatformInterface,
         window_handle: PlatformWindowHandle,
         surface: vk::SurfaceKHR,
     ) {
@@ -70,6 +102,7 @@ impl VkDeviceBindingSet {
             instance,
             graphics_options,
             &self.device,
+            platform_interface,
             window_handle,
             surface,
         );
@@ -140,10 +173,99 @@ impl VkDeviceBindingSet {
         self.bindings.as_slice()
     }
 
-    pub(crate) fn render(&mut self, input: &mut RenderStageUpdateInput) {
-        self.bindings.iter_mut().for_each(|b| match &mut b.path {
-            RenderPathInstance::Forward(path) => path.render(input, &b.camera),
-            RenderPathInstance::Deferred() => todo!(),
-        });
+    fn handle_resize(
+        &mut self,
+        platform: &mut dyn PlatformInterface,
+        binding_index: usize,
+    ) -> Result<(), ResizeError> {
+        let binding = &mut self.bindings[binding_index];
+        let target = binding.path.window_render_target_binding_mut();
+        let window_handle = target.window_handle();
+        if let Some(window) = platform.get_window_mut(window_handle) {
+            if let Some((new_width, new_height)) = window.was_resized() {
+                tagged_log!("VkGraphics Stage", "Resizing swapchain... ");
+                if let Err(e) = target.recreate_swapchain(platform, new_width, new_height) {
+                    tagged_warn!(
+                        "VkGraphics Stage",
+                        "Resizing swapchain failed: {:#?}. Binding will be removed.",
+                        e
+                    );
+                    return Err(ResizeError::WRTBError(e));
+                } else {
+                    if let Err(e) = binding.path.on_resized_render_target(new_width, new_height) {
+                        tagged_warn!(
+                            "VkGraphics Stage",
+                            "On resize has failed: {:#?}. Binding will be removed.",
+                            e
+                        );
+                        self.bindings.remove(binding_index);
+                        return Err(ResizeError::VkResult(e));
+                    } else {
+                        return Ok(());
+                    }
+                }
+            } else {
+                return Ok(());
+            }
+        } else {
+            // Window was destroyed. We should remove the binding as well.
+            self.bindings.remove(binding_index);
+            return Err(ResizeError::WindowWasDestroyed);
+        }
+    }
+
+    pub(crate) fn render(&mut self, input: &mut RenderStageUpdateInput) -> EngineUpdateResult {
+        for binding_index in (0..self.bindings.len()).rev() {
+            if let Err(_) = self.handle_resize(input.platform, binding_index) {
+                self.bindings.remove(binding_index);
+                continue;
+            }
+
+            {
+                let binding = &mut self.bindings[binding_index];
+                match &mut binding.path {
+                    RenderPathInstance::Forward(path) => {
+                        match path.render(input, &binding.camera) {
+                            Ok(present_result) => {
+                                match present_result {
+                                    render_target_bindings::PresentResult::Success => (),
+                                    render_target_bindings::PresentResult::SubOptimal => {
+                                        if let Err(_) =
+                                            self.handle_resize(input.platform, binding_index)
+                                        {
+                                            self.bindings.remove(binding_index);
+                                            continue;
+                                        }
+                                    }
+                                    render_target_bindings::PresentResult::OutOfDate => {
+                                        // Resize the render target!
+                                        if let Err(_) =
+                                            self.handle_resize(input.platform, binding_index)
+                                        {
+                                            self.bindings.remove(binding_index);
+                                            continue;
+                                        }
+                                        //TODO: do not discard frame I suppose?
+                                        // This frame is discarded?
+                                    }
+                                }
+                            }
+                            Err(e) => {
+                                tagged_warn!(
+                                    "VkGraphics Stage",
+                                    "Rendering failure: {}. Removing binding.",
+                                    e
+                                );
+                                self.bindings.remove(binding_index);
+                                continue;
+                            }
+                        }
+                    }
+                    RenderPathInstance::Deferred() => todo!(),
+                };
+            }
+        }
+
+        EngineUpdateResult::Ok
     }
 }

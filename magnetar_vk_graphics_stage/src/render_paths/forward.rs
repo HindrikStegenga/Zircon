@@ -1,9 +1,10 @@
-use std::{collections::HashMap, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
 use crate::{
     components::Camera,
     config::device_features::disabled_device_features,
     device::{commandpool::VkCommandPool, shader::VkShaderModule, VkInitializedDevice, VkQueue},
+    render_target_bindings::PresentResult,
     render_target_bindings::WindowRenderTargetBinding,
     vk_device::VkDevice,
 };
@@ -109,7 +110,7 @@ impl ForwardRenderPath {
         let create_info = vk::RenderPassCreateInfoBuilder::new()
             .attachments(&color_attach)
             .subpasses(&subpass);
-            //.dependencies(&dependencies);
+        //.dependencies(&dependencies);
 
         Ok(unsafe { device.create_render_pass(&create_info, None).result()? })
     }
@@ -166,14 +167,78 @@ impl RenderPath for ForwardRenderPath {
         super::RenderPathType::Forward
     }
 
-    fn render(&mut self, input: &mut RenderStageUpdateInput, camera: &Camera) {
+    fn on_resized_render_target(&mut self, _width: u32, _height: u32) -> Result<(), vk::Result> {
+        let graphics_command_pool = match VkCommandPool::new(
+            self.device.clone(),
+            self.graphics_queue.family_index,
+            true,
+            false,
+        ) {
+            Ok(v) => v,
+            Err(e) => return Err(e),
+        };
+
+        self.frame_buffers.iter().for_each(|f| unsafe {
+            self.device.destroy_framebuffer(Some(*f), None);
+        });
+        self.frame_buffers.clear();
+        self.graphics_command_pool.reset()?;
+        unsafe {
+            self.device
+                .destroy_render_pass(Some(self.render_pass), None);
+        }
+        self.render_pass =
+            match Self::init_default_render_pass(&self.device, self.render_target.surface_format())
+            {
+                Ok(v) => v,
+                Err(e) => return Err(e),
+            };
+
+        self.frame_buffers = match Self::init_default_frame_buffers(
+            &self.device,
+            &self.render_target,
+            self.render_pass,
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                unsafe {
+                    self.device
+                        .destroy_render_pass(Some(self.render_pass), None);
+                }
+                return Err(e);
+            }
+        };
+
+        self.graphics_command_pool = graphics_command_pool;
+        self.command_buffers = (0..self.render_target.image_count())
+            .into_iter()
+            .map(|_| {
+                self.graphics_command_pool
+                    .allocate_primary_command_buffer()
+                    .unwrap()
+            })
+            .collect();
+
+        Ok(())
+    }
+
+    fn render(
+        &mut self,
+        _input: &mut RenderStageUpdateInput,
+        camera: &Camera,
+    ) -> Result<PresentResult, vk::Result> {
         let image_info = match self.render_target.acquire_next_image() {
             Ok(v) => match v {
                 crate::render_target_bindings::PresentImageInfo::Acquired(e) => e,
                 crate::render_target_bindings::PresentImageInfo::SubOptimal(e) => e,
-                crate::render_target_bindings::PresentImageInfo::OutOfDate => return,
+                crate::render_target_bindings::PresentImageInfo::OutOfDate => {
+                    return Ok(PresentResult::OutOfDate)
+                }
             },
-            Err(e) => { warn!("Image acquire error: {}", e); return; }
+            Err(e) => {
+                warn!("Image acquire error: {}", e);
+                return Err(e);
+            }
         };
 
         let command_buffer = self.command_buffers[image_info.image_index as usize];
@@ -224,13 +289,49 @@ impl RenderPath for ForwardRenderPath {
         let signal_semas = [image_info.render_finished_semaphore];
 
         let submit_info = [vk::SubmitInfoBuilder::new()
-        .command_buffers(&cbufs)
-        .wait_semaphores(&wait_semas)
-        .signal_semaphores(&signal_semas)
-        .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])];
+            .command_buffers(&cbufs)
+            .wait_semaphores(&wait_semas)
+            .signal_semaphores(&signal_semas)
+            .wait_dst_stage_mask(&[vk::PipelineStageFlags::COLOR_ATTACHMENT_OUTPUT])];
 
-        unsafe { self.device.queue_submit(self.graphics_queue.queue, &submit_info, Some(image_info.cmd_submission_fence)) };
-        self.render_target.present_image(image_info, self.graphics_queue.clone());
+        if let Err(e) = unsafe {
+            self.device
+                .reset_fences(&[image_info.cmd_submission_fence])
+                .result()
+        } {
+            tagged_warn!("VkGraphics Stage", "Unable to reset fence: {:#?}", e);
+            return Err(e);
+        };
+
+        if let Err(e) = unsafe {
+            self.device
+                .queue_submit(
+                    self.graphics_queue.queue,
+                    &submit_info,
+                    Some(image_info.cmd_submission_fence),
+                )
+                .result()
+        } {
+            tagged_warn!("VkGraphics Stage", "Submission failure: {:#?}", e);
+            return Err(e);
+        };
+        return match self
+            .render_target
+            .present_image(image_info, self.graphics_queue.clone())
+        {
+            Err(e) => {
+                tagged_warn!("VkGraphics Stage", "Presentation failure: {:#?}", e);
+                Err(e)
+            }
+            Ok(e) => Ok(e),
+        };
+    }
+
+    fn window_render_target_binding(&self) -> &WindowRenderTargetBinding {
+        &self.render_target
+    }
+    fn window_render_target_binding_mut(&mut self) -> &mut WindowRenderTargetBinding {
+        &mut self.render_target
     }
 }
 
