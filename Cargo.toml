@@ -1,9 +1,9 @@
 [workspace]
 members = [
-    "magnetar_engine",
-    "magnetar_game",
-    "magnetar_utils",
-    "magnetar_vk_graphics_stage",
-    "magnetar_winit_platform",
-    "magnetar_asset_library"
+    "spacebar_engine",
+    "spacebar_game",
+    "spacebar_utils",
+    "spacebar_vk_graphics_stage",
+    "spacebar_winit_platform",
+    "spacebar_asset_library"
 ]

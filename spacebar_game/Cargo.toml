@@ -1,0 +1,12 @@
+[package]
+name = "spacebar_game"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+spacebar_engine = { path = "../spacebar_engine" }
+spacebar_winit_platform = { path = "../spacebar_winit_platform" }
+spacebar_vk_graphics_stage = { path = "../spacebar_vk_graphics_stage" }
+smol = "1.2.5"
