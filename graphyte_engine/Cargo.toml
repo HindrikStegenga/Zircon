@@ -13,4 +13,6 @@ re_export_utils = []
 serde = { version = "1.0", features = ["derive"] }
 graphyte_utils = { path = "../graphyte_utils" }
 graphyte_asset_library = { path = "../graphyte_asset_library" }
-raw-window-handle = "0.3"
+raw-window-handle = "0.4"
+dashmap = "4.0"
+shard-ecs = "0.2"

@@ -15,16 +15,16 @@ unsafe impl HasRawWindowHandle for WinitPlatformWindow {
 }
 
 impl PlatformWindow for WinitPlatformWindow {
-    fn handle(&self) -> PlatformWindowHandle {
-        self.handle
-    }
-
     fn width(&self) -> u32 {
         self.window.inner_size().width
     }
 
     fn height(&self) -> u32 {
         self.window.inner_size().height
+    }
+
+    fn handle(&self) -> PlatformWindowHandle {
+        self.handle
     }
 
     fn was_resized(&self) -> Option<(u32, u32)> {

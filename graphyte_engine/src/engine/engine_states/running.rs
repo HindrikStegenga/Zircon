@@ -5,10 +5,8 @@ use crate::{engine::result::*, engine_stages::*, PlatformInterface};
 use std::{sync::Arc, time::*};
 
 pub struct Running {
-    pub(crate) render_thread_resources: ResourceSystem,
     pub(super) update_stages_runner: UpdateStagesRunner,
     pub(crate) render_stages: Vec<Box<dyn AnyRenderStage>>,
-    pub(crate) dispatch_system: Arc<DispatchSystem>,
 }
 
 impl Into<EngineStateMachine<Suspended>> for EngineStateMachine<Running> {
@@ -18,24 +16,12 @@ impl Into<EngineStateMachine<Suspended>> for EngineStateMachine<Running> {
             state: Suspended {
                 update_stages_runner: self.state.update_stages_runner,
                 render_stages: self.state.render_stages,
-                dispatch_system: self.state.dispatch_system,
-                render_thread_resources: self.state.render_thread_resources,
             },
         }
     }
 }
 
 impl EngineStateMachine<Running> {
-    #[inline(always)]
-    pub fn render_thread_resources(&self) -> &ResourceSystem {
-        &self.state.render_thread_resources
-    }
-
-    #[inline(always)]
-    pub fn render_thread_resources_mut(&mut self) -> &mut ResourceSystem {
-        &mut self.state.render_thread_resources
-    }
-
     pub fn tick(&mut self, interface: &mut dyn PlatformInterface) -> EngineUpdateResult {
         self.shared.internal_resources.timings.frame_start();
 
@@ -64,7 +50,7 @@ impl EngineStateMachine<Running> {
                 self.shared.internal_resources.timings.frame_start_instant;
         }
 
-        self.state.dispatch_system.tick_async_executor();
+        //self.state.dispatch_system.tick_async_executor();
         for stage in &mut self.state.render_stages {
             match stage.render(RenderStageUpdateInput::new(interface)) {
                 EngineUpdateResult::Ok => {}

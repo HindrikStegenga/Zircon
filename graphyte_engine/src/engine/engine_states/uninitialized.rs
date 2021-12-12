@@ -1,5 +1,6 @@
 use super::*;
-use crate::{engine::gameloop_timer::*, engine_stages::*, *};
+use crate::scene_manager::SceneManager;
+use crate::{engine::gameloop_timer::*, engine_stages::*, resource_manager::*, *};
 use graphyte_utils::dispatch_system::DispatchSystem;
 use graphyte_utils::resource_system::*;
 use std::{
@@ -7,22 +8,9 @@ use std::{
     time::{Duration, Instant},
 };
 
-pub struct Uninitialized {
-    render_thread_resources: ResourceSystem,
-    update_thread_resources: SendableResourceSystem,
-}
+pub struct Uninitialized {}
 
 impl EngineStateMachine<Uninitialized> {
-    #[inline(always)]
-    pub fn render_thread_resources(&self) -> &ResourceSystem {
-        &self.state.render_thread_resources
-    }
-
-    #[inline(always)]
-    pub fn render_thread_resources_mut(&mut self) -> &mut ResourceSystem {
-        &mut self.state.render_thread_resources
-    }
-
     pub fn new(mut info: EngineCreateInfo) -> Self {
         log!(
             "Initializing {:#?} version {:#?}.{:#?}.{:#?}",
@@ -40,36 +28,19 @@ impl EngineStateMachine<Uninitialized> {
         );
 
         let instant = Instant::now();
-        let dispatch_system = Arc::<DispatchSystem>::new(DispatchSystem::new(None));
+        let resources = EngineResourceManager::default();
+        let dispatch_system = DispatchSystem::new(None);
         let asset_system = match info.asset_system.take() {
             Some(v) => v,
-            None => Arc::<AssetSystem>::new(Default::default()),
+            None => Default::default(),
         };
-        let mut shared_resource_system: SendableResourceSystem = Default::default();
-        let mut render_thread_resources: ResourceSystem = Default::default();
-        let mut update_thread_resources: SendableResourceSystem = Default::default();
-
-        shared_resource_system
-            .add_unique_resource(Arc::clone(&dispatch_system))
-            .unwrap_or_else(|_| warn!("DispatchSystem was already added. Not adding it."));
-        shared_resource_system
-            .add_unique_resource(Arc::clone(&asset_system))
-            .unwrap_or_else(|_| warn!("AssetSystem was already added. Not adding it."));
-        render_thread_resources
-            .add_unique_resource(Arc::clone(&dispatch_system))
-            .unwrap_or_else(|_| warn!("DispatchSystem was already added. Not adding it."));
-        render_thread_resources
-            .add_unique_resource(Arc::clone(&asset_system))
-            .unwrap_or_else(|_| warn!("AssetSystem was already added. Not adding it."));
-        update_thread_resources
-            .add_unique_resource(dispatch_system)
-            .unwrap_or_else(|_| warn!("DispatchSystem was already added. Not adding it."));
-        update_thread_resources
-            .add_unique_resource(asset_system)
-            .unwrap_or_else(|_| warn!("AssetSystem was already added. Not adding it."));
+        resources.add_engine_resource(asset_system);
+        resources.add_engine_resource(dispatch_system);
+        resources.add_engine_resource(SceneManager::default());
 
         Self {
             shared: EngineSharedState {
+                resources: Arc::new(resources),
                 internal_resources: EngineInternalResources {
                     timings: EngineGameloopTimer {
                         update_tick_rate: info.update_tick_rate,
@@ -91,12 +62,8 @@ impl EngineStateMachine<Uninitialized> {
                     },
                 },
                 create_info: info,
-                shared_resources: RwLock::new(shared_resource_system),
             },
-            state: Uninitialized {
-                render_thread_resources: render_thread_resources,
-                update_thread_resources,
-            },
+            state: Uninitialized {},
         }
     }
 }
@@ -113,22 +80,13 @@ impl Into<EngineStateMachine<Initialized>>
         log!("Initializing game engine...");
         let (update_stages, render_stages) = {
             let create_info = &uninit.shared.create_info;
-            let render_thread_resources = &mut uninit.state.render_thread_resources;
-            let update_thread_resources = &mut uninit.state.update_thread_resources;
-            let shared_resources = &mut uninit
-                .shared
-                .shared_resources
-                .write()
-                .expect("Poison failure");
-
             let update_stages: Vec<Box<dyn AnyUpdateStage>> = create_info
                 .update_stages
                 .iter()
                 .map(|stage_constructor| {
                     let stage = stage_constructor(UpdateStageConstructorInput::new(
                         interface,
-                        update_thread_resources,
-                        shared_resources,
+                        Arc::clone(&uninit.shared.resources),
                     ));
                     success!("Constructed update stage: {}", stage.identifier());
                     stage
@@ -141,8 +99,7 @@ impl Into<EngineStateMachine<Initialized>>
                 .map(|stage_constructor| {
                     let stage = stage_constructor(RenderStageConstructorInput::new(
                         interface,
-                        render_thread_resources,
-                        shared_resources,
+                        Arc::clone(&uninit.shared.resources),
                     ));
                     success!("Constructed render stage: {}", stage.identifier());
                     stage
@@ -156,8 +113,6 @@ impl Into<EngineStateMachine<Initialized>>
             state: Initialized {
                 update_stages,
                 render_stages,
-                render_thread_resources: uninit.state.render_thread_resources,
-                update_thread_resources: uninit.state.update_thread_resources,
             },
         }
     }

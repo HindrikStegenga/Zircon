@@ -3,22 +3,28 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use crate::{config::{
+use crate::{
+    config::{
         device_features::{combine_features, meets_required_features},
         VkGraphicsOptions,
-    }, render_paths::RenderPathDescriptor, vk_instance::VkInstance};
+    },
+    render_paths::RenderPathDescriptor,
+    vk_instance::VkInstance,
+};
 
-use super::{VkInitializedDevice, VkDeviceError, raw_window_handle_wrapper::RawWindowHandleWrapper};
+use super::{
+    raw_window_handle_wrapper::RawWindowHandleWrapper, VkDeviceError, VkInitializedDevice,
+};
 use erupt::{
     vk::{ExtensionProperties, PhysicalDeviceType, QueueFamilyProperties},
     *,
 };
-use graphyte_engine::{PlatformWindow, tagged_debug_log, tagged_success};
+use graphyte_engine::{tagged_debug_log, tagged_success, PlatformWindow};
 
 #[derive(Debug)]
 pub enum DeviceConfigurationError {
     VkResultFailure(vk::Result),
-    VkDeviceError(VkDeviceError)
+    VkDeviceError(VkDeviceError),
 }
 impl std::error::Error for DeviceConfigurationError {}
 impl Display for DeviceConfigurationError {
@@ -79,7 +85,13 @@ pub(crate) unsafe fn setup_devices(
     let physical_devices_handles = instance.enumerate_physical_devices(None).result()?;
 
     // First we need to check the rendering paths and what they require.
-    let device_path_support = get_supported_render_paths_per_device(instance, physical_devices_handles, paths, default_render_window_surface, graphics_options);
+    let device_path_support = get_supported_render_paths_per_device(
+        instance,
+        physical_devices_handles,
+        paths,
+        default_render_window_surface,
+        graphics_options,
+    );
 
     // Order devices by render path.
     let render_paths: Vec<(
@@ -207,25 +219,35 @@ pub(crate) unsafe fn setup_devices(
             device
         })
         .collect::<Vec<_>>();
-    
+
     let mut devices2 = vec![];
     for device in devices.into_iter() {
         let d = match device {
             Ok(v) => v,
-            Err(e) => return Err(e.into())
+            Err(e) => return Err(e.into()),
         };
-        tagged_success!("VkGraphics Stage", "Succesfully acquired logical device: {:#?}.", CStr::from_ptr(d.properties().device_name.as_ptr()));
+        tagged_success!(
+            "VkGraphics Stage",
+            "Succesfully acquired logical device: {:#?}.",
+            CStr::from_ptr(d.properties().device_name.as_ptr())
+        );
         devices2.push(d);
     }
 
     Ok(DeviceConfiguration {
         created_devices: devices2,
         default_render_surface: default_render_window_surface,
-        render_path_support
+        render_path_support,
     })
 }
 
-unsafe fn get_supported_render_paths_per_device(instance: &VkInstance, physical_devices_handles: Vec<vk::PhysicalDevice>, paths: &Vec<RenderPathDescriptor>, default_render_window_surface: vk::SurfaceKHR, graphics_options: &VkGraphicsOptions) -> Vec<PhysicalDeviceRenderPathSupportDescriptor> {
+unsafe fn get_supported_render_paths_per_device(
+    instance: &VkInstance,
+    physical_devices_handles: Vec<vk::PhysicalDevice>,
+    paths: &Vec<RenderPathDescriptor>,
+    default_render_window_surface: vk::SurfaceKHR,
+    graphics_options: &VkGraphicsOptions,
+) -> Vec<PhysicalDeviceRenderPathSupportDescriptor> {
     physical_devices_handles
     .iter()
     .filter_map(|device| {
@@ -376,7 +398,10 @@ unsafe fn get_supported_render_paths_per_device(instance: &VkInstance, physical_
     .collect::<Vec<_>>()
 }
 
-pub(crate) fn meets_required_extension_names(required: &[CString], has: &[ExtensionProperties]) -> bool {
+pub(crate) fn meets_required_extension_names(
+    required: &[CString],
+    has: &[ExtensionProperties],
+) -> bool {
     for name in required {
         if has
             .iter()

@@ -1,5 +1,3 @@
-use graphyte_asset_library::resource_system::ResourceSystem;
-
 use crate::*;
 
 use super::engine_states::{
@@ -18,7 +16,7 @@ impl From<Engine> for EngineController {
 }
 
 impl EngineController {
-    pub fn suspend<'a, 'b>(&'a mut self) {
+    pub fn suspend(&mut self) {
         self.engine.state.suspend();
     }
     pub fn run(&mut self) {
@@ -32,26 +30,6 @@ impl EngineController {
     }
     pub fn reset(&mut self) {
         self.engine.state.reset();
-    }
-
-    pub fn render_thread_resources(&self) -> &ResourceSystem {
-        match &self.engine.state {
-            EngineState::Uninitialized(e) => e.render_thread_resources(),
-            EngineState::Initialized(e) => e.render_thread_resources(),
-            EngineState::Running(e) => e.render_thread_resources(),
-            EngineState::Suspended(e) => e.render_thread_resources(),
-            EngineState::Invalid => failure!("Engine state is invalidated."),
-        }
-    }
-
-    pub fn render_thread_resources_mut(&mut self) -> &mut ResourceSystem {
-        match &mut self.engine.state {
-            EngineState::Uninitialized(e) => e.render_thread_resources_mut(),
-            EngineState::Initialized(e) => e.render_thread_resources_mut(),
-            EngineState::Running(e) => e.render_thread_resources_mut(),
-            EngineState::Suspended(e) => e.render_thread_resources_mut(),
-            EngineState::Invalid => failure!("Engine state is invalidated."),
-        }
     }
 
     pub fn as_running<'b, 'a: 'b>(

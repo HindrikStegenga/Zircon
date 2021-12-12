@@ -1,7 +1,4 @@
-use std::{
-    error::Error,
-    fmt::{write, Display},
-};
+use std::{error::Error, fmt::Display};
 
 #[derive(Debug)]
 pub enum VfsError {

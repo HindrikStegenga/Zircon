@@ -1,7 +1,7 @@
 use std::{fs::read_dir, path::Path, sync::RwLock};
 mod error;
-use serde::de::DeserializeOwned;
 use graphyte_utils::resource_system::UniqueResource;
+use serde::de::DeserializeOwned;
 
 use crate::{
     archive::*,

@@ -1,13 +1,6 @@
-use std::{
-    error::Error,
-    fmt::{write, Display},
-    sync::{PoisonError, RwLockReadGuard},
-};
+use std::{error::Error, fmt::Display};
 
-use crate::{
-    archive::AssetArchiveError,
-    vfs::{error::VfsError, VirtualFileSystem},
-};
+use crate::{archive::AssetArchiveError, vfs::error::VfsError};
 
 #[derive(Debug)]
 pub enum AssetSystemError {

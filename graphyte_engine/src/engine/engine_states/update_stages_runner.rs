@@ -7,7 +7,6 @@ use std::sync::{Arc, Condvar, Mutex};
 pub(super) struct UpdateStagesThreadedState {
     /// The update stages.
     stages: Vec<Box<dyn AnyUpdateStage>>,
-    update_thread_resources: SendableResourceSystem,
     /// Last result of the threaded loop.
     /// If None, it has not yet been executed.
     last_result: Option<EngineUpdateResult>,
@@ -19,19 +18,14 @@ pub(super) struct UpdateStagesRunner {
 }
 
 impl UpdateStagesRunner {
-    pub fn new(
-        stages: Vec<Box<dyn AnyUpdateStage>>,
-        update_thread_resources: SendableResourceSystem,
-        dispatch_system: Arc<DispatchSystem>,
-    ) -> Self {
+    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>, dispatch_system: Arc<DispatchSystem>) -> Self {
         Self {
             threaded_state: Arc::new((
                 Mutex::new((
                     false,
                     UpdateStagesThreadedState {
-                        stages: stages,
+                        stages,
                         last_result: None,
-                        update_thread_resources,
                     },
                 )),
                 Condvar::new(),
@@ -47,6 +41,7 @@ impl UpdateStagesRunner {
         if previous_message != EngineUpdateResult::Restart {
             // Enqueue new  update job!
             let state = Arc::clone(&self.threaded_state);
+            let resources = shared_state.resources.clone();
             let dispatcher = Arc::clone(&self.dispatch_system);
             self.dispatch_system.spawn(move || {
                 let &(ref mtx, ref cnd) = &*state;
@@ -56,7 +51,7 @@ impl UpdateStagesRunner {
 
                 // Update
                 for system in &mut threaded_state.stages {
-                    let msg = system.update(UpdateStageUpdateInput::new(Arc::clone(&dispatcher)));
+                    let msg = system.update(UpdateStageUpdateInput::new(resources.clone()));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     }

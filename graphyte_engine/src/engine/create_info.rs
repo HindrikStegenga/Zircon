@@ -1,12 +1,12 @@
-use std::{ffi::CString, sync::Arc};
+use std::ffi::CString;
 
 use crate::engine_stages::{RenderStageConstructor, UpdateStageConstructor};
-use serde::*;
 use graphyte_asset_library::asset_system::AssetSystem;
+use serde::*;
 
-/// Information required to construct an instance of `Engine`.
+/// Information required to construct an instance of [`Engine`].
 pub struct EngineCreateInfo {
-    pub asset_system: Option<Arc<AssetSystem>>,
+    pub asset_system: Option<AssetSystem>,
     pub application_info: ApplicationInfo,
     pub update_tick_rate: u32,
     pub max_skipped_frames: u32,
