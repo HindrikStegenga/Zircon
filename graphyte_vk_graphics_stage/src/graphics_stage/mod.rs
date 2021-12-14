@@ -9,6 +9,7 @@ use crate::{
 };
 use erupt::*;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, EngineUpdateResult};
+use graphyte_engine::event_manager::EventHandlerRegisterer;
 
 mod setup_instance;
 pub mod vk_device;
@@ -130,15 +131,18 @@ impl VkGraphicsStage {
 impl RenderStage for VkGraphicsStage {
     const IDENTIFIER: &'static str = "VkGraphics Stage";
 
+    fn register_event_handlers(&mut self, _registerer: &mut EventHandlerRegisterer) {
+        ()
+    }
+
     fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult {
         EngineUpdateResult::Ok
     }
 
     fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
-        for device_binding in &mut self.device_bindings {
-            device_binding.render(&mut input);
-        }
-
+        self.device_bindings.iter_mut().for_each(|e|{
+            e.render(&mut input);
+        });
         EngineUpdateResult::Ok
     }
 }

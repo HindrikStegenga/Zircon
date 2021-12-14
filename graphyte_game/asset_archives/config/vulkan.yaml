@@ -14,6 +14,6 @@ instance_validation_layer_names_debug: [
   "VK_LAYER_KHRONOS_validation"
 ]
 
-default_window_title: "Magnetar - Vulkan Renderer"
+default_window_title: "Graphyte - Vulkan Renderer"
 default_window_width: 800
 default_window_height: 600

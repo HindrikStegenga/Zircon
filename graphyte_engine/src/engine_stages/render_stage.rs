@@ -2,6 +2,7 @@ use super::*;
 use crate::resource_manager::EngineResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
 use std::sync::Arc;
+use crate::event_manager::EventHandlerRegisterer;
 
 pub type RenderStageConstructor =
     dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
@@ -36,25 +37,21 @@ impl<'a> RenderStageUpdateInput<'a> {
 pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
 
+    fn register_event_handlers(&mut self, _registerer: &mut EventHandlerRegisterer) {}
     fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 
-impl<T> AnyRenderStage for T
-where
-    T: RenderStage,
-{
-    #[inline(always)]
-    fn identifier(&self) -> &'static str {
-        T::IDENTIFIER
-    }
+/// TraitObject trait for Render Stages. Implemented for all T: RenderStage.
+pub trait AnyRenderStage: 'static {
+    fn identifier(&self) -> &'static str;
+    fn register_event_handlers(&mut self, registerer: &mut EventHandlerRegisterer);
+    fn update(&self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
+}
 
-    #[inline(always)]
-    fn update(&self, input: UpdateStageUpdateInput<'_>) -> EngineUpdateResult {
-        <T as RenderStage>::update(input)
-    }
-    #[inline(always)]
-    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
-        <T as RenderStage>::render(self, input)
+impl<T: RenderStage> From<T> for Box<dyn AnyRenderStage> {
+    fn from(stage: T) -> Self {
+        Box::from(RenderStageContainer::from(stage))
     }
 }

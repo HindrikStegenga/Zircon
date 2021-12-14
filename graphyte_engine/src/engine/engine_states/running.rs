@@ -28,8 +28,8 @@ impl EngineStateMachine<Running> {
         let fixed_update_step_duration = Duration::from_millis(1000)
             / (self.shared.internal_resources.timings.update_tick_rate as u32);
 
+        // Trigger the update thread if necessary.
         let mut n_loops = 0;
-
         while self.shared.internal_resources.timings.accumulated_time >= fixed_update_step_duration
             && n_loops < (1 + self.shared.internal_resources.timings.max_skipped_frames)
         {
@@ -50,7 +50,8 @@ impl EngineStateMachine<Running> {
                 self.shared.internal_resources.timings.frame_start_instant;
         }
 
-        //self.state.dispatch_system.tick_async_executor();
+
+        // Trigger the render thread.
         for stage in &mut self.state.render_stages {
             match stage.render(RenderStageUpdateInput::new(interface)) {
                 EngineUpdateResult::Ok => {}

@@ -78,7 +78,7 @@ impl Into<EngineStateMachine<Initialized>>
         let (mut uninit, interface) = self;
 
         log!("Initializing game engine...");
-        let (update_stages, render_stages) = {
+        let (mut update_stages, mut render_stages) = {
             let create_info = &uninit.shared.create_info;
             let update_stages: Vec<Box<dyn AnyUpdateStage>> = create_info
                 .update_stages

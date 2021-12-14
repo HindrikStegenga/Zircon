@@ -1,6 +1,8 @@
 use std::{sync::Arc, vec};
 
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
+use graphyte_engine::event_manager::EventHandlerRegisterer;
+use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_vk_graphics_stage::{config::VkGraphicsOptions, *};
 use graphyte_winit_platform::WinitPlatform;
 
@@ -42,7 +44,7 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
     };
 
     let system = VkGraphicsStage::new(create_info).expect("Could not create VkGraphicsSystem!");
-    Box::new(system)
+    Box::from(RenderStageContainer::from(system))
 }
 
 fn main() {
@@ -66,7 +68,7 @@ fn main() {
                         failure!("This system requires an asset system to be present!")
                     }
                 };
-            Box::new(TestStage {})
+            TestStage {}.into()
         })],
         render_stages: vec![Box::new(create_graphics_stage)],
         asset_system: Some(asset_system),

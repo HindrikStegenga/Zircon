@@ -4,6 +4,7 @@ use crate::{EngineUpdateResult, PlatformInterface};
 use graphyte_asset_library::asset_system::AssetSystem;
 use std::marker::PhantomData;
 use std::sync::Arc;
+use crate::event_manager::EventHandlerRegisterer;
 
 pub type UpdateStageConstructor =
     dyn Fn(UpdateStageConstructorInput) -> Box<dyn AnyUpdateStage> + 'static;
@@ -44,33 +45,19 @@ impl<'a> UpdateStageUpdateInput<'a> {
 pub trait UpdateStage: Sized + Send + 'static {
     const IDENTIFIER: &'static str;
 
+    fn register_event_handlers(&mut self, _registerer: &mut EventHandlerRegisterer) {}
     fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
 }
 
 /// TraitObject trait for Update Stages. Implemented for all T: UpdateStage.
 pub trait AnyUpdateStage: Send + 'static {
     fn identifier(&self) -> &'static str;
+    fn register_event_handlers(&mut self, registerer: &mut EventHandlerRegisterer);
     fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
 }
 
-/// TraitObject trait for Render Stages. Implemented for all T: RenderStage.
-pub trait AnyRenderStage: 'static {
-    fn identifier(&self) -> &'static str;
-    fn update(&self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
-    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
-}
-
-impl<T> AnyUpdateStage for T
-where
-    T: UpdateStage,
-{
-    #[inline(always)]
-    fn identifier(&self) -> &'static str {
-        T::IDENTIFIER
-    }
-
-    #[inline(always)]
-    fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        <T as UpdateStage>::update(self, input)
+impl<T: UpdateStage> From<T> for Box<dyn AnyUpdateStage> {
+    fn from(stage: T) -> Self {
+        Box::from(UpdateStageContainer::from(stage))
     }
 }
