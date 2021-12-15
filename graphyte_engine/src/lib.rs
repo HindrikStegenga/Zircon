@@ -1,6 +1,6 @@
 pub mod engine;
 pub mod engine_stages;
-pub mod event_manager;
+pub mod message_bus;
 pub mod platform;
 pub mod resource_manager;
 pub mod scene_manager;

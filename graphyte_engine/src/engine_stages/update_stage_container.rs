@@ -1,15 +1,16 @@
 use std::any::Any;
 use crate::engine_stages::{AnyUpdateStage, UpdateStage, UpdateStageUpdateInput};
 use crate::EngineUpdateResult;
-use crate::event_manager::EventHandlerRegisterer;
+use crate::message_bus::*;
 
 pub struct UpdateStageContainer<T: UpdateStage> {
-    stage: T
+    stage: T,
+    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>
 }
 
 impl<T: UpdateStage> From<T> for UpdateStageContainer<T> {
     fn from(stage: T) -> Self {
-        Self { stage }
+        Self { stage, receivers: vec![] }
     }
 }
 
@@ -18,8 +19,16 @@ impl<T: UpdateStage> AnyUpdateStage for UpdateStageContainer<T> {
         <T as UpdateStage>::IDENTIFIER
     }
 
-    fn register_event_handlers(&mut self, registerer: &mut EventHandlerRegisterer) {
-        self.stage.register_event_handlers(registerer)
+    fn process_events(&mut self) {
+        for receiver in self.receivers.iter_mut() {
+            receiver.receive_messages(&mut self.stage);
+        }
+    }
+
+    fn register_message_handlers(&mut self, registerer: AnyMessageRegisterer<'_>) {
+        self.receivers.clear();
+        let registerer = MessageRegisterer::new(registerer, &mut self.receivers);
+        self.stage.register_message_handlers(registerer);
     }
 
     fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {

@@ -2,7 +2,7 @@ use super::*;
 use crate::resource_manager::EngineResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
 use std::sync::Arc;
-use crate::event_manager::EventHandlerRegisterer;
+use crate::message_bus::*;
 
 pub type RenderStageConstructor =
     dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
@@ -37,7 +37,7 @@ impl<'a> RenderStageUpdateInput<'a> {
 pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
 
-    fn register_event_handlers(&mut self, _registerer: &mut EventHandlerRegisterer) {}
+    fn register_message_handlers(&self, _registerer: MessageRegisterer<'_, Self>) {}
     fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
@@ -45,7 +45,8 @@ pub trait RenderStage: Sized + 'static {
 /// TraitObject trait for Render Stages. Implemented for all T: RenderStage.
 pub trait AnyRenderStage: 'static {
     fn identifier(&self) -> &'static str;
-    fn register_event_handlers(&mut self, registerer: &mut EventHandlerRegisterer);
+    fn register_message_handlers(&mut self, _registerer: AnyMessageRegisterer<'_>);
+    fn process_events(&mut self);
     fn update(&self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }

@@ -49,6 +49,11 @@ impl UpdateStagesRunner {
                 let mut guard = mtx.lock().unwrap();
                 let threaded_state = &mut guard.1;
 
+                threaded_state.stages.iter_mut().for_each(|s|{
+                    s.process_events();
+                });
+
+
                 // Update
                 for system in &mut threaded_state.stages {
                     let msg = system.update(UpdateStageUpdateInput::new(resources.clone()));

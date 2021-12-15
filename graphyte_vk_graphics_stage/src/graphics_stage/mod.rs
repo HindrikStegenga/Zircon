@@ -9,7 +9,7 @@ use crate::{
 };
 use erupt::*;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, EngineUpdateResult};
-use graphyte_engine::event_manager::EventHandlerRegisterer;
+use graphyte_engine::message_bus::{MessageBus, MessageHandler, MessageRegisterer};
 
 mod setup_instance;
 pub mod vk_device;
@@ -131,11 +131,14 @@ impl VkGraphicsStage {
 impl RenderStage for VkGraphicsStage {
     const IDENTIFIER: &'static str = "VkGraphics Stage";
 
-    fn register_event_handlers(&mut self, _registerer: &mut EventHandlerRegisterer) {
-        ()
+    fn register_message_handlers(&self, mut _registerer: MessageRegisterer<'_, Self>) {
+        _registerer.register::<TestMessage>();
     }
 
     fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        let bus = input.resources.get_engine_resource::<MessageBus>().unwrap();
+        let sender = bus.get_sender::<TestMessage>().unwrap();
+        sender.send(TestMessage{});
         EngineUpdateResult::Ok
     }
 
@@ -144,5 +147,13 @@ impl RenderStage for VkGraphicsStage {
             e.render(&mut input);
         });
         EngineUpdateResult::Ok
+    }
+}
+
+#[derive(Debug, Clone)]
+struct TestMessage {}
+impl MessageHandler<TestMessage> for VkGraphicsStage {
+    fn handle(&mut self, _message: TestMessage) {
+        ()
     }
 }

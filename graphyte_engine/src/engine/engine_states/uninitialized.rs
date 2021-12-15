@@ -7,6 +7,7 @@ use std::{
     sync::{Arc, RwLock},
     time::{Duration, Instant},
 };
+use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType, MessageRegisterer};
 
 pub struct Uninitialized {}
 
@@ -107,6 +108,17 @@ impl Into<EngineStateMachine<Initialized>>
                 .collect();
             (update_stages, render_stages)
         };
+
+        let mut builder = MessageBusBuilder::default();
+        update_stages.iter_mut().for_each(|stage|{
+            stage.register_message_handlers(AnyMessageRegisterer::new(&mut builder, MessageHandlerType::Update));
+        });
+        render_stages.iter_mut().for_each(|stage|{
+            stage.register_message_handlers(AnyMessageRegisterer::new(&mut builder, MessageHandlerType::Render));
+        });
+
+        uninit.shared.resources.add_engine_resource(builder.build());
+
         success!("Initialized engine.");
         EngineStateMachine {
             shared: uninit.shared,

@@ -1,7 +1,6 @@
 use std::{sync::Arc, vec};
 
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
-use graphyte_engine::event_manager::EventHandlerRegisterer;
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_vk_graphics_stage::{config::VkGraphicsOptions, *};
 use graphyte_winit_platform::WinitPlatform;
