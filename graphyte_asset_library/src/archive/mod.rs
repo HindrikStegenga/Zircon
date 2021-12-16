@@ -23,8 +23,8 @@ pub struct AssetArchive {
 impl AssetArchive {
     /// Reads an asset archive from a file. Only succeeds in case the provided file can be interpreted as an archive.
     pub fn read_from_file<P: AsRef<Path>>(path: P) -> Result<AssetArchive, AssetArchiveError> {
-        let file = File::open(path.as_ref())?;
-        let reader = BufReader::new(&file);
+        let file = std::fs::File::open(path.as_ref())?;
+        let reader = std::io::BufReader::new(&file);
         let header = Self::read_header(reader)?;
         Ok(Self {
             header,
@@ -32,7 +32,9 @@ impl AssetArchive {
         })
     }
 
-    fn read_header(mut reader: BufReader<&File>) -> Result<AssetArchiveHeader, AssetArchiveError> {
+    fn read_header(
+        mut reader: std::io::BufReader<&std::fs::File>,
+    ) -> Result<AssetArchiveHeader, AssetArchiveError> {
         // last 8 bytes are compressed header size in LE byte order
         let mut compressed_header_size: [u8; 8] = [0; 8];
         reader.seek(SeekFrom::End(-8))?;
@@ -96,6 +98,30 @@ impl AssetArchive {
             let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
             unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
             reader.read_exact(&mut temp_buffer)?;
+            buffer.resize(*header.uncompressed_size() as usize, 0);
+            decompress_into(&temp_buffer, &mut buffer, 0)?;
+            Ok(())
+        }
+    }
+
+    pub async fn async_read_file_into(
+        path: impl AsRef<Path>,
+        header: &AssetArchiveFileHeader,
+        mut buffer: &mut Vec<u8>,
+    ) -> Result<(), AssetArchiveError> {
+        use graphyte_utils::smol::{fs::*, io::*};
+        let file = File::open(path.as_ref()).await?;
+        let mut reader = BufReader::new(file);
+        reader.seek(SeekFrom::Start(*header.offset())).await?;
+
+        if *header.compression_format() == AssetArchiveCompressionFormat::None {
+            buffer.resize(*header.compressed_size() as usize, 0);
+            reader.read_exact(&mut buffer).await?;
+            Ok(())
+        } else {
+            let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+            unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+            reader.read_exact(&mut temp_buffer).await?;
             buffer.resize(*header.uncompressed_size() as usize, 0);
             decompress_into(&temp_buffer, &mut buffer, 0)?;
             Ok(())

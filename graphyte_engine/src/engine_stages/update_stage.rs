@@ -1,10 +1,10 @@
 use super::*;
+use crate::message_bus::{AnyMessageRegisterer, MessageRegisterer};
 use crate::resource_manager::EngineResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
-use graphyte_asset_library::asset_system::AssetSystem;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use crate::message_bus::{AnyMessageRegisterer, MessageRegisterer};
+use graphyte_utils::dispatcher::Dispatcher;
 
 pub type UpdateStageConstructor =
     dyn Fn(UpdateStageConstructorInput) -> Box<dyn AnyUpdateStage> + 'static;
@@ -28,14 +28,25 @@ impl<'a> UpdateStageConstructorInput<'a> {
 
 pub struct UpdateStageUpdateInput<'a> {
     _phantom: PhantomData<&'a ()>,
-    pub resources: Arc<EngineResourceManager>,
+    resources: Arc<EngineResourceManager>,
+    dispatcher: Arc<Dispatcher>
 }
 
 impl<'a> UpdateStageUpdateInput<'a> {
-    pub fn new(resources: Arc<EngineResourceManager>) -> Self {
+    pub fn resources(&self) -> &Arc<EngineResourceManager> {
+        &self.resources
+    }
+    pub fn dispatcher(&self) -> &Arc<Dispatcher> {
+        &self.dispatcher
+    }
+}
+
+impl<'a> UpdateStageUpdateInput<'a> {
+    pub fn new(resources: Arc<EngineResourceManager>, dispatcher: Arc<Dispatcher>) -> Self {
         Self {
             _phantom: Default::default(),
             resources,
+            dispatcher
         }
     }
 }

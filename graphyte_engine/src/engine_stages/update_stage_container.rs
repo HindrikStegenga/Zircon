@@ -1,16 +1,18 @@
-use std::any::Any;
 use crate::engine_stages::{AnyUpdateStage, UpdateStage, UpdateStageUpdateInput};
-use crate::EngineUpdateResult;
 use crate::message_bus::*;
+use crate::EngineUpdateResult;
 
 pub struct UpdateStageContainer<T: UpdateStage> {
     stage: T,
-    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>
+    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>,
 }
 
 impl<T: UpdateStage> From<T> for UpdateStageContainer<T> {
     fn from(stage: T) -> Self {
-        Self { stage, receivers: vec![] }
+        Self {
+            stage,
+            receivers: vec![],
+        }
     }
 }
 
@@ -35,4 +37,3 @@ impl<T: UpdateStage> AnyUpdateStage for UpdateStageContainer<T> {
         self.stage.update(input)
     }
 }
-

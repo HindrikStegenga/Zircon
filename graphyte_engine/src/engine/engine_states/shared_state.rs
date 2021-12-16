@@ -1,8 +1,7 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::resource_manager::EngineResourceManager;
 use crate::{engine::gameloop_timer::EngineGameloopTimer, EngineCreateInfo};
-use graphyte_utils::resource_system::*;
 
 pub struct EngineSharedState {
     pub resources: Arc<EngineResourceManager>,

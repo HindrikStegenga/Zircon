@@ -1,7 +1,6 @@
 use super::*;
 use crate::{engine::result::*, engine_stages::*};
-use graphyte_asset_library::resource_system::SendableResourceSystem;
-use graphyte_utils::dispatch_system::DispatchSystem;
+use graphyte_utils::dispatcher::Dispatcher;
 use std::sync::{Arc, Condvar, Mutex};
 
 pub(super) struct UpdateStagesThreadedState {
@@ -10,17 +9,24 @@ pub(super) struct UpdateStagesThreadedState {
     /// Last result of the threaded loop.
     /// If None, it has not yet been executed.
     last_result: Option<EngineUpdateResult>,
-    /// Update FNs of the render stages.
-    render_stage_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>
+    /// Pre - Update FNs of the render stages.
+    render_stage_pre_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
+    /// Post - Update FNs of the render stages.
+    render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>
 }
 
 pub(super) struct UpdateStagesRunner {
     pub(super) threaded_state: Arc<(Mutex<(bool, UpdateStagesThreadedState)>, Condvar)>,
-    dispatch_system: Arc<DispatchSystem>,
+    dispatch_system: Arc<Dispatcher>,
 }
 
 impl UpdateStagesRunner {
-    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>, render_stage_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>, dispatch_system: Arc<DispatchSystem>) -> Self {
+    pub fn new(
+        stages: Vec<Box<dyn AnyUpdateStage>>,
+        render_stage_pre_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
+        render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
+        dispatch_system: Arc<Dispatcher>,
+    ) -> Self {
         Self {
             threaded_state: Arc::new((
                 Mutex::new((
@@ -28,7 +34,8 @@ impl UpdateStagesRunner {
                     UpdateStagesThreadedState {
                         stages,
                         last_result: None,
-                        render_stage_update_fns
+                        render_stage_pre_update_fns,
+                        render_stage_post_update_fns,
                     },
                 )),
                 Condvar::new(),
@@ -52,13 +59,23 @@ impl UpdateStagesRunner {
                 let mut guard = mtx.lock().unwrap();
                 let threaded_state = &mut guard.1;
 
-                threaded_state.stages.iter_mut().for_each(|s|{
+                threaded_state.stages.iter_mut().for_each(|s| {
                     s.process_events();
                 });
 
+                // Update render stage pre update fns.
+                for update_fn in &threaded_state.render_stage_pre_update_fns {
+                    let msg = (update_fn)(UpdateStageUpdateInput::new(resources.clone(), dispatcher.clone()));
+                    if msg == EngineUpdateResult::Ok {
+                        continue;
+                    };
+                    threaded_state.last_result = Some(msg);
+                    return;
+                }
+
                 // Update
                 for system in &mut threaded_state.stages {
-                    let msg = system.update(UpdateStageUpdateInput::new(resources.clone()));
+                    let msg = system.update(UpdateStageUpdateInput::new(resources.clone(), dispatcher.clone()));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     }
@@ -66,10 +83,12 @@ impl UpdateStagesRunner {
                     return;
                 }
 
-                // Update render stage update fns.
-                for update_fn in &threaded_state.render_stage_update_fns {
-                    let msg = (update_fn)(UpdateStageUpdateInput::new(resources.clone()));
-                    if msg == EngineUpdateResult::Ok { continue };
+                // Update render stage post update fns.
+                for update_fn in &threaded_state.render_stage_post_update_fns {
+                    let msg = (update_fn)(UpdateStageUpdateInput::new(resources.clone(), dispatcher.clone()));
+                    if msg == EngineUpdateResult::Ok {
+                        continue;
+                    };
                     threaded_state.last_result = Some(msg);
                     return;
                 }

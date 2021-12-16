@@ -48,9 +48,7 @@ pub(crate) fn setup_instance(
     });
 
     let mut vk_portability_instance_requirements = unsafe {
-        vec![
-        CStr::from_ptr(erupt::extensions::khr_get_physical_device_properties2::KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME).to_owned(), 
-    ]
+        vec![CStr::from_ptr(erupt::extensions::khr_get_physical_device_properties2::KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME).to_owned()]
     };
     if meets_required_extension_names(&vk_portability_instance_requirements, &supported_extensions)
     {

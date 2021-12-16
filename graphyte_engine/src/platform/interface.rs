@@ -26,10 +26,16 @@ pub trait PlatformInterface: std::fmt::Debug {
 }
 
 #[derive(Clone)]
-pub struct WindowIsCreated { pub handle: PlatformWindowHandle }
+pub struct WindowIsCreated {
+    pub handle: PlatformWindowHandle,
+}
 
 #[derive(Clone)]
-pub struct WindowDidResize { pub handle: PlatformWindowHandle }
+pub struct WindowDidResize {
+    pub handle: PlatformWindowHandle,
+}
 
 #[derive(Clone)]
-pub struct WindowDidClose { pub handle: PlatformWindowHandle }
+pub struct WindowDidClose {
+    pub handle: PlatformWindowHandle,
+}

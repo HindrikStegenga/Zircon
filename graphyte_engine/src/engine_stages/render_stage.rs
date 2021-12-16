@@ -1,16 +1,23 @@
 use super::*;
+use crate::message_bus::*;
 use crate::resource_manager::EngineResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
 use std::sync::Arc;
-use crate::message_bus::*;
 
 pub type RenderStageConstructor =
     dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
 
 pub struct RenderStageConstructorInput<'a> {
     pub platform_interface: &'a mut dyn PlatformInterface,
-    pub resources: Arc<EngineResourceManager>,
+    resources: Arc<EngineResourceManager>,
 }
+
+impl<'a> RenderStageConstructorInput<'a> {
+    pub fn resources(&self) -> &Arc<EngineResourceManager> {
+        &self.resources
+    }
+}
+
 impl<'a> RenderStageConstructorInput<'a> {
     pub fn new(
         platform_interface: &'a mut dyn PlatformInterface,
@@ -38,7 +45,8 @@ pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
 
     fn register_message_handlers(&self, _registerer: MessageRegisterer<'_, Self>) {}
-    fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn pre_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult { EngineUpdateResult::Ok }
+    fn post_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult { EngineUpdateResult::Ok }
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 
@@ -47,7 +55,8 @@ pub trait AnyRenderStage: 'static {
     fn identifier(&self) -> &'static str;
     fn register_message_handlers(&mut self, _registerer: AnyMessageRegisterer<'_>);
     fn process_events(&mut self);
-    fn get_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn get_pre_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn get_post_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 

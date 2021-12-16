@@ -378,7 +378,6 @@ unsafe fn get_supported_render_paths_per_device(
                 Vec::with_capacity(0)
             },
         };
-        
         let mut vk_portability_device_requirements = vec![
             CStr::from_ptr(erupt::extensions::khr_portability_subset::KHR_PORTABILITY_SUBSET_EXTENSION_NAME).to_owned(),
         ];

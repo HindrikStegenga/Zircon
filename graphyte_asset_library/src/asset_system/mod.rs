@@ -1,6 +1,5 @@
 use std::{fs::read_dir, path::Path, sync::RwLock};
 mod error;
-use graphyte_utils::resource_system::UniqueResource;
 use serde::de::DeserializeOwned;
 
 use crate::{
@@ -11,11 +10,6 @@ use crate::{
 };
 
 use self::error::AssetSystemError;
-
-impl UniqueResource for AssetSystem {
-    const IS_REMOVABLE: bool = false;
-    type ResourceRequestInfo = ();
-}
 
 // TODO: Move the RwLock into the virtual file system!
 

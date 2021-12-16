@@ -1,7 +1,6 @@
 use super::*;
 use dashmap::DashMap;
 use graphyte_utils::handles::Handle;
-use std::collections::HashMap;
 use std::sync::atomic::{AtomicU32, Ordering};
 
 pub struct SceneManager {

@@ -1,13 +1,12 @@
 use super::*;
+use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType};
 use crate::scene_manager::SceneManager;
 use crate::{engine::gameloop_timer::*, engine_stages::*, resource_manager::*, *};
-use graphyte_utils::dispatch_system::DispatchSystem;
-use graphyte_utils::resource_system::*;
+use graphyte_utils::dispatcher::Dispatcher;
 use std::{
-    sync::{Arc, RwLock},
+    sync::Arc,
     time::{Duration, Instant},
 };
-use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType, MessageRegisterer};
 
 pub struct Uninitialized {}
 
@@ -30,7 +29,7 @@ impl EngineStateMachine<Uninitialized> {
 
         let instant = Instant::now();
         let resources = EngineResourceManager::default();
-        let dispatch_system = DispatchSystem::new(None);
+        let dispatch_system = Dispatcher::new(None);
         let asset_system = match info.asset_system.take() {
             Some(v) => v,
             None => Default::default(),
@@ -76,7 +75,7 @@ impl Into<EngineStateMachine<Initialized>>
     )
 {
     fn into(self) -> EngineStateMachine<Initialized> {
-        let (mut uninit, interface) = self;
+        let (uninit, interface) = self;
 
         log!("Initializing game engine...");
         let (mut update_stages, mut render_stages) = {
@@ -110,11 +109,17 @@ impl Into<EngineStateMachine<Initialized>>
         };
 
         let mut builder = MessageBusBuilder::default();
-        update_stages.iter_mut().for_each(|stage|{
-            stage.register_message_handlers(AnyMessageRegisterer::new(&mut builder, MessageHandlerType::Update));
+        update_stages.iter_mut().for_each(|stage| {
+            stage.register_message_handlers(AnyMessageRegisterer::new(
+                &mut builder,
+                MessageHandlerType::Update,
+            ));
         });
-        render_stages.iter_mut().for_each(|stage|{
-            stage.register_message_handlers(AnyMessageRegisterer::new(&mut builder, MessageHandlerType::Render));
+        render_stages.iter_mut().for_each(|stage| {
+            stage.register_message_handlers(AnyMessageRegisterer::new(
+                &mut builder,
+                MessageHandlerType::Render,
+            ));
         });
 
         uninit.shared.resources.add_engine_resource(builder.build());

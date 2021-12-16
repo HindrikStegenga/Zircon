@@ -1,6 +1,6 @@
 mod async_task;
 
-use crate::resource_system::*;
+use std::sync::Arc;
 pub use async_task::*;
 pub use rayon::prelude::*;
 
@@ -10,13 +10,13 @@ use AsyncTask;
 use rayon::*;
 
 #[derive(Debug)]
-pub struct DispatchSystem {
+pub struct Dispatcher {
     thread_pool: rayon::ThreadPool,
     executor: Executor<'static>,
 }
 
-impl DispatchSystem {
-    pub fn new(max_worker_thread_count: Option<usize>) -> DispatchSystem {
+impl Dispatcher {
+    pub fn new(max_worker_thread_count: Option<usize>) -> Dispatcher {
         let num_cpus = num_cpus::get();
         let worker_threads = match max_worker_thread_count {
             Some(v) => v,
@@ -35,18 +35,15 @@ impl DispatchSystem {
     }
 }
 
-unsafe impl Send for DispatchSystem {}
-unsafe impl Sync for DispatchSystem {}
+unsafe impl Send for Dispatcher {}
+unsafe impl Sync for Dispatcher {}
 
-impl UniqueResource for DispatchSystem {
-    const IS_REMOVABLE: bool = false;
-    type ResourceRequestInfo = ();
-}
-
-impl DispatchSystem {
-    pub fn tick_async_executor(&self) -> bool {
-        let exec = &self.executor;
-        self.thread_pool.install(move || exec.try_tick())
+impl Dispatcher {
+    pub fn tick_async_executor(self: &Arc<Self>) {
+        let another_self = Arc::clone(&self);
+        self.thread_pool.spawn(move ||{
+            while another_self.executor.try_tick() {};
+        });
     }
 
     pub fn dispatch_async<T: Send + 'static>(

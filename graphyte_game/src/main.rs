@@ -1,7 +1,7 @@
 use std::{sync::Arc, vec};
 
-use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
 use graphyte_engine::engine_stages::RenderStageContainer;
+use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
 use graphyte_vk_graphics_stage::{config::VkGraphicsOptions, *};
 use graphyte_winit_platform::WinitPlatform;
 
@@ -10,16 +10,15 @@ impl UpdateStage for TestStage {
     const IDENTIFIER: &'static str = "TestStage";
 
     fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        // input.dispatcher().dispatch_async(async {
-        //     smol::Timer::after(std::time::Duration::from_secs(1)).await;
-        //     smol::Timer::after(std::time::Duration::from_secs(1)).await;
-        // });
+        input.dispatcher().dispatch_async(async {
+            smol::Timer::after(std::time::Duration::from_secs(1)).await;
+        });
         EngineUpdateResult::Ok
     }
 }
 
 fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn AnyRenderStage> {
-    let asset_system: Arc<AssetSystem> = match input.resources.get_engine_resource::<AssetSystem>()
+    let asset_system: Arc<AssetSystem> = match input.resources().get_engine_resource::<AssetSystem>()
     {
         Some(v) => v,
         None => {
@@ -59,14 +58,7 @@ fn main() {
         update_tick_rate: 20,
         max_skipped_frames: 1,
         max_frame_rate: Some(60),
-        update_stages: vec![Box::new(|input: UpdateStageConstructorInput<'_>| {
-            let asset_system: Arc<AssetSystem> =
-                match input.resources.get_engine_resource::<AssetSystem>() {
-                    Some(v) => v,
-                    None => {
-                        failure!("This system requires an asset system to be present!")
-                    }
-                };
+        update_stages: vec![Box::new(|_input: UpdateStageConstructorInput<'_>| {
             TestStage {}.into()
         })],
         render_stages: vec![Box::new(create_graphics_stage)],

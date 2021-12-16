@@ -1,16 +1,20 @@
-use std::any::Any;
+use crate::engine_stages::{
+    AnyRenderStage, RenderStage, RenderStageUpdateInput, UpdateStageUpdateInput,
+};
 use crate::message_bus::*;
-use crate::engine_stages::{AnyRenderStage, RenderStage, RenderStageUpdateInput, UpdateStageUpdateInput};
 use crate::EngineUpdateResult;
 
 pub struct RenderStageContainer<T: RenderStage> {
     stage: T,
-    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>
+    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>,
 }
 
 impl<T: RenderStage> From<T> for RenderStageContainer<T> {
     fn from(stage: T) -> Self {
-        Self { stage, receivers: vec![] }
+        Self {
+            stage,
+            receivers: vec![],
+        }
     }
 }
 
@@ -31,8 +35,12 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         }
     }
 
-    fn get_update_fn(&self) -> fn(UpdateStageUpdateInput) -> EngineUpdateResult {
-        T::update
+    fn get_pre_update_fn(&self) -> fn(UpdateStageUpdateInput) -> EngineUpdateResult {
+        T::pre_update
+    }
+
+    fn get_post_update_fn(&self) -> fn(UpdateStageUpdateInput) -> EngineUpdateResult {
+        T::post_update
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {

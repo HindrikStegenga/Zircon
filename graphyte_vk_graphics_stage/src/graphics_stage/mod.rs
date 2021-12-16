@@ -8,8 +8,8 @@ use crate::{
     VkGraphicsSystemCreateInfo, VkGraphicsSystemError, *,
 };
 use erupt::*;
-use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, EngineUpdateResult};
 use graphyte_engine::message_bus::{MessageBus, MessageHandler, MessageRegisterer};
+use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, EngineUpdateResult};
 
 mod setup_instance;
 pub mod vk_device;
@@ -135,15 +135,15 @@ impl RenderStage for VkGraphicsStage {
         _registerer.register::<TestMessage>();
     }
 
-    fn update(input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        let bus = input.resources.get_engine_resource::<MessageBus>().unwrap();
+    fn pre_update(input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        let bus = input.resources().get_engine_resource::<MessageBus>().unwrap();
         let sender = bus.get_sender::<TestMessage>().unwrap();
-        sender.send(TestMessage{});
+        sender.send(TestMessage {});
         EngineUpdateResult::Ok
     }
 
     fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
-        self.device_bindings.iter_mut().for_each(|e|{
+        self.device_bindings.iter_mut().for_each(|e| {
             e.render(&mut input);
         });
         EngineUpdateResult::Ok
@@ -153,6 +153,5 @@ impl RenderStage for VkGraphicsStage {
 #[derive(Debug, Clone)]
 struct TestMessage {}
 impl MessageHandler<TestMessage> for VkGraphicsStage {
-    fn handle(&mut self, _message: TestMessage) {
-    }
+    fn handle(&mut self, _message: TestMessage) {}
 }

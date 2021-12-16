@@ -1,10 +1,11 @@
-use graphyte_asset_library::{dispatch_system::DispatchSystem, resource_system::ResourceSystem};
-
+use std::sync::Arc;
 use super::*;
 use crate::{engine::result::*, engine_stages::*, PlatformInterface};
-use std::{sync::Arc, time::*};
+use std::time::*;
+use graphyte_utils::dispatcher::Dispatcher;
 
 pub struct Running {
+    pub(crate) dispatch_system: Arc<Dispatcher>,
     pub(super) update_stages_runner: UpdateStagesRunner,
     pub(crate) render_stages: Vec<Box<dyn AnyRenderStage>>,
 }
@@ -14,6 +15,7 @@ impl Into<EngineStateMachine<Suspended>> for EngineStateMachine<Running> {
         EngineStateMachine {
             shared: self.shared,
             state: Suspended {
+                dispatch_system: self.state.dispatch_system,
                 update_stages_runner: self.state.update_stages_runner,
                 render_stages: self.state.render_stages,
             },
@@ -27,6 +29,8 @@ impl EngineStateMachine<Running> {
 
         let fixed_update_step_duration = Duration::from_millis(1000)
             / (self.shared.internal_resources.timings.update_tick_rate as u32);
+
+        self.state.dispatch_system.tick_async_executor();
 
         // Trigger the update thread if necessary.
         let mut n_loops = 0;
@@ -50,7 +54,7 @@ impl EngineStateMachine<Running> {
                 self.shared.internal_resources.timings.frame_start_instant;
         }
 
-        self.state.render_stages.iter_mut().for_each(|s|{
+        self.state.render_stages.iter_mut().for_each(|s| {
             s.process_events();
         });
 
