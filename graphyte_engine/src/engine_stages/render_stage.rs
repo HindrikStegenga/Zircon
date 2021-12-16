@@ -47,7 +47,7 @@ pub trait AnyRenderStage: 'static {
     fn identifier(&self) -> &'static str;
     fn register_message_handlers(&mut self, _registerer: AnyMessageRegisterer<'_>);
     fn process_events(&mut self);
-    fn update(&self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn get_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 

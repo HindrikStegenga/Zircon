@@ -17,3 +17,18 @@ impl Scene {
         &mut self.registry
     }
 }
+
+#[derive(Clone)]
+pub struct SceneDidBecomeCurrent {
+    scene: Handle<Scene, u32>
+}
+
+#[derive(Clone)]
+pub struct SceneWasCreated {
+    scene: Handle<Scene, u32>
+}
+
+#[derive(Clone)]
+pub struct SceneWasDestroyed {
+    scene: Handle<Scene, u32>
+}

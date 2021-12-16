@@ -154,6 +154,5 @@ impl RenderStage for VkGraphicsStage {
 struct TestMessage {}
 impl MessageHandler<TestMessage> for VkGraphicsStage {
     fn handle(&mut self, _message: TestMessage) {
-        ()
     }
 }

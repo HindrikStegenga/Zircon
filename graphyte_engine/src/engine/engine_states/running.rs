@@ -33,10 +33,6 @@ impl EngineStateMachine<Running> {
         while self.shared.internal_resources.timings.accumulated_time >= fixed_update_step_duration
             && n_loops < (1 + self.shared.internal_resources.timings.max_skipped_frames)
         {
-            self.state.render_stages.iter().for_each(|s|{
-               s.update(UpdateStageUpdateInput::new(self.shared.resources.clone()));
-            });
-
             match self.state.update_stages_runner.update(&mut self.shared) {
                 EngineUpdateResult::Ok => {}
                 result => {

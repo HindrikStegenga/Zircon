@@ -31,8 +31,8 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         }
     }
 
-    fn update(&self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        <T as RenderStage>::update(input)
+    fn get_update_fn(&self) -> fn(UpdateStageUpdateInput) -> EngineUpdateResult {
+        T::update
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {

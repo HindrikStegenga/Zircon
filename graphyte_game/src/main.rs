@@ -58,7 +58,7 @@ fn main() {
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
         max_skipped_frames: 1,
-        max_frame_rate: None,
+        max_frame_rate: Some(60),
         update_stages: vec![Box::new(|input: UpdateStageConstructorInput<'_>| {
             let asset_system: Arc<AssetSystem> =
                 match input.resources.get_engine_resource::<AssetSystem>() {

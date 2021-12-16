@@ -10,6 +10,8 @@ pub(super) struct UpdateStagesThreadedState {
     /// Last result of the threaded loop.
     /// If None, it has not yet been executed.
     last_result: Option<EngineUpdateResult>,
+    /// Update FNs of the render stages.
+    render_stage_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>
 }
 
 pub(super) struct UpdateStagesRunner {
@@ -18,7 +20,7 @@ pub(super) struct UpdateStagesRunner {
 }
 
 impl UpdateStagesRunner {
-    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>, dispatch_system: Arc<DispatchSystem>) -> Self {
+    pub fn new(stages: Vec<Box<dyn AnyUpdateStage>>, render_stage_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>, dispatch_system: Arc<DispatchSystem>) -> Self {
         Self {
             threaded_state: Arc::new((
                 Mutex::new((
@@ -26,6 +28,7 @@ impl UpdateStagesRunner {
                     UpdateStagesThreadedState {
                         stages,
                         last_result: None,
+                        render_stage_update_fns
                     },
                 )),
                 Condvar::new(),
@@ -53,13 +56,20 @@ impl UpdateStagesRunner {
                     s.process_events();
                 });
 
-
                 // Update
                 for system in &mut threaded_state.stages {
                     let msg = system.update(UpdateStageUpdateInput::new(resources.clone()));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     }
+                    threaded_state.last_result = Some(msg);
+                    return;
+                }
+
+                // Update render stage update fns.
+                for update_fn in &threaded_state.render_stage_update_fns {
+                    let msg = (update_fn)(UpdateStageUpdateInput::new(resources.clone()));
+                    if msg == EngineUpdateResult::Ok { continue };
                     threaded_state.last_result = Some(msg);
                     return;
                 }
