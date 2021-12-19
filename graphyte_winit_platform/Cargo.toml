@@ -7,6 +7,6 @@ edition = "2018"
 
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
-graphyte_vk_graphics_stage = { path = "../graphyte_vk_graphics_stage" }
-winit = "0.26" # Update when https://github.com/rust-windowing/winit/issues/1950 is resolved.
+graphyte_graphics_stage = { path = "../graphyte_graphics_stage" }
+winit = "0.26"
 erupt = { version = "0.21", features = ["surface"] }

@@ -1,4 +1,5 @@
-use crate::VkDevice;
+use crate::vulkan::*;
+use crate::vulkan::vk_device::*;
 use erupt::*;
 
 #[derive(Debug)]

@@ -7,10 +7,13 @@ pub mod graphics_stage;
 pub mod render_paths;
 pub mod render_target_bindings;
 
+
+pub use components::*;
+pub use config::*;
 pub use create_info::*;
+pub use device::*;
 pub use error::*;
 pub use graphics_stage::*;
+pub use render_paths::*;
+pub use render_target_bindings::*;
 
-pub(crate) use graphics_stage::vk_device::*;
-pub(crate) use graphics_stage::vk_instance::*;
-pub(crate) use graphyte_utils::*;

@@ -1,20 +1,18 @@
 use std::{collections::HashMap, sync::Arc};
 
 use graphyte_engine::{
-    engine_stages::RenderStageUpdateInput, AssetSystem, EngineUpdateResult, PlatformInterface,
+    AssetSystem, engine_stages::RenderStageUpdateInput, EngineUpdateResult, PlatformInterface,
     PlatformWindowHandle,
 };
 
 use crate::{
-    components::Camera,
-    config::VkGraphicsOptions,
-    render_paths::{ForwardRenderPath, RenderPath, RenderPathDescriptor},
-    render_target_bindings::{WindowRenderTargetBinding, WindowRenderTargetBindingError},
     *,
 };
 
+use graphyte_engine::*;
 use super::{shader::VkShaderModule, VkInitializedDevice};
 use erupt::*;
+use crate::vulkan::{graphics_stage::*, config::*, components::*, render_paths::*, render_target_bindings::*, vk_instance::*, *};
 
 pub(crate) struct CameraRenderPathBinding {
     //TODO: Abstract camera concept later when adding the ECS.
@@ -228,8 +226,8 @@ impl VkDeviceBindingSet {
                         match path.render(input, &binding.camera) {
                             Ok(present_result) => {
                                 match present_result {
-                                    render_target_bindings::PresentResult::Success => (),
-                                    render_target_bindings::PresentResult::SubOptimal => {
+                                    PresentResult::Success => (),
+                                    PresentResult::SubOptimal => {
                                         if let Err(_) =
                                             self.handle_resize(input.platform, binding_index)
                                         {
@@ -237,7 +235,7 @@ impl VkDeviceBindingSet {
                                             continue;
                                         }
                                     }
-                                    render_target_bindings::PresentResult::OutOfDate => {
+                                    PresentResult::OutOfDate => {
                                         // Resize the render target!
                                         if let Err(_) =
                                             self.handle_resize(input.platform, binding_index)

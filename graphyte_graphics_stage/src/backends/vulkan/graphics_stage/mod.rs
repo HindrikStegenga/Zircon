@@ -1,13 +1,10 @@
 use std::{ops::Deref, sync::Arc};
 
 use crate::{
-    components::{Camera, CameraTargetBinding, CameraType, PerspectiveCamera},
-    config::VkGraphicsOptions,
-    device::{setup_devices, VkDeviceBindingSet},
-    render_paths::{ForwardRenderPath, RenderPathDescriptor, RenderPathType},
-    VkGraphicsSystemCreateInfo, VkGraphicsSystemError, *,
+    *, vulkan::*
 };
 use erupt::*;
+use graphyte_engine::*;
 use graphyte_engine::message_bus::{MessageBus, MessageHandler, MessageRegisterer};
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, EngineUpdateResult};
 
@@ -17,6 +14,9 @@ pub mod vk_instance;
 
 use setup_instance::*;
 use vk_instance::*;
+use crate::backends::vulkan::{ForwardRenderPath, RenderPathDescriptor, RenderPathType};
+use crate::backends::vulkan::{setup_devices, VkDeviceBindingSet};
+use crate::backends::vulkan::{Camera, CameraTargetBinding, CameraType, PerspectiveCamera, VkGraphicsOptions};
 
 pub struct VkGraphicsStage {
     device_bindings: Vec<VkDeviceBindingSet>,

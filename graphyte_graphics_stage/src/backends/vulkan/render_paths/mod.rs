@@ -1,5 +1,5 @@
 use erupt::*;
-use graphyte_engine::{engine_stages::RenderStageUpdateInput, AssetSystem};
+use graphyte_engine::{AssetSystem, engine_stages::RenderStageUpdateInput};
 use serde::*;
 use std::{ffi::CString, sync::Arc};
 
@@ -7,12 +7,10 @@ pub mod forward;
 
 pub use forward::*;
 
-use crate::{
-    components::Camera,
-    device::{RenderPathInstance, VkInitializedDevice},
-    render_target_bindings::{PresentResult, WindowRenderTargetBinding},
-    vk_device::VkDevice,
-};
+use crate::vulkan::*;
+use crate::backends::vulkan::{PresentResult, WindowRenderTargetBinding};
+use crate::backends::vulkan::{RenderPathInstance, VkInitializedDevice};
+use crate::backends::vulkan::components::Camera;
 
 #[repr(u8)]
 #[derive(Debug, Deserialize, Serialize, Clone, Copy, PartialEq, Eq)]

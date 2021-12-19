@@ -3,7 +3,7 @@ members = [
     "graphyte_engine",
     "graphyte_game",
     "graphyte_utils",
-    "graphyte_vk_graphics_stage",
+    "graphyte_graphics_stage",
     "graphyte_winit_platform",
     "graphyte_asset_library"
 ]

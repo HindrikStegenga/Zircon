@@ -1,5 +1,5 @@
 use graphyte_engine::platform::{HasRawWindowHandle, RawWindowHandle};
-pub(super) struct RawWindowHandleWrapper {
+pub(crate) struct RawWindowHandleWrapper {
     handle: RawWindowHandle,
 }
 unsafe impl HasRawWindowHandle for RawWindowHandleWrapper {

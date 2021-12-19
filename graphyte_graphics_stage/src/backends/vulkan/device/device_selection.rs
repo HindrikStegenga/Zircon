@@ -3,23 +3,16 @@ use std::{
     fmt::{Debug, Display},
 };
 
-use crate::{
-    config::{
-        device_features::{combine_features, meets_required_features},
-        VkGraphicsOptions,
-    },
-    render_paths::RenderPathDescriptor,
-    vk_instance::VkInstance,
-};
-
+use crate::vulkan::vk_instance::*;
 use super::{
     raw_window_handle_wrapper::RawWindowHandleWrapper, VkDeviceError, VkInitializedDevice,
 };
 use erupt::{
-    vk::{ExtensionProperties, PhysicalDeviceType, QueueFamilyProperties},
     *,
+    vk::{ExtensionProperties, PhysicalDeviceType, QueueFamilyProperties},
 };
-use graphyte_engine::{tagged_debug_log, tagged_success, PlatformWindow};
+use graphyte_engine::{PlatformWindow, tagged_debug_log, tagged_success};
+use crate::backends::vulkan::{device_features::{combine_features, meets_required_features}, RenderPathDescriptor, VkGraphicsOptions};
 
 #[derive(Debug)]
 pub enum DeviceConfigurationError {
@@ -387,8 +380,8 @@ unsafe fn get_supported_render_paths_per_device(
 
         Some(PhysicalDeviceRenderPathSupportDescriptor {
             device: *device,
-            supported_paths: supported_paths,
-            queue_family_properties: queue_family_properties,
+            supported_paths,
+            queue_family_properties,
             queue_family_designations: config,
             properties: device_properties,
             enabled_extensions,

@@ -1,18 +1,17 @@
 use std::ops::Deref;
 
-use erupt::{vk::CommandBuffer, *};
+use erupt::{*, vk::CommandBuffer};
 use graphyte_engine::{
-    tagged_log, tagged_success, PlatformInterface, PlatformWindow, PlatformWindowHandle,
+    PlatformInterface, PlatformWindow, PlatformWindowHandle, tagged_log, tagged_success,
 };
 
-use crate::device::fence::VkFence;
-use crate::{
-    config::VkGraphicsOptions,
-    device::{VkInitializedDevice, VkQueue},
-    vk_device::VkDevice,
-    vk_instance::VkInstance,
-};
+use crate::vulkan::vk_instance::*;
+use crate::vulkan::vk_device::*;
+use crate::backends::vulkan::fence::VkFence;
+use crate::vulkan::*;
 use erupt::utils::VulkanResult;
+use crate::backends::vulkan::{VkInitializedDevice, VkQueue};
+use crate::backends::vulkan::VkGraphicsOptions;
 
 pub(crate) struct WindowRenderTargetBinding {
     in_flight_fences: Vec<VkFence>,

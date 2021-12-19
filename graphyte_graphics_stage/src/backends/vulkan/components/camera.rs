@@ -1,6 +1,6 @@
 use graphyte_engine::PlatformWindowHandle;
 
-use crate::render_paths::RenderPathType;
+use crate::vulkan::render_paths::*;
 
 pub enum CameraType {
     Orthographic(OrthographicCamera),

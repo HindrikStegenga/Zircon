@@ -1,17 +1,13 @@
 use std::{ops::Deref, sync::Arc};
 
-use crate::{
-    components::Camera,
-    config::device_features::disabled_device_features,
-    device::{commandpool::VkCommandPool, shader::VkShaderModule, VkInitializedDevice, VkQueue},
-    render_target_bindings::PresentResult,
-    render_target_bindings::WindowRenderTargetBinding,
-    vk_device::VkDevice,
-};
-
+use crate::vulkan::*;
+use crate::vulkan::vk_device::*;
 use super::RenderPath;
 use erupt::*;
-use graphyte_engine::{engine_stages::RenderStageUpdateInput, *};
+use graphyte_engine::{*, engine_stages::RenderStageUpdateInput};
+use crate::backends::vulkan::{commandpool::VkCommandPool, PresentResult, shader::VkShaderModule, VkInitializedDevice, VkQueue, WindowRenderTargetBinding};
+use crate::backends::vulkan::Camera;
+use crate::backends::vulkan::device_features::disabled_device_features;
 
 pub(crate) struct ForwardRenderPath {
     command_buffers: Vec<vk::CommandBuffer>,
@@ -229,9 +225,9 @@ impl RenderPath for ForwardRenderPath {
     ) -> Result<PresentResult, vk::Result> {
         let image_info = match self.render_target.acquire_next_image() {
             Ok(v) => match v {
-                crate::render_target_bindings::PresentImageInfo::Acquired(e) => e,
-                crate::render_target_bindings::PresentImageInfo::SubOptimal(e) => e,
-                crate::render_target_bindings::PresentImageInfo::OutOfDate => {
+                crate::backends::vulkan::PresentImageInfo::Acquired(e) => e,
+                crate::backends::vulkan::PresentImageInfo::SubOptimal(e) => e,
+                crate::backends::vulkan::PresentImageInfo::OutOfDate => {
                     return Ok(PresentResult::OutOfDate)
                 }
             },

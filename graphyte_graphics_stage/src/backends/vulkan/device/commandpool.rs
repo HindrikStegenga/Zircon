@@ -1,6 +1,6 @@
 use erupt::*;
 
-use crate::vk_device::VkDevice;
+use crate::vulkan::{*, vk_device::*};
 
 pub(crate) struct VkCommandPool {
     allocated_buffers: Vec<vk::CommandBuffer>,

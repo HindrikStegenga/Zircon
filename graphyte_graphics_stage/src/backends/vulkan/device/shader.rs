@@ -2,7 +2,8 @@ use erupt::*;
 use serde::*;
 use std::ffi::CString;
 
-use crate::vk_device::VkDevice;
+use crate::vulkan::*;
+use crate::vulkan::vk_device::*;
 
 #[repr(u8)]
 #[derive(Debug, Serialize, Deserialize)]

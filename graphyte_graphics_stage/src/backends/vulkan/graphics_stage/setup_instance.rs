@@ -1,11 +1,11 @@
 use std::{ffi::CStr, os::raw::c_char};
 
-use crate::{
-    config::VkGraphicsOptions, device::meets_required_extension_names,
-    render_paths::RenderPathDescriptor, vk_instance::VkInstance, VkGraphicsSystemError,
-};
+use crate::vulkan::*;
+use crate::vulkan::vk_device::*;
+use crate::vulkan::vk_instance::*;
 use erupt::*;
 use graphyte_engine::{engine::create_info::ApplicationInfo, tagged_log};
+use crate::backends::vulkan::{meets_required_extension_names, RenderPathDescriptor, VkGraphicsOptions};
 
 pub(crate) fn setup_instance(
     library_loader: &EntryLoader,

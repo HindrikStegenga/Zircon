@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::config::VkGraphicsOptions;
+use super::config::*;
 use graphyte_engine::{engine::create_info::ApplicationInfo, AssetSystem, PlatformInterface};
 
 pub struct VkGraphicsSystemCreateInfo<'a> {

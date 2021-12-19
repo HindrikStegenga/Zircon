@@ -8,5 +8,4 @@ edition = "2018"
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
 graphyte_winit_platform = { path = "../graphyte_winit_platform" }
-graphyte_vk_graphics_stage = { path = "../graphyte_vk_graphics_stage" }
-smol = "1.2.5"
+graphyte_graphics_stage = { path = "../graphyte_graphics_stage", features = ["vulkan"] }

@@ -1,0 +1,21 @@
+[package]
+name = "graphyte_graphics_stage"
+version = "0.1.0"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["erupt", "gl", "ui"]
+vulkan = ["erupt"]
+open_gl = ["gl"]
+ui = ["egui"]
+
+[dependencies]
+graphyte_engine = { path = "../graphyte_engine" }
+graphyte_utils = { path = "../graphyte_utils" }
+serde = { version = "1.0", features = ["derive"] }
+
+egui = { version = "0.15", optional = true }
+erupt = { version = "0.19", features = ["surface", "loading"], optional = true }
+gl = { version = "0.14", optional = true }

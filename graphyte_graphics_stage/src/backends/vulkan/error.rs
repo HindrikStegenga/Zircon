@@ -1,7 +1,7 @@
 use erupt::{utils::loading::EntryLoaderError, *};
 use std::{error::Error, fmt::Display};
 
-use crate::device::DeviceConfigurationError;
+use super::device::DeviceConfigurationError;
 
 #[derive(Debug)]
 pub enum VkGraphicsSystemError {
