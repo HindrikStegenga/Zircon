@@ -2,7 +2,9 @@ use std::{sync::Arc, vec};
 
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
+
 use graphyte_graphics_stage::vulkan::*;
+
 use graphyte_winit_platform::WinitPlatform;
 
 struct TestStage {}

@@ -8,4 +8,9 @@ edition = "2018"
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
 graphyte_winit_platform = { path = "../graphyte_winit_platform" }
-graphyte_graphics_stage = { path = "../graphyte_graphics_stage", features = ["vulkan"] }
+
+[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
+graphyte_graphics_stage = { path = "../graphyte_graphics_stage", features = ["vulkan_api", "open_gl_api", "metal_api"] }
+
+[target.'cfg(not(any(target_os = "macos", target_os = "ios")))'.dependencies]
+graphyte_graphics_stage = { path = "../graphyte_graphics_stage", features = ["vulkan_api", "open_gl_api"] }
