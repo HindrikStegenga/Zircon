@@ -1,4 +1,5 @@
 mod backends;
+mod components;
 
 #[cfg(feature = "vulkan")]
 pub use backends::vulkan as vulkan;

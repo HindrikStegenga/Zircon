@@ -2,6 +2,7 @@
 members = [
     "graphyte_engine",
     "graphyte_game",
+    "graphyte_math",
     "graphyte_utils",
     "graphyte_graphics_stage",
     "graphyte_winit_platform",
