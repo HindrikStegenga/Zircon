@@ -3,6 +3,9 @@ mod add;
 mod sub;
 mod mul;
 mod neg;
+mod accessors;
+mod dot;
+mod cross;
 
 #[repr(C)]
 #[derive(Debug, Eq, PartialEq)]

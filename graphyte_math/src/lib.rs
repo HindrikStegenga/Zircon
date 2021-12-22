@@ -1,4 +1,4 @@
-#![no_std]
+//#![no_std]
 
 pub(crate) mod vector;
 pub(crate) use vector::*;
