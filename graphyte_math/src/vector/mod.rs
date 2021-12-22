@@ -2,6 +2,7 @@ use core::ops::{Index, IndexMut};
 mod add;
 mod sub;
 mod mul;
+mod neg;
 
 #[repr(C)]
 #[derive(Debug, Eq, PartialEq)]
