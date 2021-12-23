@@ -1,15 +1,17 @@
 use graphyte_engine::*;
 use graphyte_engine::engine_stages::{RenderStage, RenderStageUpdateInput, UpdateStageUpdateInput};
 use graphyte_engine::message_bus::{MessageHandler, MessageRegisterer};
-use crate::GraphicsStageCreateInfo;
+use crate::{GraphicsBackend, GraphicsBackendContainer, GraphicsStageCreateInfo};
 
 pub struct GraphicsStage {
-
+    backend: GraphicsBackendContainer
 }
 
 impl GraphicsStage {
-    pub fn new(create_info: GraphicsStageCreateInfo) -> Self {
-        Self {}
+    pub fn new(create_info: GraphicsStageCreateInfo) -> Option<Self> {
+        Self {
+            backend: GraphicsBackendContainer::new(create_info)?
+        }.into()
     }
 }
 
@@ -23,7 +25,14 @@ impl RenderStage for GraphicsStage {
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
-        todo!()
+        return match &mut self.backend {
+            #[cfg(feature = "metal_api")]
+            GraphicsBackendContainer::Metal(backend) => { backend.render(input) }
+            #[cfg(feature = "vulkan_api")]
+            GraphicsBackendContainer::Vulkan(backend) => { backend.render(input) }
+            #[cfg(feature = "open_gl_api")]
+            GraphicsBackendContainer::OpenGL(backend) => { backend.render(input) }
+        }
     }
 }
 

@@ -6,19 +6,12 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = ["vulkan_api", "open_gl_api"]
 vulkan_api = ["graphyte_graphics_stage/vulkan_api"]
 metal_api = ["graphyte_graphics_stage/metal_api"]
 open_gl_api = ["graphyte_graphics_stage/open_gl_api"]
 
-[target.'cfg(not(any(target_os = "macos", target_os = "ios")))'.features]
-default = ["vulkan_api", "open_gl_api"]
-
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
 graphyte_winit_platform = { path = "../graphyte_winit_platform" }
-
-#[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
-#graphyte_graphics_stage = { path = "../graphyte_graphics_stage", features = ["vulkan_api", "open_gl_api", "metal_api"] }
-
-[target.'cfg(not(any(target_os = "macos", target_os = "ios")))'.dependencies]
-graphyte_graphics_stage = { path = "../graphyte_graphics_stage", features = ["vulkan_api", "open_gl_api"] }
+graphyte_graphics_stage = { path = "../graphyte_graphics_stage" }

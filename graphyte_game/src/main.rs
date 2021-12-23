@@ -3,9 +3,6 @@ use std::{sync::Arc, vec};
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
 use graphyte_graphics_stage::{GraphicsStage, GraphicsStageCreateInfo};
-
-use graphyte_graphics_stage::vulkan::*;
-
 use graphyte_winit_platform::WinitPlatform;
 
 struct TestStage {}
@@ -29,8 +26,9 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
         }
     };
 
-    let vulkan_graphics_options: VkGraphicsOptions = asset_system
-        .load_asset_as_type::<VkGraphicsOptions, _, _>("config", "vulkan")
+    #[cfg(feature = "vulkan_api")]
+    let vulkan_graphics_options: graphyte_graphics_stage::vulkan::VkGraphicsOptions = asset_system
+        .load_asset_as_type::<graphyte_graphics_stage::vulkan::VkGraphicsOptions, _, _>("config", "vulkan")
         .unwrap();
 
     let application_info = asset_system
@@ -38,19 +36,19 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
         .unwrap();
 
     let create_info = GraphicsStageCreateInfo {
-        preferred_api: "vulkan".to_string(),
+        preferred_api: None,
         application_info,
         platform: input.platform_interface,
         asset_system,
-        //#[cfg(feature = "vulkan_api")]
+        #[cfg(feature = "vulkan_api")]
         vulkan: vulkan_graphics_options,
-        //#[cfg(feature = "open_gl_api")]
+        #[cfg(feature = "open_gl_api")]
         open_gl: (),
-        //#[cfg(feature = "metal_api")]
-        //metal: ()
+        #[cfg(feature = "metal_api")]
+        metal: ()
     };
 
-    let system = GraphicsStage::new(create_info);
+    let system = GraphicsStage::new(create_info).expect("Could not initialize render stage.");
     Box::from(RenderStageContainer::from(system))
 }
 

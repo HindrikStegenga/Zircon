@@ -3,7 +3,7 @@ use graphyte_engine::{ApplicationInfo, AssetSystem, PlatformInterface};
 use crate::GraphicsBackend;
 
 pub struct GraphicsStageCreateInfo<'a> {
-    pub preferred_api: String,
+    pub preferred_api: Option<String>,
     pub application_info: ApplicationInfo,
     pub platform: &'a mut dyn PlatformInterface,
     pub asset_system: Arc<AssetSystem>,

@@ -15,7 +15,7 @@ pub struct EngineCreateInfo {
     pub render_stages: Vec<Box<RenderStageConstructor>>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ApplicationInfo {
     pub application_name: CString,
     pub engine_name: CString,

@@ -6,10 +6,11 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [features]
+default = []
 vulkan_api = ["erupt"]
 open_gl_api = ["gl"]
-metal_api = ["metal"]
 ui = ["egui"]
+metal_api = ["metal"]
 
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
