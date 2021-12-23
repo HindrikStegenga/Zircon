@@ -1,5 +1,5 @@
 use graphyte_math::*;
-use shard_ecs::*;
+use graphyte_engine::ecs::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Transform {

@@ -1,24 +1,14 @@
-use std::{ops::Deref, sync::Arc};
-
-use crate::{
-    *, vulkan::*
-};
+use std::sync::Arc;
+use crate::vulkan::*;
+use crate::vulkan::vk_instance::*;
+use crate::vulkan::setup_devices;
 use erupt::*;
 use graphyte_engine::*;
-use graphyte_engine::message_bus::{MessageBus, MessageHandler, MessageRegisterer};
-use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, EngineUpdateResult};
+use crate::vulkan::graphics_stage::setup_instance::setup_instance;
+use graphyte_engine::engine_stages::RenderStageUpdateInput;
+use crate::{GraphicsBackend, GraphicsBackendCreateInfo};
 
-pub mod setup_instance;
-pub mod vk_device;
-pub mod vk_instance;
-
-use setup_instance::*;
-use vk_instance::*;
-use crate::backends::vulkan::{ForwardRenderPath, RenderPathDescriptor, RenderPathType};
-use crate::backends::vulkan::{setup_devices, VkDeviceBindingSet};
-use crate::backends::vulkan::{Camera, CameraTargetBinding, CameraType, PerspectiveCamera, VkGraphicsOptions};
-
-pub struct VkGraphicsStage {
+pub struct VulkanRenderBackend {
     device_bindings: Vec<VkDeviceBindingSet>,
     instance: VkInstance,
     library_loader: EntryLoader,
@@ -26,8 +16,12 @@ pub struct VkGraphicsStage {
     graphics_options: VkGraphicsOptions,
 }
 
-impl VkGraphicsStage {
-    pub fn new(create_info: VkGraphicsSystemCreateInfo) -> Result<Self, VkGraphicsSystemError> {
+impl GraphicsBackend for VulkanRenderBackend {
+    const API_IDENTIFIER: &'static str = "vulkan";
+    type GraphicsOptions = VkGraphicsOptions;
+    type ErrorType = VkGraphicsSystemError;
+
+    fn new(create_info: GraphicsBackendCreateInfo<'_, Self::GraphicsOptions>) -> Result<Self, Self::ErrorType> {
         let asset_system = Arc::clone(&create_info.asset_system);
         // TODO: Remove this part here when events and such are finished.
         let default_window_handle = match create_info.platform_interface.get_windows().first() {
@@ -125,18 +119,6 @@ impl VkGraphicsStage {
             instance,
             device_bindings: bindings,
         })
-    }
-}
-
-impl RenderStage for VkGraphicsStage {
-    const IDENTIFIER: &'static str = "VkGraphics Stage";
-
-    fn register_message_handlers(&self, mut _registerer: MessageRegisterer<'_, Self>) {
-
-    }
-
-    fn pre_update(input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        EngineUpdateResult::Ok
     }
 
     fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {

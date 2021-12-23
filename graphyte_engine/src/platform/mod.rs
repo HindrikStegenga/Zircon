@@ -1,7 +1,10 @@
 use crate::engine::controller::EngineController;
 
-pub mod interface;
+mod interface;
+mod messages;
+
 pub use interface::*;
+pub use messages::*;
 
 /// Trait that is used to control the state of the game engine and interact with the OS windowing library.
 pub trait Platform {

@@ -6,8 +6,9 @@ pub mod error;
 pub mod graphics_stage;
 pub mod render_paths;
 pub mod render_target_bindings;
+pub mod backend;
 
-
+pub use backend::*;
 pub use components::*;
 pub use config::*;
 pub use create_info::*;

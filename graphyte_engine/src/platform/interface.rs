@@ -24,18 +24,3 @@ pub trait PlatformInterface: std::fmt::Debug {
         title: &str,
     ) -> Option<&dyn PlatformWindow>;
 }
-
-#[derive(Clone)]
-pub struct WindowIsCreated {
-    pub handle: PlatformWindowHandle,
-}
-
-#[derive(Clone)]
-pub struct WindowDidResize {
-    pub handle: PlatformWindowHandle,
-}
-
-#[derive(Clone)]
-pub struct WindowDidClose {
-    pub handle: PlatformWindowHandle,
-}

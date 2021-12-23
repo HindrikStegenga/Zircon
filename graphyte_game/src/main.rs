@@ -2,6 +2,7 @@ use std::{sync::Arc, vec};
 
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
+use graphyte_graphics_stage::{GraphicsStage, GraphicsStageCreateInfo};
 
 use graphyte_graphics_stage::vulkan::*;
 
@@ -28,7 +29,7 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
         }
     };
 
-    let graphics_options: VkGraphicsOptions = asset_system
+    let vulkan_graphics_options: VkGraphicsOptions = asset_system
         .load_asset_as_type::<VkGraphicsOptions, _, _>("config", "vulkan")
         .unwrap();
 
@@ -36,14 +37,20 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
         .load_asset_as_type::<ApplicationInfo, _, _>("config", "game")
         .unwrap();
 
-    let create_info = VkGraphicsSystemCreateInfo {
-        graphics_options,
+    let create_info = GraphicsStageCreateInfo {
+        preferred_api: "vulkan".to_string(),
         application_info,
-        platform_interface: input.platform_interface,
+        platform: input.platform_interface,
         asset_system,
+        //#[cfg(feature = "vulkan_api")]
+        vulkan: vulkan_graphics_options,
+        //#[cfg(feature = "open_gl_api")]
+        open_gl: (),
+        //#[cfg(feature = "metal_api")]
+        //metal: ()
     };
 
-    let system = VkGraphicsStage::new(create_info).expect("Could not create VkGraphicsSystem!");
+    let system = GraphicsStage::new(create_info);
     Box::from(RenderStageContainer::from(system))
 }
 
