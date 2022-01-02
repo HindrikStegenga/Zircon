@@ -6,6 +6,7 @@ pub struct WinitPlatformWindow {
     pub(crate) was_resized: Option<(u32, u32)>,
     pub(crate) window: Window,
     pub(crate) handle: PlatformWindowHandle,
+    pub(crate) intent: Option<String>
 }
 
 unsafe impl HasRawWindowHandle for WinitPlatformWindow {
@@ -15,6 +16,14 @@ unsafe impl HasRawWindowHandle for WinitPlatformWindow {
 }
 
 impl PlatformWindow for WinitPlatformWindow {
+    fn intent(&self) -> Option<&str> {
+        return if let Some(v) = &self.intent {
+            Some(v.as_str())
+        } else {
+            None
+        }
+    }
+
     fn width(&self) -> u32 {
         self.window.inner_size().width
     }

@@ -1,8 +1,9 @@
 use std::{sync::Arc, vec};
+use std::ffi::CString;
 
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
-use graphyte_graphics_stage::{GraphicsStage, GraphicsStageCreateInfo};
+use graphyte_graphics_stage::*;
 use graphyte_winit_platform::WinitPlatform;
 
 struct TestStage {}
@@ -17,7 +18,7 @@ impl UpdateStage for TestStage {
     }
 }
 
-fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn AnyRenderStage> {
+fn create_graphics_stage<'r>(mut input: RenderStageConstructorInput<'r>) -> Box<dyn AnyRenderStage> {
     let asset_system: Arc<AssetSystem> = match input.resources().get_engine_resource::<AssetSystem>()
     {
         Some(v) => v,
@@ -26,26 +27,20 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
         }
     };
 
-    #[cfg(feature = "vulkan_api")]
-    let vulkan_graphics_options: graphyte_graphics_stage::vulkan::VkGraphicsOptions = asset_system
-        .load_asset_as_type::<graphyte_graphics_stage::vulkan::VkGraphicsOptions, _, _>("config", "vulkan")
+    let options = asset_system
+        .load_asset_as_type::<GraphicsOptions, _, _>("config", "vulkan")
         .unwrap();
+
 
     let application_info = asset_system
         .load_asset_as_type::<ApplicationInfo, _, _>("config", "game")
         .unwrap();
 
     let create_info = GraphicsStageCreateInfo {
-        preferred_api: None,
-        application_info,
         platform: input.platform_interface,
+        application_info,
         asset_system,
-        #[cfg(feature = "vulkan_api")]
-        vulkan: vulkan_graphics_options,
-        #[cfg(feature = "open_gl_api")]
-        open_gl: (),
-        #[cfg(feature = "metal_api")]
-        metal: ()
+        options
     };
 
     let system = GraphicsStage::new(create_info).expect("Could not initialize render stage.");

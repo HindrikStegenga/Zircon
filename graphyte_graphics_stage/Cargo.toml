@@ -5,22 +5,12 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
-[features]
-default = []
-vulkan_api = ["erupt"]
-open_gl_api = ["gl"]
-ui = ["egui"]
-metal_api = ["metal"]
-
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
 graphyte_math = { path = "../graphyte_math" }
 graphyte_utils = { path = "../graphyte_utils" }
 serde = { version = "1.0", features = ["derive"] }
 
-egui = { version = "0.15", optional = true }
-erupt = { version = "0.19", features = ["surface", "loading"], optional = true }
-gl = { version = "0.14", optional = true }
-
-[target.'cfg(any(target_os = "macos", target_os = "ios"))'.dependencies]
-metal = { version = "0.23", optional = true }
+egui = { version = "0.15" }
+erupt = { version = "0.19", features = ["surface", "loading"] }
+ash = { version = "0.33" }

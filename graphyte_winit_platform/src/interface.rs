@@ -49,7 +49,7 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
         height: u32,
         title: &str,
     ) -> Option<&dyn PlatformWindow> {
-        match self.platform.window_id_counter != std::u16::MAX {
+        return match self.platform.window_id_counter != u16::MAX {
             true => {
                 let window = WindowBuilder::new()
                     .with_title(title)
@@ -62,13 +62,14 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                     window,
                     handle: PlatformWindowHandle::from(id),
                     was_resized: None,
+                    intent: None
                 };
                 self.platform.windows.push(window);
-                return Some(self.platform.windows.last_mut().unwrap());
+                Some(self.platform.windows.last_mut().unwrap())
             }
             false => {
                 tagged_warn!("WinitPlatform", "Constructed too many windows.");
-                return None;
+                None
             }
         }
     }

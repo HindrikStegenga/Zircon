@@ -1,55 +1,50 @@
 use graphyte_engine::*;
-use graphyte_engine::engine_stages::{RenderStage, RenderStageUpdateInput, UpdateStageUpdateInput};
-use graphyte_engine::message_bus::{MessageHandler, MessageRegisterer};
-use crate::{GraphicsBackend, GraphicsBackendContainer, GraphicsStageCreateInfo};
+use super::*;
 
 pub struct GraphicsStage {
-    backend: GraphicsBackendContainer
+    entry: ash::Entry,
+    instance: ash::Instance,
 }
 
 impl GraphicsStage {
     pub fn new(create_info: GraphicsStageCreateInfo) -> Option<Self> {
+        let (entry, instance) = setup_vulkan_instance(&create_info.application_info, &create_info.options)?;
+        tagged_success!("Graphics", "Successfully set-up vulkan instance!");
+
+        let target_window = create_info.platform.request_window(640, 480, create_info.application_info.application_name.to_str().unwrap())?;
+
+
         Self {
-            backend: GraphicsBackendContainer::new(create_info)?
+            entry,
+            instance
         }.into()
     }
 }
 
 impl RenderStage for GraphicsStage {
-    const IDENTIFIER: &'static str = "GraphicsStage";
+    const IDENTIFIER: &'static str = "Graphics";
 
-    fn register_message_handlers(&self, mut registerer: MessageRegisterer<'_, Self>) {
-        registerer.register::<WindowDidOpen>();
-        registerer.register::<WindowDidClose>();
-        registerer.register::<WindowDidResize>();
+    fn register_message_handlers(&self, _registerer: MessageRegisterer<'_, Self>) {
+        ()
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
-        return match &mut self.backend {
-            #[cfg(feature = "metal_api")]
-            GraphicsBackendContainer::Metal(backend) => { backend.render(input) }
-            #[cfg(feature = "vulkan_api")]
-            GraphicsBackendContainer::Vulkan(backend) => { backend.render(input) }
-            #[cfg(feature = "open_gl_api")]
-            GraphicsBackendContainer::OpenGL(backend) => { backend.render(input) }
-        }
+        EngineUpdateResult::Ok
     }
 }
 
 impl MessageHandler<WindowDidOpen> for GraphicsStage {
     fn handle(&mut self, message: WindowDidOpen) {
-        todo!()
+
     }
 }
-
 impl MessageHandler<WindowDidClose> for GraphicsStage {
     fn handle(&mut self, message: WindowDidClose) {
-        todo!()
+
     }
 }
-
 impl MessageHandler<WindowDidResize> for GraphicsStage {
     fn handle(&mut self, message: WindowDidResize) {
-        todo!()
+
     }
 }
