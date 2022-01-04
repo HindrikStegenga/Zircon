@@ -13,11 +13,7 @@ pub struct Initialized {
 
 impl Into<EngineStateMachine<Running>> for EngineStateMachine<Initialized> {
     fn into(self) -> EngineStateMachine<Running> {
-        let dispatch_system = match self
-            .shared
-            .resources
-            .get_engine_resource::<Dispatcher>()
-        {
+        let dispatch_system = match self.shared.resources.get_engine_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {
                 failure!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");

@@ -1,5 +1,5 @@
-use std::ffi::CString;
 use serde::{Deserialize, Serialize};
+use std::ffi::CString;
 
 #[derive(Deserialize, Serialize)]
 pub struct GraphicsOptions {
@@ -9,6 +9,7 @@ pub struct GraphicsOptions {
     pub instance_extension_names: Vec<CString>,
     pub instance_validation_layer_names: Vec<CString>,
     pub preferred_device_name: Option<CString>,
+    pub preferred_render_path: Option<CString>,
     pub prefer_integrated_gpu: bool,
     pub prevent_tearing: bool,
     pub limit_frame_rate: bool,

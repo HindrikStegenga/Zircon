@@ -28,6 +28,8 @@ impl Platform for WinitPlatform {
         let mut interface = WinitPlatformInterface::new(&mut self, &event_loop);
         controller.initialize(&mut interface);
         controller.run();
+        let message_bus = controller.shared().resources.get_engine_resource::<MessageBus>().expect("Requires a message bus!");
+        let window_resize_sender = message_bus.get_sender::<WindowDidResize>();
 
         event_loop.run(move |event, window_target, control_flow| {
             *control_flow = ControlFlow::Poll;
@@ -52,7 +54,16 @@ impl Platform for WinitPlatform {
                         .find(|(_, e)| window_id == e.window.id())
                         .map(|(idx, _)| idx)
                     {
-                        self.windows[window_idx].was_resized = Some((size.width, size.height))
+                        if let Some(resize_handler) = &window_resize_sender {
+                            let handle = self.windows[window_idx].handle;
+                            tagged_log!("Winit", "Window resized: {} - {}", size.width, size.height);
+                            resize_handler.send(WindowDidResize {
+                                window: handle,
+                                new_width: size.width,
+                                new_height: size.height
+                            })
+                        }
+
                     }
                 }
                 Event::WindowEvent {
@@ -122,7 +133,6 @@ impl Platform for WinitPlatform {
                         }
                         _ => {}
                     }
-                    self.windows.iter_mut().for_each(|e| e.was_resized = None)
                 }
                 _ => {}
             }

@@ -1,6 +1,6 @@
 mod constants;
 
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 macro_rules! define_matrix_defs {
     ($t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident, { $($derive:ident),* }) => {

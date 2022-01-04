@@ -61,8 +61,7 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                 let window = WinitPlatformWindow {
                     window,
                     handle: PlatformWindowHandle::from(id),
-                    was_resized: None,
-                    intent: None
+                    intent: None,
                 };
                 self.platform.windows.push(window);
                 Some(self.platform.windows.last_mut().unwrap())
@@ -71,6 +70,6 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                 tagged_warn!("WinitPlatform", "Constructed too many windows.");
                 None
             }
-        }
+        };
     }
 }

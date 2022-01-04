@@ -1,10 +1,10 @@
-use graphyte_engine::PlatformWindowHandle;
-use ash::*;
 use ash::extensions::khr::Swapchain;
+use ash::*;
+use graphyte_engine::PlatformWindowHandle;
 
 pub struct WindowRenderTarget {
     window: PlatformWindowHandle,
-    surface: vk::SurfaceKHR
+    surface: vk::SurfaceKHR,
 }
 
 pub struct WindowRenderTargetBinding {
@@ -13,5 +13,5 @@ pub struct WindowRenderTargetBinding {
 }
 
 pub enum RenderTarget {
-    Window(WindowRenderTargetBinding)
+    Window(WindowRenderTargetBinding),
 }

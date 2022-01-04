@@ -29,6 +29,17 @@ pub enum EngineState {
 }
 
 impl EngineState {
+
+    pub fn shared(&self) -> &EngineSharedState {
+        return match self {
+            EngineState::Uninitialized(e) => { &e.shared }
+            EngineState::Initialized(e) => { &e.shared }
+            EngineState::Running(e) => { &e.shared }
+            EngineState::Suspended(e) => { &e.shared }
+            EngineState::Invalid => failure!("Cannot get shared state from invalid engine state.")
+        }
+    }
+
     pub fn initialize(&mut self, interface: &mut dyn PlatformInterface) {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Uninitialized(s) => {

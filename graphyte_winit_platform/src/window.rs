@@ -3,10 +3,9 @@ use winit::window::Window;
 
 #[derive(Debug)]
 pub struct WinitPlatformWindow {
-    pub(crate) was_resized: Option<(u32, u32)>,
     pub(crate) window: Window,
     pub(crate) handle: PlatformWindowHandle,
-    pub(crate) intent: Option<String>
+    pub(crate) intent: Option<String>,
 }
 
 unsafe impl HasRawWindowHandle for WinitPlatformWindow {
@@ -21,7 +20,7 @@ impl PlatformWindow for WinitPlatformWindow {
             Some(v.as_str())
         } else {
             None
-        }
+        };
     }
 
     fn width(&self) -> u32 {
@@ -34,9 +33,5 @@ impl PlatformWindow for WinitPlatformWindow {
 
     fn handle(&self) -> PlatformWindowHandle {
         self.handle
-    }
-
-    fn was_resized(&self) -> Option<(u32, u32)> {
-        self.was_resized
     }
 }

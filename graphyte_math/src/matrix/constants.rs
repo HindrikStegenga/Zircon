@@ -4,75 +4,124 @@ macro_rules! define_constants_impl {
     ($zero_value:expr, $one_value:expr, $t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident) => {
         impl $v2_name {
             pub const fn identity() -> $v2_name {
-                $v2_name { values: [$one_value, $zero_value,
-                                    $zero_value, $one_value ] }
+                $v2_name {
+                    values: [$one_value, $zero_value, $zero_value, $one_value],
+                }
             }
 
             pub const fn zero() -> $v2_name {
-                $v2_name { values: [$zero_value; 4] }
+                $v2_name {
+                    values: [$zero_value; 4],
+                }
             }
 
             pub const fn one() -> $v2_name {
-                $v2_name { values: [$one_value; 4] }
+                $v2_name {
+                    values: [$one_value; 4],
+                }
             }
 
             pub const fn min() -> $v2_name {
-                $v2_name { values: [<$t>::MIN; 4] }
+                $v2_name {
+                    values: [<$t>::MIN; 4],
+                }
             }
 
             pub const fn max() -> $v2_name {
-                $v2_name { values: [<$t>::MAX; 4] }
+                $v2_name {
+                    values: [<$t>::MAX; 4],
+                }
             }
         }
-        
+
         impl $v3_name {
             pub const fn identity() -> $v3_name {
-                $v3_name { values: [$one_value, $zero_value, $zero_value,
-                                    $zero_value, $one_value, $zero_value,
-                                    $zero_value, $zero_value, $one_value
-                ] }
+                $v3_name {
+                    values: [
+                        $one_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $one_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $one_value,
+                    ],
+                }
             }
 
             pub const fn zero() -> $v3_name {
-                $v3_name { values: [$zero_value; 9] }
+                $v3_name {
+                    values: [$zero_value; 9],
+                }
             }
 
             pub const fn one() -> $v3_name {
-                $v3_name { values: [$one_value; 9] }
+                $v3_name {
+                    values: [$one_value; 9],
+                }
             }
 
-            pub const fn min() ->$v3_name {
-                $v3_name { values: [<$t>::MIN; 9] }
+            pub const fn min() -> $v3_name {
+                $v3_name {
+                    values: [<$t>::MIN; 9],
+                }
             }
 
-            pub const fn max() ->$v3_name {
-                $v3_name { values: [<$t>::MAX; 9] }
+            pub const fn max() -> $v3_name {
+                $v3_name {
+                    values: [<$t>::MAX; 9],
+                }
             }
         }
-        
+
         impl $v4_name {
             pub const fn identity() -> $v4_name {
-                $v4_name { values: [$one_value, $zero_value, $zero_value, $zero_value,
-                                    $zero_value, $one_value, $zero_value, $zero_value,
-                                    $zero_value, $zero_value, $one_value, $zero_value,
-                                    $zero_value, $zero_value, $zero_value, $one_value,
-                ] }
+                $v4_name {
+                    values: [
+                        $one_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $one_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $one_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $zero_value,
+                        $one_value,
+                    ],
+                }
             }
 
             pub const fn zero() -> $v4_name {
-                $v4_name { values: [$zero_value; 16] }
+                $v4_name {
+                    values: [$zero_value; 16],
+                }
             }
 
             pub const fn one() -> $v4_name {
-                $v4_name { values: [$one_value; 16] }
+                $v4_name {
+                    values: [$one_value; 16],
+                }
             }
 
-            pub const fn min() ->$v4_name {
-                $v4_name { values: [<$t>::MIN; 16] }
+            pub const fn min() -> $v4_name {
+                $v4_name {
+                    values: [<$t>::MIN; 16],
+                }
             }
 
-            pub const fn max() ->$v4_name {
-                $v4_name { values: [<$t>::MAX; 16] }
+            pub const fn max() -> $v4_name {
+                $v4_name {
+                    values: [<$t>::MAX; 16],
+                }
             }
         }
     };

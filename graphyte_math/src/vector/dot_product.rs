@@ -13,8 +13,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: $v2_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y()
+                self.x() * rhs.x() + self.y() * rhs.y()
             }
         }
 
@@ -22,9 +21,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: $v3_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z()
             }
         }
 
@@ -32,10 +29,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: $v4_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z() +
-                self.w() * rhs.w()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z() + self.w() * rhs.w()
             }
         }
 
@@ -44,8 +38,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: &'a $v2_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y()
+                self.x() * rhs.x() + self.y() * rhs.y()
             }
         }
 
@@ -53,9 +46,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: &'a $v3_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z()
             }
         }
 
@@ -63,10 +54,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: &'a $v4_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z() +
-                self.w() * rhs.w()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z() + self.w() * rhs.w()
             }
         }
 
@@ -75,8 +63,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: $v2_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y()
+                self.x() * rhs.x() + self.y() * rhs.y()
             }
         }
 
@@ -84,9 +71,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: $v3_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z()
             }
         }
 
@@ -94,10 +79,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: $v4_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z() +
-                self.w() * rhs.w()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z() + self.w() * rhs.w()
             }
         }
 
@@ -106,8 +88,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: &'b $v2_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y()
+                self.x() * rhs.x() + self.y() * rhs.y()
             }
         }
 
@@ -115,9 +96,7 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: &'b $v3_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z()
             }
         }
 
@@ -125,15 +104,11 @@ macro_rules! define_dot_product_impl {
             type Output = $t;
             //noinspection ALL
             fn dot(self, rhs: &'b $v4_name) -> Self::Output {
-                self.x() * rhs.x() +
-                self.y() * rhs.y() +
-                self.z() * rhs.z() +
-                self.w() * rhs.w()
+                self.x() * rhs.x() + self.y() * rhs.y() + self.z() * rhs.z() + self.w() * rhs.w()
             }
         }
     };
 }
-
 
 // Floating point types
 

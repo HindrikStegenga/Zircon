@@ -1,11 +1,11 @@
-mod stage;
 mod create_info;
 mod graphics_options;
-mod instance_setup;
 mod render_target;
+mod instance_setup;
+mod stage;
+mod device_and_path_setup;
+mod device_feature_utils;
 
-pub use stage::*;
 pub use create_info::*;
 pub use graphics_options::*;
-
-use instance_setup::*;
+pub use stage::*;

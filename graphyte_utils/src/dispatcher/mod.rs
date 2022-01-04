@@ -1,8 +1,8 @@
 mod async_task;
 
-use std::sync::Arc;
 pub use async_task::*;
 pub use rayon::prelude::*;
+use std::sync::Arc;
 
 use smol::{future::Future, Executor};
 use AsyncTask;
@@ -41,8 +41,8 @@ unsafe impl Sync for Dispatcher {}
 impl Dispatcher {
     pub fn tick_async_executor(self: &Arc<Self>) {
         let another_self = Arc::clone(&self);
-        self.thread_pool.spawn(move ||{
-            while another_self.executor.try_tick() {};
+        self.thread_pool.spawn(move || {
+            while another_self.executor.try_tick() {}
         });
     }
 

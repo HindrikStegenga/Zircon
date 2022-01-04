@@ -1,11 +1,11 @@
-use graphyte_math::*;
 use graphyte_engine::ecs::*;
+use graphyte_math::*;
 
 #[derive(Debug, Copy, Clone, PartialEq)]
 pub struct Transform {
     position: Vec3f,
     rotation: Vec4f,
-    scale: f32
+    scale: f32,
 }
 
 impl Transform {
@@ -22,7 +22,11 @@ impl Transform {
 
 impl Transform {
     pub fn new(position: Vec3f, rotation: Vec4f, scale: f32) -> Self {
-        Transform { position, rotation, scale }
+        Transform {
+            position,
+            rotation,
+            scale,
+        }
     }
 }
 

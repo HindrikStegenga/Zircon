@@ -8,10 +8,10 @@ pub mod scene_manager;
 pub use engine::{create_info::*, result::EngineUpdateResult, Engine};
 pub use engine_stages::{
     RenderStage, RenderStageConstructor, RenderStageConstructorInput, RenderStageUpdateInput,
-    UpdateStage, UpdateStageConstructor, UpdateStageConstructorInput, UpdateStageUpdateInput
+    UpdateStage, UpdateStageConstructor, UpdateStageConstructorInput, UpdateStageUpdateInput,
 };
-pub use message_bus::*;
 pub use graphyte_asset_library::asset_system::AssetSystem;
+pub use message_bus::*;
 pub use platform::*;
 
 pub use shard_ecs as ecs;

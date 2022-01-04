@@ -2,9 +2,9 @@ use super::*;
 use crate::message_bus::{AnyMessageRegisterer, MessageRegisterer};
 use crate::resource_manager::EngineResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
+use graphyte_utils::dispatcher::Dispatcher;
 use std::marker::PhantomData;
 use std::sync::Arc;
-use graphyte_utils::dispatcher::Dispatcher;
 
 pub type UpdateStageConstructor =
     dyn Fn(UpdateStageConstructorInput) -> Box<dyn AnyUpdateStage> + 'static;
@@ -29,7 +29,7 @@ impl<'a> UpdateStageConstructorInput<'a> {
 pub struct UpdateStageUpdateInput<'a> {
     _phantom: PhantomData<&'a ()>,
     resources: Arc<EngineResourceManager>,
-    dispatcher: Arc<Dispatcher>
+    dispatcher: Arc<Dispatcher>,
 }
 
 impl<'a> UpdateStageUpdateInput<'a> {
@@ -46,7 +46,7 @@ impl<'a> UpdateStageUpdateInput<'a> {
         Self {
             _phantom: Default::default(),
             resources,
-            dispatcher
+            dispatcher,
         }
     }
 }

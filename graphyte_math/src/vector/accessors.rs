@@ -16,7 +16,9 @@ macro_rules! define_accessors_impl {
             }
 
             pub const fn yx(&self) -> $v2_name {
-                $v2_name { values: [self.y(), self.x()] }
+                $v2_name {
+                    values: [self.y(), self.x()],
+                }
             }
         }
         impl $v3_name {
@@ -33,11 +35,15 @@ macro_rules! define_accessors_impl {
             }
 
             pub const fn xy(&self) -> $v2_name {
-                $v2_name { values: [self.x(), self.y()] }
+                $v2_name {
+                    values: [self.x(), self.y()],
+                }
             }
 
             pub const fn yx(&self) -> $v2_name {
-                $v2_name { values: [self.y(), self.x()] }
+                $v2_name {
+                    values: [self.y(), self.x()],
+                }
             }
 
             pub const fn xyz(&self) -> $v3_name {
@@ -45,7 +51,9 @@ macro_rules! define_accessors_impl {
             }
 
             pub const fn zyx(&self) -> $v3_name {
-                $v3_name { values: [self.z(), self.y(), self.x()] }
+                $v3_name {
+                    values: [self.z(), self.y(), self.x()],
+                }
             }
         }
         impl $v4_name {
@@ -66,19 +74,27 @@ macro_rules! define_accessors_impl {
             }
 
             pub const fn xy(&self) -> $v2_name {
-                $v2_name { values: [self.x(), self.y()] }
+                $v2_name {
+                    values: [self.x(), self.y()],
+                }
             }
 
             pub const fn yx(&self) -> $v2_name {
-                $v2_name { values: [self.y(), self.x()] }
+                $v2_name {
+                    values: [self.y(), self.x()],
+                }
             }
 
             pub const fn xyz(&self) -> $v3_name {
-                $v3_name { values: [self.x(), self.y(), self.z()] }
+                $v3_name {
+                    values: [self.x(), self.y(), self.z()],
+                }
             }
 
             pub const fn zyx(&self) -> $v3_name {
-                $v3_name { values: [self.z(), self.y(), self.x()] }
+                $v3_name {
+                    values: [self.z(), self.y(), self.x()],
+                }
             }
 
             pub const fn xyzw(&self) -> $v4_name {
@@ -86,7 +102,9 @@ macro_rules! define_accessors_impl {
             }
 
             pub const fn wzyx(&self) -> $v4_name {
-                $v4_name { values: [self.w(), self.z(), self.y(), self.x()] }
+                $v4_name {
+                    values: [self.w(), self.z(), self.y(), self.x()],
+                }
             }
         }
     };

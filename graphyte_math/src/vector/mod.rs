@@ -1,13 +1,13 @@
-use serde::{Serialize, Deserialize};
-mod from;
-mod constructors;
+use serde::{Deserialize, Serialize};
 mod accessors;
-mod properties;
-mod binary_vector_ops;
 mod binary_scalar_ops;
-mod negation;
-mod dot_product;
+mod binary_vector_ops;
 mod constants;
+mod constructors;
+mod dot_product;
+mod from;
+mod negation;
+mod properties;
 
 macro_rules! define_vector_defs {
     ($t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident, { $($derive:ident),* }) => {

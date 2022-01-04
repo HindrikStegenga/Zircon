@@ -1,5 +1,1 @@
-
-
-struct MeshRenderer {
-    
-}
+struct MeshRenderer {}

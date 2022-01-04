@@ -1,7 +1,7 @@
-use std::sync::Arc;
-use graphyte_utils::dispatcher::Dispatcher;
 use super::*;
 use crate::engine_stages::*;
+use graphyte_utils::dispatcher::Dispatcher;
+use std::sync::Arc;
 
 pub struct Suspended {
     pub(crate) dispatch_system: Arc<Dispatcher>,

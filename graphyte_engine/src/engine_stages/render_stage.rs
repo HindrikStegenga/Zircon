@@ -45,8 +45,12 @@ pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
 
     fn register_message_handlers(&self, _registerer: MessageRegisterer<'_, Self>) {}
-    fn pre_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult { EngineUpdateResult::Ok }
-    fn post_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult { EngineUpdateResult::Ok }
+    fn pre_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
+    fn post_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 

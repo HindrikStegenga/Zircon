@@ -16,6 +16,9 @@ impl From<Engine> for EngineController {
 }
 
 impl EngineController {
+    pub fn shared(&self) -> &EngineSharedState {
+        self.engine.state.shared()
+    }
     pub fn suspend(&mut self) {
         self.engine.state.suspend();
     }

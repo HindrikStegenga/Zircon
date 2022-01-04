@@ -7,7 +7,6 @@ pub trait PlatformWindow: HasRawWindowHandle {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
     fn handle(&self) -> PlatformWindowHandle;
-    fn was_resized(&self) -> Option<(u32, u32)>;
 }
 
 pub type PlatformWindowHandle = Handle<*const dyn PlatformWindow, u16>;

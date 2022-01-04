@@ -12,7 +12,7 @@ pub(super) struct UpdateStagesThreadedState {
     /// Pre - Update FNs of the render stages.
     render_stage_pre_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
     /// Post - Update FNs of the render stages.
-    render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>
+    render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
 }
 
 pub(super) struct UpdateStagesRunner {
@@ -65,7 +65,10 @@ impl UpdateStagesRunner {
 
                 // Update render stage pre update fns.
                 for update_fn in &threaded_state.render_stage_pre_update_fns {
-                    let msg = (update_fn)(UpdateStageUpdateInput::new(resources.clone(), dispatcher.clone()));
+                    let msg = (update_fn)(UpdateStageUpdateInput::new(
+                        resources.clone(),
+                        dispatcher.clone(),
+                    ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     };
@@ -75,7 +78,10 @@ impl UpdateStagesRunner {
 
                 // Update
                 for system in &mut threaded_state.stages {
-                    let msg = system.update(UpdateStageUpdateInput::new(resources.clone(), dispatcher.clone()));
+                    let msg = system.update(UpdateStageUpdateInput::new(
+                        resources.clone(),
+                        dispatcher.clone(),
+                    ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     }
@@ -85,7 +91,10 @@ impl UpdateStagesRunner {
 
                 // Update render stage post update fns.
                 for update_fn in &threaded_state.render_stage_post_update_fns {
-                    let msg = (update_fn)(UpdateStageUpdateInput::new(resources.clone(), dispatcher.clone()));
+                    let msg = (update_fn)(UpdateStageUpdateInput::new(
+                        resources.clone(),
+                        dispatcher.clone(),
+                    ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
                     };

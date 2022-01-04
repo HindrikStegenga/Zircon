@@ -24,11 +24,15 @@ macro_rules! define_constructor_impl {
 
         impl $v4_name {
             pub const fn from_scalar(v: $t) -> Self {
-                $v4_name { values: [v, v, v, v] }
+                $v4_name {
+                    values: [v, v, v, v],
+                }
             }
 
             pub const fn new(x: $t, y: $t, z: $t, w: $t) -> Self {
-                $v4_name { values: [x, y, z, w] }
+                $v4_name {
+                    values: [x, y, z, w],
+                }
             }
         }
     };

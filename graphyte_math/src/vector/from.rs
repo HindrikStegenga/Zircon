@@ -4,40 +4,34 @@ macro_rules! define_from_impl {
     ($t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident) => {
         impl From<$t> for $v2_name {
             fn from(v: $t) -> Self {
-                $v2_name {
-                    values: [v, v]
-                }
+                $v2_name { values: [v, v] }
             }
         }
 
         impl From<$t> for $v3_name {
             fn from(v: $t) -> Self {
-                $v3_name {
-                    values: [v, v, v]
-                }
+                $v3_name { values: [v, v, v] }
             }
         }
 
         impl From<$t> for $v4_name {
             fn from(v: $t) -> Self {
                 $v4_name {
-                    values: [v, v, v, v]
+                    values: [v, v, v, v],
                 }
             }
         }
 
         impl<'a> From<&'a $t> for $v2_name {
             fn from(v: &'a $t) -> Self {
-                $v2_name {
-                    values: [*v, *v]
-                }
+                $v2_name { values: [*v, *v] }
             }
         }
 
         impl<'a> From<&'a $t> for $v3_name {
             fn from(v: &'a $t) -> Self {
                 $v3_name {
-                    values: [*v, *v, *v]
+                    values: [*v, *v, *v],
                 }
             }
         }
@@ -45,56 +39,44 @@ macro_rules! define_from_impl {
         impl<'a> From<&'a $t> for $v4_name {
             fn from(v: &'a $t) -> Self {
                 $v4_name {
-                    values: [*v, *v, *v, *v]
+                    values: [*v, *v, *v, *v],
                 }
             }
         }
-        
+
         impl From<[$t; 2]> for $v2_name {
             fn from(values: [$t; 2]) -> Self {
-                $v2_name {
-                    values
-                }
+                $v2_name { values }
             }
         }
-        
+
         impl From<[$t; 3]> for $v3_name {
             fn from(values: [$t; 3]) -> Self {
-                $v3_name {
-                    values
-                }
+                $v3_name { values }
             }
         }
-        
+
         impl From<[$t; 4]> for $v4_name {
             fn from(values: [$t; 4]) -> Self {
-                $v4_name {
-                    values
-                }
+                $v4_name { values }
             }
         }
-        
+
         impl<'a> From<&'a [$t; 2]> for $v2_name {
             fn from(values: &'a [$t; 2]) -> Self {
-                $v2_name {
-                    values: *values
-                }
+                $v2_name { values: *values }
             }
         }
-        
+
         impl<'a> From<&'a [$t; 3]> for $v3_name {
             fn from(values: &'a [$t; 3]) -> Self {
-                $v3_name {
-                    values: *values
-                }
+                $v3_name { values: *values }
             }
         }
-        
+
         impl<'a> From<&'a [$t; 4]> for $v4_name {
             fn from(values: &'a [$t; 4]) -> Self {
-                $v4_name {
-                    values: *values
-                }
+                $v4_name { values: *values }
             }
         }
     };

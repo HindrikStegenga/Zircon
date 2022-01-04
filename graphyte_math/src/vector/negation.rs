@@ -6,41 +6,53 @@ macro_rules! define_vector_negation_impl {
         impl Neg for $v2_name {
             type Output = $v2_name;
             fn neg(self) -> Self::Output {
-                $v2_name { values: [-self.x(), -self.y()] }
+                $v2_name {
+                    values: [-self.x(), -self.y()],
+                }
             }
         }
         impl<'a> Neg for &'a $v2_name {
             type Output = $v2_name;
             fn neg(self) -> Self::Output {
-                $v2_name { values: [-self.x(), -self.y()] }
+                $v2_name {
+                    values: [-self.x(), -self.y()],
+                }
             }
         }
 
         impl Neg for $v3_name {
             type Output = $v3_name;
             fn neg(self) -> Self::Output {
-                $v3_name { values: [-self.x(), -self.y(), -self.z()] }
+                $v3_name {
+                    values: [-self.x(), -self.y(), -self.z()],
+                }
             }
         }
 
         impl<'a> Neg for &'a $v3_name {
             type Output = $v3_name;
             fn neg(self) -> Self::Output {
-                $v3_name { values: [-self.x(), -self.y(), -self.z()] }
+                $v3_name {
+                    values: [-self.x(), -self.y(), -self.z()],
+                }
             }
         }
 
         impl Neg for $v4_name {
             type Output = $v4_name;
             fn neg(self) -> Self::Output {
-                $v4_name { values: [-self.x(), -self.y(), -self.z(), -self.w()] }
+                $v4_name {
+                    values: [-self.x(), -self.y(), -self.z(), -self.w()],
+                }
             }
         }
 
         impl<'a> Neg for &'a $v4_name {
             type Output = $v4_name;
             fn neg(self) -> Self::Output {
-                $v4_name { values: [-self.x(), -self.y(), -self.z(), -self.w()] }
+                $v4_name {
+                    values: [-self.x(), -self.y(), -self.z(), -self.w()],
+                }
             }
         }
     };
