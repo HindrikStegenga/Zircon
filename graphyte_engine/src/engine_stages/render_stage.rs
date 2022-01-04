@@ -44,7 +44,7 @@ impl<'a> RenderStageUpdateInput<'a> {
 pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
 
-    fn register_message_handlers(&self, _registerer: MessageRegisterer<'_, Self>) {}
+    fn register_message_handlers(&self, _registerer: RenderMessageRegisterer<'_, Self>) {}
     fn pre_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult {
         EngineUpdateResult::Ok
     }
@@ -58,7 +58,7 @@ pub trait RenderStage: Sized + 'static {
 pub trait AnyRenderStage: 'static {
     fn identifier(&self) -> &'static str;
     fn register_message_handlers(&mut self, _registerer: AnyMessageRegisterer<'_>);
-    fn process_events(&mut self);
+    fn process_events(&mut self, input: RenderStageUpdateInput);
     fn get_pre_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn get_post_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;

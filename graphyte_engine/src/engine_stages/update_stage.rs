@@ -1,7 +1,7 @@
 use super::*;
-use crate::message_bus::{AnyMessageRegisterer, MessageRegisterer};
+use crate::message_bus::{AnyMessageRegisterer, RenderMessageRegisterer};
 use crate::resource_manager::EngineResourceManager;
-use crate::{EngineUpdateResult, PlatformInterface};
+use crate::{EngineUpdateResult, PlatformInterface, UpdateMessageRegisterer};
 use graphyte_utils::dispatcher::Dispatcher;
 use std::marker::PhantomData;
 use std::sync::Arc;
@@ -56,7 +56,7 @@ impl<'a> UpdateStageUpdateInput<'a> {
 pub trait UpdateStage: Sized + Send + 'static {
     const IDENTIFIER: &'static str;
 
-    fn register_message_handlers(&self, _registerer: MessageRegisterer<'_, Self>) {}
+    fn register_message_handlers(&self, _registerer: UpdateMessageRegisterer<'_, Self>) {}
     fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
 }
 

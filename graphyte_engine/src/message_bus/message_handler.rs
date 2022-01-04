@@ -1,5 +1,6 @@
 use super::*;
 
-pub trait MessageHandler<M: Message> {
-    fn handle(&mut self, message: M);
+pub trait MessageHandler<C, M: Message> {
+    fn handle(&mut self, context: &mut C, message: M);
 }
+

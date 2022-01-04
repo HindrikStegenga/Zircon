@@ -1,6 +1,7 @@
 use std::sync::Arc;
 use super::instance_setup::*;
 use graphyte_engine::*;
+use graphyte_engine::engine_stages::RenderStageMessageContext;
 use crate::*;
 
 pub struct GraphicsStage {
@@ -17,6 +18,8 @@ impl GraphicsStage {
         };
         tagged_success!("Graphics", "Successfully set-up vulkan instance!");
 
+        create_info.platform.request_window(600, 480, "asdf");
+
         let device = GraphicsDevice::new(
             GraphicsDeviceCreateInfo {
                 instance: Arc::clone(&instance),
@@ -30,7 +33,7 @@ impl GraphicsStage {
 impl RenderStage for GraphicsStage {
     const IDENTIFIER: &'static str = "Graphics";
 
-    fn register_message_handlers(&self, mut registerer: MessageRegisterer<'_, Self>) {
+    fn register_message_handlers(&self, mut registerer: RenderMessageRegisterer<'_, Self>) {
         registerer.register::<WindowDidResize>();
         registerer.register::<WindowDidOpen>();
         registerer.register::<WindowDidClose>();
@@ -41,14 +44,19 @@ impl RenderStage for GraphicsStage {
     }
 }
 
-impl MessageHandler<WindowDidOpen> for GraphicsStage {
-    fn handle(&mut self, message: WindowDidOpen) {}
+impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for GraphicsStage {
+    fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidOpen) {
+
+    }
 }
-impl MessageHandler<WindowDidClose> for GraphicsStage {
-    fn handle(&mut self, message: WindowDidClose) {}
+impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
+    fn handle(&mut self, context: &mut RenderStageMessageContext,message: WindowDidClose) {}
 }
-impl MessageHandler<WindowDidResize> for GraphicsStage {
-    fn handle(&mut self, message: WindowDidResize) {}
+impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for GraphicsStage {
+    fn handle(&mut self, context: &mut RenderStageMessageContext,message: WindowDidResize) {
+        let window = context.platform.get_window(message.window).unwrap();
+        tagged_log!("Graphics", "WindowResized message received!");
+    }
 }
 
 impl Drop for GraphicsStage {

@@ -55,7 +55,7 @@ impl EngineStateMachine<Running> {
         }
 
         self.state.render_stages.iter_mut().for_each(|s| {
-            s.process_events();
+            s.process_events(RenderStageUpdateInput::new(interface));
         });
 
         // Trigger the render thread.

@@ -1,10 +1,15 @@
+use std::marker::PhantomData;
 use crate::engine_stages::{AnyUpdateStage, UpdateStage, UpdateStageUpdateInput};
 use crate::message_bus::*;
 use crate::EngineUpdateResult;
 
 pub struct UpdateStageContainer<T: UpdateStage> {
     stage: T,
-    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>,
+    receivers: Vec<Box<dyn AnyUpdateMessageReceiver<T>>>,
+}
+
+pub struct UpdateStageMessageContext<'a> {
+    phantom: PhantomData<fn(&'a u32)>
 }
 
 impl<T: UpdateStage> From<T> for UpdateStageContainer<T> {
@@ -23,13 +28,15 @@ impl<T: UpdateStage> AnyUpdateStage for UpdateStageContainer<T> {
 
     fn process_events(&mut self) {
         for receiver in self.receivers.iter_mut() {
-            receiver.receive_messages(&mut self.stage);
+            receiver.receive_messages(&mut self.stage, &mut UpdateStageMessageContext {
+                phantom: Default::default()
+            });
         }
     }
 
     fn register_message_handlers(&mut self, registerer: AnyMessageRegisterer<'_>) {
         self.receivers.clear();
-        let registerer = MessageRegisterer::new(registerer, &mut self.receivers);
+        let registerer = UpdateMessageRegisterer::new(registerer, &mut self.receivers);
         self.stage.register_message_handlers(registerer);
     }
 

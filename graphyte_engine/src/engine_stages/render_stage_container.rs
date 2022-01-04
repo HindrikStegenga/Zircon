@@ -1,12 +1,17 @@
+use std::marker::PhantomData;
 use crate::engine_stages::{
     AnyRenderStage, RenderStage, RenderStageUpdateInput, UpdateStageUpdateInput,
 };
 use crate::message_bus::*;
-use crate::EngineUpdateResult;
+use crate::{EngineUpdateResult, PlatformInterface};
 
 pub struct RenderStageContainer<T: RenderStage> {
     stage: T,
-    receivers: Vec<Box<dyn AnyMessageReceiver<T>>>,
+    receivers: Vec<Box<dyn AnyRenderMessageReceiver<T>>>,
+}
+
+pub struct RenderStageMessageContext<'a> {
+    pub platform: &'a mut dyn PlatformInterface,
 }
 
 impl<T: RenderStage> From<T> for RenderStageContainer<T> {
@@ -25,13 +30,15 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
 
     fn register_message_handlers(&mut self, registerer: AnyMessageRegisterer<'_>) {
         self.receivers.clear();
-        let registerer = MessageRegisterer::new(registerer, &mut self.receivers);
+        let registerer = RenderMessageRegisterer::new(registerer, &mut self.receivers);
         self.stage.register_message_handlers(registerer);
     }
 
-    fn process_events(&mut self) {
+    fn process_events(&mut self, input: RenderStageUpdateInput) {
         for receiver in self.receivers.iter_mut() {
-            receiver.receive_messages(&mut self.stage);
+            receiver.receive_messages(&mut self.stage, &mut RenderStageMessageContext {
+                platform: input.platform
+            });
         }
     }
 
