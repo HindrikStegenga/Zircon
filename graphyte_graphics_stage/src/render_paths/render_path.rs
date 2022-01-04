@@ -5,7 +5,7 @@ use crate::{ForwardRenderPath, GraphicsOptions};
 #[derive(Clone)]
 pub(crate) struct RenderPathDescriptor {
     required_features: vk::PhysicalDeviceFeatures,
-    instantiate_fn: fn(options: GraphicsOptions) -> Option<Box<dyn RenderPath>>,
+    instantiate_fn: fn(create_info: RenderPathCreateInfo) -> Option<Box<dyn RenderPath>>,
     identifier: CString,
 }
 
@@ -13,17 +13,24 @@ impl RenderPathDescriptor {
     pub fn required_features(&self) -> vk::PhysicalDeviceFeatures {
         self.required_features
     }
-    pub fn instantiate_fn(&self) -> fn(GraphicsOptions) -> Option<Box<dyn RenderPath>> {
+    pub fn instantiate_fn(&self) -> fn(RenderPathCreateInfo) -> Option<Box<dyn RenderPath>> {
         self.instantiate_fn
     }
+    pub fn identifier(&self) -> &CStr {
+        &self.identifier
+    }
+}
+
+pub(crate) struct RenderPathCreateInfo<'a> {
+    pub options: &'a GraphicsOptions
 }
 
 impl RenderPathDescriptor {
     pub fn new<T: RenderPath + Sized + 'static>() -> Self {
         Self {
             required_features: T::required_device_features(),
-            instantiate_fn: |options| {
-                return if let Some(value) = T::instantiate(options) {
+            instantiate_fn: |create_info| {
+                return if let Some(value) = T::instantiate(create_info) {
                     Some(Box::from(value))
                 } else { None }
             },
@@ -40,7 +47,7 @@ pub(crate) trait RenderPath {
     fn required_device_features() -> vk::PhysicalDeviceFeatures
     where
         Self: Sized;
-    fn instantiate(options: GraphicsOptions) -> Option<Self>
+    fn instantiate(create_info: RenderPathCreateInfo) -> Option<Self>
     where
         Self: Sized;
 

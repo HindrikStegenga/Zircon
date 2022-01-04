@@ -4,7 +4,7 @@ use ash::{vk::make_api_version, *};
 use graphyte_engine::ApplicationInfo;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use graphyte_utils::tagged_log;
+use graphyte_utils::*;
 
 pub(crate) fn setup_vulkan_instance(
     application_info: &ApplicationInfo,
@@ -40,9 +40,14 @@ pub(crate) fn setup_vulkan_instance(
     let required_layers = unsafe {
         check_and_get_required_layers(&entry, &graphics_options.instance_validation_layer_names)?
     };
-    let required_extensions = unsafe {
+    let mut required_extensions = unsafe {
         check_and_get_required_extensions(&entry, &graphics_options.instance_extension_names)?
     };
+
+    // Add surface extensions.
+    required_extensions.append(&mut unsafe {
+        check_and_get_required_extensions(&entry, get_required_vulkan_surface_extensions().as_slice())
+    }?);
 
     required_layers.iter().for_each(|ptr|{
         unsafe {
@@ -66,15 +71,15 @@ pub(crate) fn setup_vulkan_instance(
     };
 }
 
-unsafe fn check_and_get_required_layers(
+unsafe fn check_and_get_required_layers<T: AsRef<CStr>>(
     entry: &Entry,
-    required_layers: &[CString],
+    required_layers: &[T],
 ) -> Option<Vec<*const c_char>> {
     let layer_properties = entry.enumerate_instance_layer_properties().ok()?;
     'parent_loop: for required_layer_name in required_layers {
         for layer in &layer_properties {
             let layer_name = CStr::from_ptr(layer.layer_name.as_ptr());
-            if required_layer_name.as_c_str() == layer_name {
+            if required_layer_name.as_ref() == layer_name {
                 continue 'parent_loop;
             }
         }
@@ -84,20 +89,20 @@ unsafe fn check_and_get_required_layers(
     Some(
         required_layers
             .iter()
-            .map(|e| e.as_ptr())
+            .map(|e| e.as_ref().as_ptr())
             .collect::<Vec<_>>(),
     )
 }
 
-unsafe fn check_and_get_required_extensions(
+unsafe fn check_and_get_required_extensions<T: AsRef<CStr>>(
     entry: &Entry,
-    required_extensions: &[CString],
+    required_extensions: &[T],
 ) -> Option<Vec<*const c_char>> {
     let extension_properties = entry.enumerate_instance_extension_properties().ok()?;
     'parent_loop: for required_extension_name in required_extensions {
         for extension_property in &extension_properties {
             let layer_name = CStr::from_ptr(extension_property.extension_name.as_ptr());
-            if required_extension_name.as_c_str() == layer_name {
+            if required_extension_name.as_ref() == layer_name {
                 continue 'parent_loop;
             }
         }
@@ -107,7 +112,46 @@ unsafe fn check_and_get_required_extensions(
     Some(
         required_extensions
             .iter()
-            .map(|e| e.as_ptr())
+            .map(|e| e.as_ref().as_ptr())
             .collect::<Vec<_>>(),
     )
+}
+
+/// Returns a list of required surface extensions per platform.
+fn get_required_vulkan_surface_extensions() -> Vec<&'static CStr> {
+    vec![
+        ash::extensions::khr::Surface::name(),
+        #[cfg(any(
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+        ))]
+            ash::extensions::khr::WaylandSurface::name(),
+        #[cfg(any(
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+        ))]
+            ash::extensions::khr::XlibSurface::name(),
+        #[cfg(any(
+        target_os = "linux",
+        target_os = "dragonfly",
+        target_os = "freebsd",
+        target_os = "netbsd",
+        target_os = "openbsd"
+        ))]
+            ash::extensions::khr::XcbSurface::name(),
+        #[cfg(any(target_os = "android"))]
+            ash::extensions::khr::AndroidSurface::name(),
+        #[cfg(any(target_os = "macos"))]
+            ash::extensions::mvk::MacOSSurface::name(),
+        #[cfg(any(target_os = "ios"))]
+            ash::extensions::mvk::IOSSurface::name(),
+        #[cfg(target_os = "windows")]
+            ash::extensions::khr::Win32Surface::name(),
+    ]
 }

@@ -1,5 +1,5 @@
 use std::ffi::{CStr, CString};
-use crate::{GraphicsOptions, RenderPath};
+use crate::{GraphicsOptions, RenderPath, RenderPathCreateInfo};
 use ash::vk::PhysicalDeviceFeatures;
 use ash::*;
 
@@ -17,7 +17,7 @@ impl RenderPath for ForwardRenderPath {
         vk::PhysicalDeviceFeatures::default()
     }
 
-    fn instantiate(options: GraphicsOptions) -> Option<Self> where Self: Sized {
+    fn instantiate(create_info: RenderPathCreateInfo) -> Option<Self> where Self: Sized {
         Self {}.into()
     }
 

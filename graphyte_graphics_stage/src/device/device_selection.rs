@@ -5,41 +5,27 @@ use graphyte_utils::tagged_log;
 use crate::common::device_feature_utils::meets_required_features;
 
 #[derive(Clone)]
-struct DeviceSelectionInfo {
-    device: vk::PhysicalDevice,
-    properties: vk::PhysicalDeviceProperties,
-    features: vk::PhysicalDeviceFeatures,
-    compatible_paths: Vec<RenderPathDescriptor>
+pub(super) struct DeviceSelectionInfo {
+    pub(super) device: vk::PhysicalDevice,
+    pub(super) properties: vk::PhysicalDeviceProperties,
+    pub(super) features: vk::PhysicalDeviceFeatures,
+    pub(super) compatible_paths: Vec<RenderPathDescriptor>
 }
 
 impl DeviceSelectionInfo {
-    fn device_name(&self) -> &CStr {
+    pub(super) fn device_name(&self) -> &CStr {
         unsafe { CStr::from_ptr(self.properties.device_name.as_ptr()) }
     }
-    fn is_integrated_gpu(&self) -> bool {
+    pub(super) fn is_integrated_gpu(&self) -> bool {
         self.properties.device_type == vk::PhysicalDeviceType::INTEGRATED_GPU
     }
-    fn is_dedicated_gpu(&self) -> bool {
+    pub(super) fn is_dedicated_gpu(&self) -> bool {
         self.properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU
     }
 }
 
-/// Selects the device and a compatible render path to use in the rendering engine.
-pub(super) fn select_device_and_render_path(instance: &Instance, options: &GraphicsOptions) -> Option<(GraphicsDevice, Box<dyn RenderPath>)> {
-    let path_descriptors = [
-        RenderPathDescriptor::new::<ForwardRenderPath>()
-    ];
-    let devices = collect_compatible_devices(instance, &path_descriptors)?;
-    let selected_device = select_device(&options, devices)?;
-
-    tagged_log!("Graphics", "Selected GPU: {:#?}", selected_device.device_name());
-
-    None
-}
-
-
 /// Selects a device to use based on the provided configuration options.
-fn select_device(options: &GraphicsOptions, compatible_devices: Vec<DeviceSelectionInfo>) -> Option<DeviceSelectionInfo> {
+pub(super) fn select_device(options: &GraphicsOptions, compatible_devices: Vec<DeviceSelectionInfo>) -> Option<DeviceSelectionInfo> {
     // Check the preferred devices.
     if compatible_devices.is_empty() { return None }
 
@@ -70,7 +56,7 @@ fn select_device(options: &GraphicsOptions, compatible_devices: Vec<DeviceSelect
 
 
 /// Collects all devices that are compatible with any of the render paths.
-fn collect_compatible_devices(instance: &Instance, render_paths: &[RenderPathDescriptor]) -> Option<Vec<DeviceSelectionInfo>> {
+pub(super) fn collect_compatible_devices(instance: &Instance, render_paths: &[RenderPathDescriptor]) -> Option<Vec<DeviceSelectionInfo>> {
     let devices = unsafe { instance.enumerate_physical_devices().ok()? };
 
     // Prepare the set of available devices.
