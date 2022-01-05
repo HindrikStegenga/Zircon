@@ -1,9 +1,11 @@
 use crate::*;
+use graphyte_engine::message_bus::*;
 use graphyte_engine::*;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};
 
 #[derive(Debug)]
 pub struct WinitPlatformInterface<'a> {
+    pub(crate) window_open_sender: Option<MessageSender<WindowDidOpen>>,
     pub(crate) platform: &'a mut WinitPlatform,
     pub(crate) event_loop: &'a EventLoopWindowTarget<()>,
 }
@@ -11,9 +13,13 @@ pub struct WinitPlatformInterface<'a> {
 impl<'a> WinitPlatformInterface<'a> {
     pub fn new(platform: &'a mut WinitPlatform, event_loop: &'a EventLoopWindowTarget<()>) -> Self {
         Self {
+            window_open_sender: None,
             platform,
             event_loop,
         }
+    }
+    pub fn set_message_sender(&mut self, sender: MessageSender<WindowDidOpen>) {
+        self.window_open_sender = Some(sender);
     }
 }
 
@@ -63,6 +69,12 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                     handle: PlatformWindowHandle::from(id),
                     intent: None,
                 };
+                if let Some(v) = &self.window_open_sender {
+                    v.send(WindowDidOpen {
+                        window: PlatformWindowHandle::from(id),
+                    })
+                }
+
                 self.platform.windows.push(window);
                 Some(self.platform.windows.last_mut().unwrap())
             }

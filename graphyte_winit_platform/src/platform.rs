@@ -1,5 +1,6 @@
 use crate::*;
 use graphyte_engine::{engine::controller::EngineController, *};
+use winit::window::WindowId;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
@@ -28,8 +29,37 @@ impl Platform for WinitPlatform {
         let mut interface = WinitPlatformInterface::new(&mut self, &event_loop);
         controller.initialize(&mut interface);
         controller.run();
-        let message_bus = controller.shared().resources.get_engine_resource::<MessageBus>().expect("Requires a message bus!");
+
+        let message_bus = controller
+            .shared()
+            .resources
+            .get_engine_resource::<MessageBus>()
+            .expect("Requires a message bus!");
+
         let window_resize_sender = message_bus.get_sender::<WindowDidResize>();
+        let window_close_sender = message_bus.get_sender::<WindowDidClose>();
+
+        if let Some(window_open_sender) = message_bus.get_sender::<WindowDidOpen>() {
+            interface.set_message_sender(window_open_sender);
+        }
+
+        interface.request_window(1025, 768, "Primary window");
+
+        fn find_window(
+            platform: &mut WinitPlatform,
+            window_id: WindowId,
+            mut closure: impl FnMut(&mut WinitPlatform, usize),
+        ) {
+            if let Some(window_idx) = platform
+                .windows
+                .iter()
+                .enumerate()
+                .find(|(_, e)| window_id == e.window.id())
+                .map(|(idx, _)| idx)
+            {
+                (closure)(platform, window_idx);
+            }
+        }
 
         event_loop.run(move |event, window_target, control_flow| {
             *control_flow = ControlFlow::Poll;
@@ -47,38 +77,35 @@ impl Platform for WinitPlatform {
                     event: WindowEvent::Resized(size),
                     window_id,
                 } => {
-                    if let Some(window_idx) = self
-                        .windows
-                        .iter()
-                        .enumerate()
-                        .find(|(_, e)| window_id == e.window.id())
-                        .map(|(idx, _)| idx)
-                    {
+                    find_window(&mut self, window_id, |platform, window_idx| {
                         if let Some(resize_handler) = &window_resize_sender {
-                            let handle = self.windows[window_idx].handle;
-                            tagged_log!("Winit", "Window resized: {} - {}", size.width, size.height);
+                            let handle = platform.windows[window_idx].handle;
+                            tagged_log!(
+                                "Winit",
+                                "Window resized: {} - {}",
+                                size.width,
+                                size.height
+                            );
                             resize_handler.send(WindowDidResize {
                                 window: handle,
                                 new_width: size.width,
-                                new_height: size.height
+                                new_height: size.height,
                             })
                         }
-
-                    }
+                    });
                 }
                 Event::WindowEvent {
                     event: WindowEvent::CloseRequested,
                     window_id,
                 } => {
-                    if let Some(window_idx) = self
-                        .windows
-                        .iter()
-                        .enumerate()
-                        .find(|(_, e)| window_id == e.window.id())
-                        .map(|(idx, _)| idx)
-                    {
-                        self.windows.remove(window_idx);
-                    }
+                    find_window(&mut self, window_id, |platform, window_idx| {
+                        if let Some(resize_handler) = &window_close_sender {
+                            let handle = platform.windows[window_idx].handle;
+                            tagged_log!("Winit", "Window closed.");
+                            resize_handler.send(WindowDidClose { window: handle })
+                        }
+                        platform.windows.remove(window_idx);
+                    });
                     if self.windows.is_empty() {
                         *control_flow = ControlFlow::Exit;
                         return;

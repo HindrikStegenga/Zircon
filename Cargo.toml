@@ -6,5 +6,6 @@ members = [
     "graphyte_utils",
     "graphyte_graphics_stage",
     "graphyte_winit_platform",
-    "graphyte_asset_library"
+    "graphyte_asset_library",
+    "graphyte_scripting"
 ]

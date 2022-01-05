@@ -1,12 +1,20 @@
+use crate::scene_manager::SceneHandle;
 use graphyte_utils::handles::*;
 use shard_ecs::*;
 
 pub struct Scene {
-    handle: Handle<Scene, u32>,
+    handle: SceneHandle,
     registry: Registry,
 }
 
 impl Scene {
+    pub(super) fn new(handle: SceneHandle) -> Scene {
+        Self {
+            handle,
+            registry: Default::default(),
+        }
+    }
+
     pub fn handle(&self) -> Handle<Scene, u32> {
         self.handle
     }
@@ -20,15 +28,15 @@ impl Scene {
 
 #[derive(Clone)]
 pub struct SceneDidBecomeCurrent {
-    scene: Handle<Scene, u32>,
+    scene: SceneHandle,
 }
 
 #[derive(Clone)]
 pub struct SceneWasCreated {
-    scene: Handle<Scene, u32>,
+    scene: SceneHandle,
 }
 
 #[derive(Clone)]
 pub struct SceneWasDestroyed {
-    scene: Handle<Scene, u32>,
+    scene: SceneHandle,
 }

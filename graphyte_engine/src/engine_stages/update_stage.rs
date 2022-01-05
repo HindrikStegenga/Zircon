@@ -1,6 +1,7 @@
 use super::*;
 use crate::message_bus::{AnyMessageRegisterer, RenderMessageRegisterer};
 use crate::resource_manager::EngineResourceManager;
+use crate::scene_manager::{Scene, SceneManager};
 use crate::{EngineUpdateResult, PlatformInterface, UpdateMessageRegisterer};
 use graphyte_utils::dispatcher::Dispatcher;
 use std::marker::PhantomData;
@@ -27,7 +28,7 @@ impl<'a> UpdateStageConstructorInput<'a> {
 }
 
 pub struct UpdateStageUpdateInput<'a> {
-    _phantom: PhantomData<&'a ()>,
+    scene_manager: &'a mut SceneManager,
     resources: Arc<EngineResourceManager>,
     dispatcher: Arc<Dispatcher>,
 }
@@ -39,12 +40,22 @@ impl<'a> UpdateStageUpdateInput<'a> {
     pub fn dispatcher(&self) -> &Arc<Dispatcher> {
         &self.dispatcher
     }
+    pub fn scene_manager(&self) -> &SceneManager {
+        self.scene_manager
+    }
+    pub fn scene_manager_mut(&mut self) -> &mut SceneManager {
+        self.scene_manager
+    }
 }
 
 impl<'a> UpdateStageUpdateInput<'a> {
-    pub fn new(resources: Arc<EngineResourceManager>, dispatcher: Arc<Dispatcher>) -> Self {
+    pub fn new(
+        resources: Arc<EngineResourceManager>,
+        dispatcher: Arc<Dispatcher>,
+        scene_manager: &'a mut SceneManager,
+    ) -> Self {
         Self {
-            _phantom: Default::default(),
+            scene_manager,
             resources,
             dispatcher,
         }

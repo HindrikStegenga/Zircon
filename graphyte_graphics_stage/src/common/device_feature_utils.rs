@@ -1,6 +1,5 @@
 use ash::*;
 
-
 pub(crate) fn combine_features(
     left: vk::PhysicalDeviceFeatures,
     right: vk::PhysicalDeviceFeatures,
@@ -445,7 +444,9 @@ pub(crate) fn meets_required_features(
     if required.sampler_anisotropy == vk::TRUE && features.sampler_anisotropy == vk::FALSE {
         return false;
     }
-    if required.texture_compression_etc2 == vk::TRUE && features.texture_compression_etc2 == vk::FALSE {
+    if required.texture_compression_etc2 == vk::TRUE
+        && features.texture_compression_etc2 == vk::FALSE
+    {
         return false;
     }
     if required.texture_compression_astc_ldr == vk::TRUE
@@ -456,10 +457,12 @@ pub(crate) fn meets_required_features(
     if required.texture_compression_bc == vk::TRUE && features.texture_compression_bc == vk::FALSE {
         return false;
     }
-    if required.occlusion_query_precise == vk::TRUE && features.occlusion_query_precise == vk::FALSE {
+    if required.occlusion_query_precise == vk::TRUE && features.occlusion_query_precise == vk::FALSE
+    {
         return false;
     }
-    if required.pipeline_statistics_query == vk::TRUE && features.pipeline_statistics_query == vk::FALSE
+    if required.pipeline_statistics_query == vk::TRUE
+        && features.pipeline_statistics_query == vk::FALSE
     {
         return false;
     }
@@ -538,36 +541,44 @@ pub(crate) fn meets_required_features(
     if required.shader_int16 == vk::TRUE && features.shader_int16 == vk::FALSE {
         return false;
     }
-    if required.shader_resource_residency == vk::TRUE && features.shader_resource_residency == vk::FALSE
+    if required.shader_resource_residency == vk::TRUE
+        && features.shader_resource_residency == vk::FALSE
     {
         return false;
     }
-    if required.shader_resource_min_lod == vk::TRUE && features.shader_resource_min_lod == vk::FALSE {
+    if required.shader_resource_min_lod == vk::TRUE && features.shader_resource_min_lod == vk::FALSE
+    {
         return false;
     }
     if required.sparse_binding == vk::TRUE && features.sparse_binding == vk::FALSE {
         return false;
     }
-    if required.sparse_residency_buffer == vk::TRUE && features.sparse_residency_buffer == vk::FALSE {
-        return false;
-    }
-    if required.sparse_residency_image2_d == vk::TRUE && features.sparse_residency_image2_d == vk::FALSE
+    if required.sparse_residency_buffer == vk::TRUE && features.sparse_residency_buffer == vk::FALSE
     {
         return false;
     }
-    if required.sparse_residency_image3_d == vk::TRUE && features.sparse_residency_image3_d == vk::FALSE
+    if required.sparse_residency_image2_d == vk::TRUE
+        && features.sparse_residency_image2_d == vk::FALSE
     {
         return false;
     }
-    if required.sparse_residency2_samples == vk::TRUE && features.sparse_residency2_samples == vk::FALSE
+    if required.sparse_residency_image3_d == vk::TRUE
+        && features.sparse_residency_image3_d == vk::FALSE
     {
         return false;
     }
-    if required.sparse_residency4_samples == vk::TRUE && features.sparse_residency4_samples == vk::FALSE
+    if required.sparse_residency2_samples == vk::TRUE
+        && features.sparse_residency2_samples == vk::FALSE
     {
         return false;
     }
-    if required.sparse_residency8_samples == vk::TRUE && features.sparse_residency8_samples == vk::FALSE
+    if required.sparse_residency4_samples == vk::TRUE
+        && features.sparse_residency4_samples == vk::FALSE
+    {
+        return false;
+    }
+    if required.sparse_residency8_samples == vk::TRUE
+        && features.sparse_residency8_samples == vk::FALSE
     {
         return false;
     }
@@ -576,10 +587,13 @@ pub(crate) fn meets_required_features(
     {
         return false;
     }
-    if required.sparse_residency_aliased == vk::TRUE && features.sparse_residency_aliased == vk::FALSE {
+    if required.sparse_residency_aliased == vk::TRUE
+        && features.sparse_residency_aliased == vk::FALSE
+    {
         return false;
     }
-    if required.variable_multisample_rate == vk::TRUE && features.variable_multisample_rate == vk::FALSE
+    if required.variable_multisample_rate == vk::TRUE
+        && features.variable_multisample_rate == vk::FALSE
     {
         return false;
     }

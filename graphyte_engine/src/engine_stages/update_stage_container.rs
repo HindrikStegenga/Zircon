@@ -1,7 +1,7 @@
-use std::marker::PhantomData;
 use crate::engine_stages::{AnyUpdateStage, UpdateStage, UpdateStageUpdateInput};
 use crate::message_bus::*;
 use crate::EngineUpdateResult;
+use std::marker::PhantomData;
 
 pub struct UpdateStageContainer<T: UpdateStage> {
     stage: T,
@@ -9,7 +9,7 @@ pub struct UpdateStageContainer<T: UpdateStage> {
 }
 
 pub struct UpdateStageMessageContext<'a> {
-    phantom: PhantomData<fn(&'a u32)>
+    phantom: PhantomData<fn(&'a u32)>,
 }
 
 impl<T: UpdateStage> From<T> for UpdateStageContainer<T> {
@@ -28,9 +28,12 @@ impl<T: UpdateStage> AnyUpdateStage for UpdateStageContainer<T> {
 
     fn process_events(&mut self) {
         for receiver in self.receivers.iter_mut() {
-            receiver.receive_messages(&mut self.stage, &mut UpdateStageMessageContext {
-                phantom: Default::default()
-            });
+            receiver.receive_messages(
+                &mut self.stage,
+                &mut UpdateStageMessageContext {
+                    phantom: Default::default(),
+                },
+            );
         }
     }
 

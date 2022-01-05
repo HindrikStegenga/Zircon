@@ -1,6 +1,6 @@
-use std::ffi::{CStr, CString};
-use ash::*;
 use crate::{ForwardRenderPath, GraphicsOptions};
+use ash::*;
+use std::ffi::{CStr, CString};
 
 #[derive(Clone)]
 pub(crate) struct RenderPathDescriptor {
@@ -22,7 +22,7 @@ impl RenderPathDescriptor {
 }
 
 pub(crate) struct RenderPathCreateInfo<'a> {
-    pub options: &'a GraphicsOptions
+    pub options: &'a GraphicsOptions,
 }
 
 impl RenderPathDescriptor {
@@ -32,9 +32,11 @@ impl RenderPathDescriptor {
             instantiate_fn: |create_info| {
                 return if let Some(value) = T::instantiate(create_info) {
                     Some(Box::from(value))
-                } else { None }
+                } else {
+                    None
+                };
             },
-            identifier: T::render_path_identifier()
+            identifier: T::render_path_identifier(),
         }
     }
 }

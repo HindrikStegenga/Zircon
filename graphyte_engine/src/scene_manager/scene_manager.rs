@@ -1,38 +1,35 @@
 use super::*;
 use dashmap::DashMap;
 use graphyte_utils::handles::Handle;
-use std::sync::atomic::{AtomicU32, Ordering};
+use std::collections::HashMap;
+
+pub type SceneHandle = Handle<Scene, u32>;
 
 pub struct SceneManager {
-    counter: AtomicU32,
-    current_scene: Option<AtomicU32>,
-    scenes: DashMap<u32, Scene>,
+    counter: u32,
+    active: SceneHandle,
+    scenes: HashMap<SceneHandle, Scene>,
 }
 
 impl Default for SceneManager {
     fn default() -> Self {
+        let scene = Scene::new(Handle::from(0));
+        let mut scenes: HashMap<SceneHandle, Scene> = Default::default();
+        scenes.insert(Handle::from(0), scene);
         Self {
-            counter: AtomicU32::new(0),
-            current_scene: None,
-            scenes: Default::default(),
+            counter: 1,
+            active: Handle::from(0),
+            scenes,
         }
     }
 }
 
 impl SceneManager {
-    pub fn add_scene(&self, scene: Scene) -> Handle<Scene, u32> {
-        let value = self.counter.fetch_add(1, Ordering::SeqCst);
-        self.scenes.insert(value, scene);
-        return Handle::from(value);
+    pub fn active_scene(&self) -> &Scene {
+        self.scenes.get(&self.active).unwrap()
     }
 
-    pub fn remove_scene(&self, handle: Handle<Scene, u32>) -> Option<Scene> {
-        let (_, s) = self.scenes.remove(&handle.value)?;
-        Some(s)
-    }
-
-    pub fn make_current(&self, handle: Handle<Scene, u32>) -> bool {
-        self.counter.swap(handle.value, Ordering::SeqCst);
-        return true;
+    pub fn active_scene_mut(&mut self) -> &mut Scene {
+        self.scenes.get_mut(&self.active).unwrap()
     }
 }

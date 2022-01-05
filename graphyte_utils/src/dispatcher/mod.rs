@@ -41,9 +41,8 @@ unsafe impl Sync for Dispatcher {}
 impl Dispatcher {
     pub fn tick_async_executor(self: &Arc<Self>) {
         let another_self = Arc::clone(&self);
-        self.thread_pool.spawn(move || {
-            while another_self.executor.try_tick() {}
-        });
+        self.thread_pool
+            .spawn(move || while another_self.executor.try_tick() {});
     }
 
     pub fn dispatch_async<T: Send + 'static>(

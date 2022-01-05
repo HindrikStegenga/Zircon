@@ -1,9 +1,11 @@
 use super::*;
+use crate::scene_manager::{Scene, SceneManager};
 use crate::{engine::result::*, engine_stages::*};
 use graphyte_utils::dispatcher::Dispatcher;
 use std::sync::{Arc, Condvar, Mutex};
 
 pub(super) struct UpdateStagesThreadedState {
+    scene_manager: SceneManager,
     /// The update stages.
     stages: Vec<Box<dyn AnyUpdateStage>>,
     /// Last result of the threaded loop.
@@ -22,6 +24,7 @@ pub(super) struct UpdateStagesRunner {
 
 impl UpdateStagesRunner {
     pub fn new(
+        scene_manager: SceneManager,
         stages: Vec<Box<dyn AnyUpdateStage>>,
         render_stage_pre_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
         render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
@@ -32,6 +35,7 @@ impl UpdateStagesRunner {
                 Mutex::new((
                     false,
                     UpdateStagesThreadedState {
+                        scene_manager,
                         stages,
                         last_result: None,
                         render_stage_pre_update_fns,
@@ -68,6 +72,7 @@ impl UpdateStagesRunner {
                     let msg = (update_fn)(UpdateStageUpdateInput::new(
                         resources.clone(),
                         dispatcher.clone(),
+                        &mut threaded_state.scene_manager,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -81,6 +86,7 @@ impl UpdateStagesRunner {
                     let msg = system.update(UpdateStageUpdateInput::new(
                         resources.clone(),
                         dispatcher.clone(),
+                        &mut threaded_state.scene_manager,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -94,6 +100,7 @@ impl UpdateStagesRunner {
                     let msg = (update_fn)(UpdateStageUpdateInput::new(
                         resources.clone(),
                         dispatcher.clone(),
+                        &mut threaded_state.scene_manager,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -101,10 +108,6 @@ impl UpdateStagesRunner {
                     threaded_state.last_result = Some(msg);
                     return;
                 }
-
-                // Completed update (copying state to render system thread)
-                //let universe = threaded_state.universe.as_mut();
-                //universe.update_render_state(&mut threaded_state.special_fns);
 
                 guard.0 = true;
                 cnd.notify_one();

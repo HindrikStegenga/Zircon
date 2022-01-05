@@ -4,6 +4,7 @@ use graphyte_asset_library::dispatcher::Dispatcher;
 
 use super::*;
 use crate::engine_stages::*;
+use crate::scene_manager::{Scene, SceneManager};
 use crate::*;
 
 pub struct Initialized {
@@ -36,6 +37,7 @@ impl Into<EngineStateMachine<Running>> for EngineStateMachine<Initialized> {
             state: Running {
                 dispatch_system: Arc::clone(&dispatch_system),
                 update_stages_runner: UpdateStagesRunner::new(
+                    SceneManager::default(),
                     self.state.update_stages,
                     render_stage_pre_update_fns,
                     render_stage_post_update_fns,

@@ -2,9 +2,9 @@ use crate::GraphicsOptions;
 use ash::prelude::VkResult;
 use ash::{vk::make_api_version, *};
 use graphyte_engine::ApplicationInfo;
+use graphyte_utils::*;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use graphyte_utils::*;
 
 pub(crate) fn setup_vulkan_instance(
     application_info: &ApplicationInfo,
@@ -46,18 +46,25 @@ pub(crate) fn setup_vulkan_instance(
 
     // Add surface extensions.
     required_extensions.append(&mut unsafe {
-        check_and_get_required_extensions(&entry, get_required_vulkan_surface_extensions().as_slice())
+        check_and_get_required_extensions(
+            &entry,
+            get_required_vulkan_surface_extensions().as_slice(),
+        )
     }?);
 
-    required_layers.iter().for_each(|ptr|{
-        unsafe {
-            tagged_log!("Graphics", "Enabled instance layer: {:#?}", CStr::from_ptr(*ptr));
-        }
+    required_layers.iter().for_each(|ptr| unsafe {
+        tagged_log!(
+            "Graphics",
+            "Enabled instance layer: {:#?}",
+            CStr::from_ptr(*ptr)
+        );
     });
-    required_extensions.iter().for_each(|ptr|{
-        unsafe {
-            tagged_log!("Graphics", "Enabled instance extension: {:#?}", CStr::from_ptr(*ptr));
-        }
+    required_extensions.iter().for_each(|ptr| unsafe {
+        tagged_log!(
+            "Graphics",
+            "Enabled instance extension: {:#?}",
+            CStr::from_ptr(*ptr)
+        );
     });
 
     let instance_create_info = vk::InstanceCreateInfo::builder()
@@ -122,36 +129,36 @@ fn get_required_vulkan_surface_extensions() -> Vec<&'static CStr> {
     vec![
         ash::extensions::khr::Surface::name(),
         #[cfg(any(
-        target_os = "linux",
-        target_os = "dragonfly",
-        target_os = "freebsd",
-        target_os = "netbsd",
-        target_os = "openbsd"
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
         ))]
-            ash::extensions::khr::WaylandSurface::name(),
+        ash::extensions::khr::WaylandSurface::name(),
         #[cfg(any(
-        target_os = "linux",
-        target_os = "dragonfly",
-        target_os = "freebsd",
-        target_os = "netbsd",
-        target_os = "openbsd"
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
         ))]
-            ash::extensions::khr::XlibSurface::name(),
+        ash::extensions::khr::XlibSurface::name(),
         #[cfg(any(
-        target_os = "linux",
-        target_os = "dragonfly",
-        target_os = "freebsd",
-        target_os = "netbsd",
-        target_os = "openbsd"
+            target_os = "linux",
+            target_os = "dragonfly",
+            target_os = "freebsd",
+            target_os = "netbsd",
+            target_os = "openbsd"
         ))]
-            ash::extensions::khr::XcbSurface::name(),
+        ash::extensions::khr::XcbSurface::name(),
         #[cfg(any(target_os = "android"))]
-            ash::extensions::khr::AndroidSurface::name(),
+        ash::extensions::khr::AndroidSurface::name(),
         #[cfg(any(target_os = "macos"))]
-            ash::extensions::mvk::MacOSSurface::name(),
+        ash::extensions::mvk::MacOSSurface::name(),
         #[cfg(any(target_os = "ios"))]
-            ash::extensions::mvk::IOSSurface::name(),
+        ash::extensions::mvk::IOSSurface::name(),
         #[cfg(target_os = "windows")]
-            ash::extensions::khr::Win32Surface::name(),
+        ash::extensions::khr::Win32Surface::name(),
     ]
 }

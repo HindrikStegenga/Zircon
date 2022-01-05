@@ -1,7 +1,7 @@
 use super::*;
+use crate::engine_stages::{RenderStageMessageContext, UpdateStageMessageContext};
 use crossbeam::channel::*;
 use std::marker::PhantomData;
-use crate::engine_stages::{RenderStageMessageContext, UpdateStageMessageContext};
 
 pub struct AnyMessageRegisterer<'a> {
     builder: &'a mut MessageBusBuilder,
@@ -68,8 +68,8 @@ impl<'a, T: 'static> UpdateMessageRegisterer<'a, T> {
     }
 
     pub fn register<M: Message>(&mut self)
-        where
-            T: for<'b> MessageHandler<UpdateStageMessageContext<'b>, M>,
+    where
+        T: for<'b> MessageHandler<UpdateStageMessageContext<'b>, M>,
     {
         let receiver = self.registerer.register::<M>();
         self.receivers

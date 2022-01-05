@@ -1,8 +1,8 @@
-use std::sync::Arc;
 use super::instance_setup::*;
-use graphyte_engine::*;
-use graphyte_engine::engine_stages::RenderStageMessageContext;
 use crate::*;
+use graphyte_engine::engine_stages::RenderStageMessageContext;
+use graphyte_engine::*;
+use std::sync::Arc;
 
 pub struct GraphicsStage {
     entry: ash::Entry,
@@ -13,20 +13,22 @@ pub struct GraphicsStage {
 impl GraphicsStage {
     pub fn new(create_info: GraphicsStageCreateInfo) -> Option<Self> {
         let (entry, instance) = {
-            let (entry, instance) = setup_vulkan_instance(&create_info.application_info, &create_info.options)?;
+            let (entry, instance) =
+                setup_vulkan_instance(&create_info.application_info, &create_info.options)?;
             (entry, Arc::new(instance))
         };
         tagged_success!("Graphics", "Successfully set-up vulkan instance!");
+        let device = GraphicsDevice::new(GraphicsDeviceCreateInfo {
+            instance: Arc::clone(&instance),
+            options: &create_info.options,
+        })?;
 
-        create_info.platform.request_window(600, 480, "asdf");
-
-        let device = GraphicsDevice::new(
-            GraphicsDeviceCreateInfo {
-                instance: Arc::clone(&instance),
-                options: &create_info.options
-            })?;
-
-        Self { entry, instance, device }.into()
+        Self {
+            entry,
+            instance,
+            device,
+        }
+        .into()
     }
 }
 
@@ -46,14 +48,15 @@ impl RenderStage for GraphicsStage {
 
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidOpen) {
-
+        let window = context.platform.get_window(message.window).unwrap();
+        tagged_log!("Graphics", "WindowDidOpen message received!");
     }
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
-    fn handle(&mut self, context: &mut RenderStageMessageContext,message: WindowDidClose) {}
+    fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidClose) {}
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for GraphicsStage {
-    fn handle(&mut self, context: &mut RenderStageMessageContext,message: WindowDidResize) {
+    fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidResize) {
         let window = context.platform.get_window(message.window).unwrap();
         tagged_log!("Graphics", "WindowResized message received!");
     }

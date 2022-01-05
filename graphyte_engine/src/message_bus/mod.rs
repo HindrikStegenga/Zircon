@@ -9,4 +9,5 @@ pub use message::*;
 pub use message_bus::*;
 pub use message_handler::*;
 pub use message_receiver::*;
+pub use message_sender::*;
 pub use registerers::*;
