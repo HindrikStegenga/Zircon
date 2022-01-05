@@ -1,9 +1,11 @@
-use crate::device::device_selection::{collect_compatible_devices, DeviceSelectionInfo, select_device};
+use crate::device::device_selection::{
+    collect_compatible_devices, select_device, DeviceSelectionInfo,
+};
+use crate::device::queue_types::DeviceQueue;
 use crate::{ForwardRenderPath, GraphicsOptions, RenderPath, RenderPathDescriptor};
 use ash::*;
 use std::sync::Arc;
 use std::vec::Vec;
-use crate::device::queue_types::DeviceQueue;
 
 pub(crate) struct GraphicsDevice {
     instance: Arc<Instance>,
@@ -26,7 +28,8 @@ impl GraphicsDevice {
 
         let compatible_devices = collect_compatible_devices(instance, &render_path_descriptors)?;
         let graphics_device = select_device(create_info.options, compatible_devices)?;
-        let creation_result = super::setup::setup_device(instance, &graphics_device, create_info.options)?;
+        let creation_result =
+            super::setup::setup_device(instance, &graphics_device, create_info.options)?;
 
         Self {
             instance: Arc::clone(&create_info.instance),
@@ -37,8 +40,6 @@ impl GraphicsDevice {
         }
         .into()
     }
-
-
 }
 
 impl Drop for GraphicsDevice {

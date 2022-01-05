@@ -1,13 +1,13 @@
-use super::instance_setup::*;
-use super::render_target::*;
 use super::debug_extension::*;
+use super::instance_setup::*;
+use crate::common::vk_library_wrapper::VkLibraryWrapper;
+use crate::render_target::*;
 use crate::*;
+use ash::extensions::ext::DebugUtils;
+use ash::vk::DebugUtilsMessengerEXT;
 use graphyte_engine::engine_stages::RenderStageMessageContext;
 use graphyte_engine::*;
 use std::sync::Arc;
-use ash::extensions::ext::DebugUtils;
-use ash::vk::DebugUtilsMessengerEXT;
-use crate::common::vk_library_wrapper::VkLibraryWrapper;
 
 pub struct GraphicsStage {
     render_targets: Vec<WindowRenderTargetBinding>,
@@ -37,7 +37,7 @@ impl GraphicsStage {
             debug_messenger,
             graphics_options: create_info.options,
             device,
-            render_targets: vec![]
+            render_targets: vec![],
         }
         .into()
     }
@@ -60,8 +60,8 @@ impl RenderStage for GraphicsStage {
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidOpen) {
         let window = context.platform.get_window(message.window).unwrap();
-
-
+        let (entry, instance) = self.vk.entry_and_instance();
+        let surface = get_vulkan_surface(entry, instance, &window.raw_platform_handle());
     }
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {

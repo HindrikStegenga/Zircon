@@ -11,6 +11,6 @@ graphyte_math = { path = "../graphyte_math" }
 graphyte_utils = { path = "../graphyte_utils" }
 serde = { version = "1.0", features = ["derive"] }
 
-egui = { version = "0.15" }
-erupt = { version = "0.19", features = ["surface", "loading"] }
-ash = { version = "0.33" }
+egui = { version = "0.16" }
+ash = { version = "0.35" }
+ash-window = "0.9"

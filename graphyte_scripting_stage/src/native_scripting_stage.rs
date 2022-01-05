@@ -9,7 +9,6 @@ impl Default for NativeScriptingStage {
     }
 }
 
-
 impl UpdateStage for NativeScriptingStage {
     const IDENTIFIER: &'static str = "NativeScripting";
 

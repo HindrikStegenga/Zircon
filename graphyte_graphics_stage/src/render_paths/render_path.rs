@@ -11,7 +11,9 @@ pub(crate) struct RenderPathDescriptor {
 }
 
 impl RenderPathDescriptor {
-    pub fn required_extensions(&self) -> &Vec<CString> { &self.required_extensions }
+    pub fn required_extensions(&self) -> &Vec<CString> {
+        &self.required_extensions
+    }
     pub fn required_features(&self) -> vk::PhysicalDeviceFeatures {
         self.required_features
     }

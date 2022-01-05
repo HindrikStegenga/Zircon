@@ -1,10 +1,10 @@
+use ash::*;
 use std::ops::Deref;
 use std::sync::Arc;
-use ash::*;
 
 pub(super) struct VkLibraryWrapper {
     instance: Arc<Instance>,
-    entry: ash::Entry
+    entry: ash::Entry,
 }
 
 impl VkLibraryWrapper {
@@ -24,6 +24,10 @@ impl Deref for VkLibraryWrapper {
 impl VkLibraryWrapper {
     pub fn instance(&self) -> &Instance {
         &self.instance
+    }
+
+    pub fn entry_and_instance(&self) -> (&Entry, &Instance) {
+        (&self.entry, &self.instance)
     }
 }
 

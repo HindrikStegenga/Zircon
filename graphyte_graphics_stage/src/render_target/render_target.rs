@@ -1,7 +1,7 @@
+use crate::RenderPath;
 use ash::extensions::khr::Swapchain;
 use ash::*;
 use graphyte_engine::PlatformWindowHandle;
-use crate::RenderPath;
 
 pub struct WindowRenderTarget {
     window: PlatformWindowHandle,
@@ -11,7 +11,7 @@ pub struct WindowRenderTarget {
 pub struct WindowRenderTargetBinding {
     window_render_target: WindowRenderTarget,
     swap_chain: Swapchain,
-    render_path: Box<dyn RenderPath>
+    render_path: Box<dyn RenderPath>,
 }
 
 pub enum RenderTarget {

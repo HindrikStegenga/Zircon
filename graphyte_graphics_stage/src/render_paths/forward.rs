@@ -13,7 +13,10 @@ impl RenderPath for ForwardRenderPath {
         CString::new(b"Forward" as &[u8]).unwrap()
     }
 
-    fn required_device_extensions() -> Vec<CString> where Self: Sized {
+    fn required_device_extensions() -> Vec<CString>
+    where
+        Self: Sized,
+    {
         vec![CString::from(ash::extensions::khr::Swapchain::name())]
     }
 

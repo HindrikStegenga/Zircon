@@ -1,6 +1,6 @@
-use ash::*;
-use ash::extensions::ext::{DebugUtils};
+use ash::extensions::ext::DebugUtils;
 use ash::vk::DebugUtilsMessengerEXT;
+use ash::*;
 
 pub(super) struct DebugExtension {
     messenger: DebugUtilsMessengerEXT,
@@ -16,7 +16,8 @@ impl DebugExtension {
 impl Drop for DebugExtension {
     fn drop(&mut self) {
         unsafe {
-            self.utils.destroy_debug_utils_messenger(self.messenger, None);
+            self.utils
+                .destroy_debug_utils_messenger(self.messenger, None);
         }
     }
 }
