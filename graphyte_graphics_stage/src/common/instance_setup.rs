@@ -7,6 +7,7 @@ use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
 use ash::extensions::ext::DebugUtils;
 use ash::vk::{DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessengerEXT, Flags};
+use crate::common::debug_extension::DebugExtension;
 
 pub(crate) fn setup_vulkan_instance(
     application_info: &ApplicationInfo,
@@ -174,7 +175,7 @@ fn get_required_vulkan_surface_extensions() -> Vec<&'static CStr> {
     ]
 }
 
-pub(super) fn setup_debug_utils_messenger(entry: &Entry, instance: &Instance, options: &GraphicsOptions) -> Option<(DebugUtils, DebugUtilsMessengerEXT)> {
+pub(super) fn setup_debug_utils_messenger(entry: &Entry, instance: &Instance, options: &GraphicsOptions) -> Option<DebugExtension> {
     if !options.enable_debug_utils { return None; }
     let debug_utils = ash::extensions::ext::DebugUtils::new(entry, instance);
     let debug_create_info = vk::DebugUtilsMessengerCreateInfoEXT::builder()
@@ -187,7 +188,7 @@ pub(super) fn setup_debug_utils_messenger(entry: &Entry, instance: &Instance, op
             | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION)
         .pfn_user_callback(Some(vulkan_debug_utils_callback));
     let messenger = unsafe { debug_utils.create_debug_utils_messenger(&debug_create_info, None).ok()? };
-    Some((debug_utils, messenger))
+    Some(DebugExtension::new(messenger, debug_utils))
 }
 
 unsafe extern "system" fn vulkan_debug_utils_callback(

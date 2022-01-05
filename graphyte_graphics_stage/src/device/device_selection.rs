@@ -3,6 +3,7 @@ use crate::*;
 use ash::*;
 use graphyte_utils::tagged_log;
 use std::ffi::{CStr, CString};
+use std::os::raw::c_char;
 use ash::prelude::VkResult;
 use crate::device::queue_types::QueueFamilySelectionInfo;
 use crate::device_feature_utils::combine_features;
@@ -17,6 +18,19 @@ pub(super) struct DeviceSelectionInfo {
 }
 
 impl DeviceSelectionInfo {
+
+    pub(super) unsafe fn get_extension_names(&self) -> Vec<*const c_char> {
+        let mut chars : Vec<&CStr> = vec![];
+        for path in &self.compatible_paths {
+            for extension in path.required_extensions() {
+                if !chars.contains(&extension.as_c_str()) {
+                    chars.push(extension.as_c_str());
+                }
+            }
+        }
+        chars.iter().map(|e|e.as_ptr()).collect()
+    }
+
     pub(super) fn device_name(&self) -> &CStr {
         unsafe { CStr::from_ptr(self.properties.device_name.as_ptr()) }
     }
@@ -83,6 +97,7 @@ pub(super) fn collect_compatible_devices(
             let queue_properties = instance.get_physical_device_queue_family_properties(*device);
             let extension_properties = instance.enumerate_device_extension_properties(*device).ok()?;
 
+            // Check the render paths for compatibility
             let compatible_paths: Vec<RenderPathDescriptor> = render_paths
                 .iter()
                 .filter_map(|descriptor| {
@@ -100,15 +115,24 @@ pub(super) fn collect_compatible_devices(
             if compatible_paths.is_empty() {
                 return None;
             }
+
+            let device_queue_families = queue_properties.iter()
+                .enumerate().map(|(idx,elem)|{
+                QueueFamilySelectionInfo::new(idx as u32, *elem)
+            }).collect::<Vec<_>>();
+
+            // Make sure there is at least a graphics queue.
+            if device_queue_families.iter().find(|e|{
+                e.is_graphics_queue()
+            }).is_none() { return None; }
+
+            // Store the potential device's information.
             Some(DeviceSelectionInfo {
                 device: *device,
                 properties: device_properties,
                 features: device_features,
                 compatible_paths,
-                device_queue_info: queue_properties.iter()
-                    .enumerate().map(|(idx,elem)|{
-                    QueueFamilySelectionInfo::new(idx as u32, *elem)
-                }).collect()
+                device_queue_info: device_queue_families
             })
         })
         .collect::<Vec<_>>();

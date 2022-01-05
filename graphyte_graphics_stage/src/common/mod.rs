@@ -4,6 +4,8 @@ mod graphics_options;
 mod instance_setup;
 mod render_target;
 mod stage;
+mod debug_extension;
+mod vk_library_wrapper;
 
 
 pub use create_info::*;
