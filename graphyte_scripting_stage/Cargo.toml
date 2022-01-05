@@ -1,5 +1,5 @@
 [package]
-name = "graphyte_scripting"
+name = "graphyte_scripting_stage"
 version = "0.1.0"
 edition = "2021"
 

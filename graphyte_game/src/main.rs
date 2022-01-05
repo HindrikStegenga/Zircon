@@ -4,19 +4,8 @@ use std::{sync::Arc, vec};
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
 use graphyte_graphics_stage::*;
+use graphyte_scripting_stage::{NativeScriptingStage, NativeScriptSet};
 use graphyte_winit_platform::WinitPlatform;
-
-struct TestStage {}
-impl UpdateStage for TestStage {
-    const IDENTIFIER: &'static str = "TestStage";
-
-    fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        input.dispatcher().dispatch_async(async {
-            smol::Timer::after(std::time::Duration::from_secs(1)).await;
-        });
-        EngineUpdateResult::Ok
-    }
-}
 
 fn create_graphics_stage<'r>(
     mut input: RenderStageConstructorInput<'r>,
@@ -61,9 +50,7 @@ fn main() {
         update_tick_rate: 20,
         max_skipped_frames: 1,
         max_frame_rate: Some(60),
-        update_stages: vec![Box::new(|_input: UpdateStageConstructorInput<'_>| {
-            TestStage {}.into()
-        })],
+        update_stages: vec![Box::new(|_|{ NativeScriptingStage::default().into() })],
         render_stages: vec![Box::new(create_graphics_stage)],
         asset_system: Some(asset_system),
         application_info,

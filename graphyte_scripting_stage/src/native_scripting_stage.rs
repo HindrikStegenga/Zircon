@@ -1,9 +1,17 @@
 use crate::NativeScriptSet;
 use graphyte_engine::*;
 
-pub struct NativeScriptStage {}
-impl UpdateStage for NativeScriptStage {
-    const IDENTIFIER: &'static str = "NativeScript";
+pub struct NativeScriptingStage {}
+
+impl Default for NativeScriptingStage {
+    fn default() -> Self {
+        Self {}
+    }
+}
+
+
+impl UpdateStage for NativeScriptingStage {
+    const IDENTIFIER: &'static str = "NativeScripting";
 
     fn update(&mut self, mut input: UpdateStageUpdateInput) -> EngineUpdateResult {
         let registry = input.scene_manager().active_scene().registry();

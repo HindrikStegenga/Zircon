@@ -9,3 +9,4 @@ edition = "2018"
 graphyte_engine = { path = "../graphyte_engine" }
 graphyte_winit_platform = { path = "../graphyte_winit_platform" }
 graphyte_graphics_stage = { path = "../graphyte_graphics_stage" }
+graphyte_scripting_stage = { path = "../graphyte_scripting_stage" }
