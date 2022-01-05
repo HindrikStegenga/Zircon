@@ -1,13 +1,19 @@
 use super::instance_setup::*;
+use super::render_target::*;
 use crate::*;
 use graphyte_engine::engine_stages::RenderStageMessageContext;
 use graphyte_engine::*;
 use std::sync::Arc;
+use ash::extensions::ext::DebugUtils;
+use ash::vk::DebugUtilsMessengerEXT;
 
 pub struct GraphicsStage {
     entry: ash::Entry,
     instance: Arc<ash::Instance>,
+    debug_messenger: Option<(DebugUtils, DebugUtilsMessengerEXT)>,
+    graphics_options: GraphicsOptions,
     device: GraphicsDevice,
+    render_targets: Vec<WindowRenderTargetBinding>
 }
 
 impl GraphicsStage {
@@ -18,6 +24,8 @@ impl GraphicsStage {
             (entry, Arc::new(instance))
         };
         tagged_success!("Graphics", "Successfully set-up vulkan instance!");
+
+        let debug_messenger = setup_debug_utils_messenger(&entry, &instance, &create_info.options);
         let device = GraphicsDevice::new(GraphicsDeviceCreateInfo {
             instance: Arc::clone(&instance),
             options: &create_info.options,
@@ -26,7 +34,10 @@ impl GraphicsStage {
         Self {
             entry,
             instance,
+            debug_messenger,
+            graphics_options: create_info.options,
             device,
+            render_targets: vec![]
         }
         .into()
     }
@@ -49,7 +60,8 @@ impl RenderStage for GraphicsStage {
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidOpen) {
         let window = context.platform.get_window(message.window).unwrap();
-        tagged_log!("Graphics", "WindowDidOpen message received!");
+
+
     }
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
@@ -64,6 +76,13 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for Grap
 
 impl Drop for GraphicsStage {
     fn drop(&mut self) {
+
+        if let Some((debug_loader, messenger)) = &mut self.debug_messenger {
+            unsafe {
+                debug_loader.destroy_debug_utils_messenger(*messenger, None);
+            }
+        }
+
         if self.instance.handle() != ash::vk::Instance::null() {
             unsafe { self.instance.destroy_instance(None) }
         }

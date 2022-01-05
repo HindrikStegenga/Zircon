@@ -1,4 +1,4 @@
-use crate::device::device_selection::{collect_compatible_devices, select_device};
+use crate::device::device_selection::{collect_compatible_devices, DeviceSelectionInfo, select_device};
 use crate::{ForwardRenderPath, GraphicsOptions, RenderPath, RenderPathDescriptor};
 use ash::*;
 use std::sync::Arc;
@@ -29,5 +29,10 @@ impl GraphicsDevice {
             physical_device: graphics_device.device,
         }
         .into()
+    }
+
+    fn setup_device(selection_info: &DeviceSelectionInfo) -> Option<Device> {
+
+        None
     }
 }

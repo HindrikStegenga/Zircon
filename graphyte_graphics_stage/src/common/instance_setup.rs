@@ -5,6 +5,8 @@ use graphyte_engine::ApplicationInfo;
 use graphyte_utils::*;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
+use ash::extensions::ext::DebugUtils;
+use ash::vk::{DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessengerEXT, Flags};
 
 pub(crate) fn setup_vulkan_instance(
     application_info: &ApplicationInfo,
@@ -51,6 +53,15 @@ pub(crate) fn setup_vulkan_instance(
             get_required_vulkan_surface_extensions().as_slice(),
         )
     }?);
+
+    // Enable the debug utils extension if applicable.
+    if graphics_options.enable_debug_utils {
+        required_extensions.append(&mut unsafe {
+           check_and_get_required_extensions(&entry, &[
+               ash::extensions::ext::DebugUtils::name()
+           ])
+        }?);
+    }
 
     required_layers.iter().for_each(|ptr| unsafe {
         tagged_log!(
@@ -161,4 +172,40 @@ fn get_required_vulkan_surface_extensions() -> Vec<&'static CStr> {
         #[cfg(target_os = "windows")]
         ash::extensions::khr::Win32Surface::name(),
     ]
+}
+
+pub(super) fn setup_debug_utils_messenger(entry: &Entry, instance: &Instance, options: &GraphicsOptions) -> Option<(DebugUtils, DebugUtilsMessengerEXT)> {
+    if !options.enable_debug_utils { return None; }
+    let debug_utils = ash::extensions::ext::DebugUtils::new(entry, instance);
+    let debug_create_info = vk::DebugUtilsMessengerCreateInfoEXT::builder()
+        .message_severity(vk::DebugUtilsMessageSeverityFlagsEXT::WARNING
+            | vk::DebugUtilsMessageSeverityFlagsEXT::VERBOSE
+            | vk::DebugUtilsMessageSeverityFlagsEXT::INFO
+            | vk::DebugUtilsMessageSeverityFlagsEXT::ERROR)
+        .message_type(vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
+            | vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+            | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION)
+        .pfn_user_callback(Some(vulkan_debug_utils_callback));
+    let messenger = unsafe { debug_utils.create_debug_utils_messenger(&debug_create_info, None).ok()? };
+    Some((debug_utils, messenger))
+}
+
+unsafe extern "system" fn vulkan_debug_utils_callback(
+    message_severity: vk::DebugUtilsMessageSeverityFlagsEXT,
+    message_type: vk::DebugUtilsMessageTypeFlagsEXT,
+    p_callback_data: *const vk::DebugUtilsMessengerCallbackDataEXT,
+    _p_user_data: *mut std::ffi::c_void,
+) -> vk::Bool32 {
+    let message = std::ffi::CStr::from_ptr((*p_callback_data).p_message);
+    let ty = format!("{:?}", message_type).to_lowercase();
+    if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::INFO) ||
+        message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::VERBOSE)
+        {
+        tagged_log!("Vulkan", "[{}] {:#?}", ty, message);
+    } else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::WARNING) {
+        tagged_warn!("Vulkan", "[{}] {:#?}", ty, message);
+    } else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::ERROR) {
+        tagged_error!("Vulkan", "[{}] {:#?}", ty, message);
+    }
+    vk::FALSE
 }

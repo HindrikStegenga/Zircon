@@ -2,7 +2,10 @@ use crate::common::device_feature_utils::meets_required_features;
 use crate::*;
 use ash::*;
 use graphyte_utils::tagged_log;
-use std::ffi::CStr;
+use std::ffi::{CStr, CString};
+use ash::prelude::VkResult;
+use crate::device::queue_types::QueueFamilySelectionInfo;
+use crate::device_feature_utils::combine_features;
 
 #[derive(Clone)]
 pub(super) struct DeviceSelectionInfo {
@@ -10,6 +13,7 @@ pub(super) struct DeviceSelectionInfo {
     pub(super) properties: vk::PhysicalDeviceProperties,
     pub(super) features: vk::PhysicalDeviceFeatures,
     pub(super) compatible_paths: Vec<RenderPathDescriptor>,
+    pub(super) device_queue_info: Vec<QueueFamilySelectionInfo>
 }
 
 impl DeviceSelectionInfo {
@@ -21,6 +25,13 @@ impl DeviceSelectionInfo {
     }
     pub(super) fn is_dedicated_gpu(&self) -> bool {
         self.properties.device_type == vk::PhysicalDeviceType::DISCRETE_GPU
+    }
+    pub(super) fn features_to_enable(&self) -> vk::PhysicalDeviceFeatures {
+        let mut features = vk::PhysicalDeviceFeatures::default();
+        for path in &self.compatible_paths {
+            features = combine_features(features, path.required_features());
+        }
+        features
     }
 }
 
@@ -69,6 +80,8 @@ pub(super) fn collect_compatible_devices(
         .filter_map(|device| unsafe {
             let device_properties = instance.get_physical_device_properties(*device);
             let device_features = instance.get_physical_device_features(*device);
+            let queue_properties = instance.get_physical_device_queue_family_properties(*device);
+            let extension_properties = instance.enumerate_device_extension_properties(*device).ok()?;
 
             let compatible_paths: Vec<RenderPathDescriptor> = render_paths
                 .iter()
@@ -76,7 +89,7 @@ pub(super) fn collect_compatible_devices(
                     return if meets_required_features(
                         device_features,
                         descriptor.required_features(),
-                    ) {
+                    ) && meets_required_device_extensions(&extension_properties, descriptor.required_extensions()){
                         Some((*descriptor).clone())
                     } else {
                         None
@@ -92,6 +105,10 @@ pub(super) fn collect_compatible_devices(
                 properties: device_properties,
                 features: device_features,
                 compatible_paths,
+                device_queue_info: queue_properties.iter()
+                    .enumerate().map(|(idx,elem)|{
+                    QueueFamilySelectionInfo::new(idx as u32, *elem)
+                }).collect()
             })
         })
         .collect::<Vec<_>>();
@@ -99,4 +116,20 @@ pub(super) fn collect_compatible_devices(
         return None;
     }
     Some(devices)
+}
+
+unsafe fn meets_required_device_extensions<T: AsRef<CStr>>(
+    supported_extensions: &[vk::ExtensionProperties],
+    required_extensions: &[T],
+) -> bool {
+    'parent_loop: for required_extension_name in required_extensions {
+        for extension_property in supported_extensions {
+            let layer_name = CStr::from_ptr(extension_property.extension_name.as_ptr());
+            if required_extension_name.as_ref() == layer_name {
+                continue 'parent_loop;
+            }
+        }
+        return false;
+    }
+    return true;
 }

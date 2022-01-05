@@ -10,6 +10,7 @@ pub struct GraphicsOptions {
     pub instance_validation_layer_names: Vec<CString>,
     pub preferred_device_name: Option<CString>,
     pub preferred_render_path: Option<CString>,
+    pub enable_debug_utils: bool,
     pub prefer_integrated_gpu: bool,
     pub prevent_tearing: bool,
     pub limit_frame_rate: bool,
