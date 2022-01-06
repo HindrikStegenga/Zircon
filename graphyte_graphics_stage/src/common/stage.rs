@@ -10,6 +10,7 @@ use graphyte_engine::*;
 use std::sync::Arc;
 
 pub struct GraphicsStage {
+    available_window_targets: Vec<WindowRenderTarget>,
     render_targets: Vec<WindowRenderTargetBinding>,
     device: GraphicsDevice,
     debug_messenger: Option<DebugExtension>,
@@ -33,6 +34,7 @@ impl GraphicsStage {
         })?;
 
         Self {
+            available_window_targets: vec![],
             vk: VkLibraryWrapper::new(instance, entry),
             debug_messenger,
             graphics_options: create_info.options,
@@ -61,7 +63,9 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for Graphi
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidOpen) {
         let window = context.platform.get_window(message.window).unwrap();
         let (entry, instance) = self.vk.entry_and_instance();
-        let surface = get_vulkan_surface(entry, instance, &window.raw_platform_handle());
+        if let Some(target) = WindowRenderTarget::new(entry, instance, window) {
+            self.available_window_targets.push(target);
+        }
     }
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {

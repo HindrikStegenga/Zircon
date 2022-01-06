@@ -164,10 +164,8 @@ fn get_required_vulkan_surface_extensions() -> Vec<&'static CStr> {
         ash::extensions::khr::XcbSurface::name(),
         #[cfg(any(target_os = "android"))]
         ash::extensions::khr::AndroidSurface::name(),
-        #[cfg(any(target_os = "macos"))]
-        ash::extensions::mvk::MacOSSurface::name(),
-        #[cfg(any(target_os = "ios"))]
-        ash::extensions::mvk::IOSSurface::name(),
+        #[cfg(any(target_os = "macos", target_os = "ios"))]
+        ash::extensions::ext::MetalSurface::name(),
         #[cfg(target_os = "windows")]
         ash::extensions::khr::Win32Surface::name(),
     ]

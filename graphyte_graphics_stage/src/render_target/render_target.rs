@@ -1,12 +1,9 @@
+use super::WindowRenderTarget;
 use crate::RenderPath;
-use ash::extensions::khr::Swapchain;
+use ash::extensions::khr::{Surface, Swapchain};
 use ash::*;
-use graphyte_engine::PlatformWindowHandle;
-
-pub struct WindowRenderTarget {
-    window: PlatformWindowHandle,
-    surface: vk::SurfaceKHR,
-}
+use graphyte_engine::{PlatformWindow, PlatformWindowHandle};
+use std::sync::Arc;
 
 pub struct WindowRenderTargetBinding {
     window_render_target: WindowRenderTarget,
