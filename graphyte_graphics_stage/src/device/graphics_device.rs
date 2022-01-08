@@ -15,6 +15,21 @@ pub(crate) struct GraphicsDevice {
     physical_device: vk::PhysicalDevice,
 }
 
+impl GraphicsDevice {
+    pub fn device(&self) -> &Device {
+        &self.device
+    }
+    pub fn graphics_queue(&self) -> &DeviceQueue {
+        &self.graphics_queue
+    }
+    pub fn transfer_queues(&self) -> &[DeviceQueue] {
+        &self.transfer_queues
+    }
+    pub fn physical_device(&self) -> vk::PhysicalDevice {
+        self.physical_device
+    }
+}
+
 pub(crate) struct GraphicsDeviceCreateInfo<'a> {
     pub instance: Arc<Instance>,
     pub options: &'a GraphicsOptions,

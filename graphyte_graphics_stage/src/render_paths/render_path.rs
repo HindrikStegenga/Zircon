@@ -1,6 +1,13 @@
 use crate::{ForwardRenderPath, GraphicsOptions};
 use ash::*;
+use serde::{Deserialize, Serialize};
 use std::ffi::{CStr, CString};
+
+#[repr(u8)]
+#[derive(Clone, Copy, Deserialize, Serialize)]
+pub enum RenderPathType {
+    Forward = 0,
+}
 
 #[derive(Clone)]
 pub(crate) struct RenderPathDescriptor {

@@ -5,7 +5,7 @@ use graphyte_engine::*;
 pub(crate) struct WindowRenderTarget {
     window: PlatformWindowHandle,
     surface: vk::SurfaceKHR,
-    surface_fn: Surface,
+    loader: Surface,
 }
 
 impl WindowRenderTarget {
@@ -19,9 +19,13 @@ impl WindowRenderTarget {
         Self {
             window: window.handle(),
             surface,
-            surface_fn,
+            loader: surface_fn,
         }
         .into()
+    }
+
+    pub fn loader(&self) -> &Surface {
+        &self.loader
     }
 
     pub fn surface(&self) -> vk::SurfaceKHR {
@@ -36,7 +40,7 @@ impl WindowRenderTarget {
 impl Drop for WindowRenderTarget {
     fn drop(&mut self) {
         unsafe {
-            self.surface_fn.destroy_surface(self.surface, None);
+            self.loader.destroy_surface(self.surface, None);
         }
     }
 }
