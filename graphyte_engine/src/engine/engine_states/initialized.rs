@@ -10,28 +10,17 @@ use crate::*;
 pub struct Initialized {
     pub(super) update_stages: Vec<Box<dyn AnyUpdateStage>>,
     pub(super) render_stages: Vec<Box<dyn AnyRenderStage>>,
+    pub(super) render_stage_update_handlers: Vec<Box<dyn AnyRenderStageUpdateThreadHandler>>,
 }
 
 impl Into<EngineStateMachine<Running>> for EngineStateMachine<Initialized> {
-    fn into(self) -> EngineStateMachine<Running> {
+    fn into(mut self) -> EngineStateMachine<Running> {
         let dispatch_system = match self.shared.resources.get_engine_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {
                 failure!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");
             }
         };
-        let render_stage_pre_update_fns = self
-            .state
-            .render_stages
-            .iter()
-            .map(|e| e.get_pre_update_fn())
-            .collect();
-        let render_stage_post_update_fns = self
-            .state
-            .render_stages
-            .iter()
-            .map(|e| e.get_post_update_fn())
-            .collect();
         EngineStateMachine {
             shared: self.shared,
             state: Running {
@@ -39,8 +28,7 @@ impl Into<EngineStateMachine<Running>> for EngineStateMachine<Initialized> {
                 update_stages_runner: UpdateStagesRunner::new(
                     SceneManager::default(),
                     self.state.update_stages,
-                    render_stage_pre_update_fns,
-                    render_stage_post_update_fns,
+                    self.state.render_stage_update_handlers,
                     dispatch_system,
                 ),
                 render_stages: self.state.render_stages,

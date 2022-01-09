@@ -39,18 +39,35 @@ impl<'a> RenderStageUpdateInput<'a> {
         Self { platform }
     }
 }
+
+/// Deals with logic from a render stage within the update thread.
+/// To send messages to the render thread, use the message bus or a channel.
+pub trait RenderStageUpdateThreadHandler: Sized + Send + 'static {
+    fn register_message_handlers(&self, _registerer: UpdateMessageRegisterer<'_, Self>) {}
+    fn pre_update(&mut self, _input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
+    fn post_update(&mut self, _input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
+}
+
+pub trait AnyRenderStageUpdateThreadHandler: Send {
+    fn register_message_handlers(&mut self, registerer: AnyMessageRegisterer<'_>);
+    fn process_events(&mut self, input: UpdateStageUpdateInput);
+    fn pre_update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
+    fn post_update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
+}
+
 /// Render stages run on the main thread. They cannot access regular game data during rendering.
 /// They can access data in the update stage, but they can not access `self` while doing so.
+/// Everything related to login on the update thread is performed through a handler object.
 pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
+    type UpdateThreadHandler: RenderStageUpdateThreadHandler;
 
     fn register_message_handlers(&self, _registerer: RenderMessageRegisterer<'_, Self>) {}
-    fn pre_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        EngineUpdateResult::Ok
-    }
-    fn post_update(_input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        EngineUpdateResult::Ok
-    }
+    fn get_update_thread_handler(&mut self) -> Self::UpdateThreadHandler;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 
@@ -58,9 +75,11 @@ pub trait RenderStage: Sized + 'static {
 pub trait AnyRenderStage: 'static {
     fn identifier(&self) -> &'static str;
     fn register_message_handlers(&mut self, _registerer: AnyMessageRegisterer<'_>);
+    fn get_update_thread_handler(
+        &mut self,
+        _registerer: AnyMessageRegisterer<'_>,
+    ) -> Box<dyn AnyRenderStageUpdateThreadHandler>;
     fn process_events(&mut self, input: RenderStageUpdateInput);
-    fn get_pre_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
-    fn get_post_update_fn(&self) -> fn(input: UpdateStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 

@@ -1,5 +1,6 @@
 use crate::engine_stages::{
-    AnyRenderStage, RenderStage, RenderStageUpdateInput, UpdateStageUpdateInput,
+    AnyRenderStage, AnyRenderStageUpdateThreadHandler, RenderStage, RenderStageUpdateInput,
+    RenderStageUpdateThreadHandler, UpdateStageUpdateInput, UpdateThreadHandlerContainer,
 };
 use crate::message_bus::*;
 use crate::{EngineUpdateResult, PlatformInterface};
@@ -34,6 +35,17 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         self.stage.register_message_handlers(registerer);
     }
 
+    fn get_update_thread_handler(
+        &mut self,
+        registerer: AnyMessageRegisterer<'_>,
+    ) -> Box<dyn AnyRenderStageUpdateThreadHandler> {
+        let mut item = Box::new(UpdateThreadHandlerContainer::from(
+            self.stage.get_update_thread_handler(),
+        ));
+        item.register_message_handlers(registerer);
+        item
+    }
+
     fn process_events(&mut self, input: RenderStageUpdateInput) {
         for receiver in self.receivers.iter_mut() {
             receiver.receive_messages(
@@ -43,14 +55,6 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
                 },
             );
         }
-    }
-
-    fn get_pre_update_fn(&self) -> fn(UpdateStageUpdateInput) -> EngineUpdateResult {
-        T::pre_update
-    }
-
-    fn get_post_update_fn(&self) -> fn(UpdateStageUpdateInput) -> EngineUpdateResult {
-        T::post_update
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {

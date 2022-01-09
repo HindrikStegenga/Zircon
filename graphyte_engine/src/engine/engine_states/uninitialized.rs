@@ -121,6 +121,15 @@ impl Into<EngineStateMachine<Initialized>>
                 MessageHandlerType::Render,
             ));
         });
+        let mut render_stage_update_handlers = render_stages
+            .iter_mut()
+            .map(|e| {
+                e.get_update_thread_handler(AnyMessageRegisterer::new(
+                    &mut builder,
+                    MessageHandlerType::Update,
+                ))
+            })
+            .collect::<Vec<_>>();
 
         uninit.shared.resources.add_engine_resource(builder.build());
 
@@ -130,6 +139,7 @@ impl Into<EngineStateMachine<Initialized>>
             state: Initialized {
                 update_stages,
                 render_stages,
+                render_stage_update_handlers,
             },
         }
     }

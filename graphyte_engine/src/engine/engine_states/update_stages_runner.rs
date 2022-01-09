@@ -11,10 +11,8 @@ pub(super) struct UpdateStagesThreadedState {
     /// Last result of the threaded loop.
     /// If None, it has not yet been executed.
     last_result: Option<EngineUpdateResult>,
-    /// Pre - Update FNs of the render stages.
-    render_stage_pre_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
-    /// Post - Update FNs of the render stages.
-    render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
+    /// Render stage update thread handlers.
+    render_stage_update_thread_handlers: Vec<Box<dyn AnyRenderStageUpdateThreadHandler>>,
 }
 
 pub(super) struct UpdateStagesRunner {
@@ -26,8 +24,7 @@ impl UpdateStagesRunner {
     pub fn new(
         scene_manager: SceneManager,
         stages: Vec<Box<dyn AnyUpdateStage>>,
-        render_stage_pre_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
-        render_stage_post_update_fns: Vec<fn(UpdateStageUpdateInput) -> EngineUpdateResult>,
+        render_stage_update_thread_handlers: Vec<Box<dyn AnyRenderStageUpdateThreadHandler>>,
         dispatch_system: Arc<Dispatcher>,
     ) -> Self {
         Self {
@@ -38,8 +35,7 @@ impl UpdateStagesRunner {
                         scene_manager,
                         stages,
                         last_result: None,
-                        render_stage_pre_update_fns,
-                        render_stage_post_update_fns,
+                        render_stage_update_thread_handlers,
                     },
                 )),
                 Condvar::new(),
@@ -63,16 +59,28 @@ impl UpdateStagesRunner {
                 let mut guard = mtx.lock().unwrap();
                 let threaded_state = &mut guard.1;
 
+                // Update events
                 threaded_state.stages.iter_mut().for_each(|s| {
                     s.process_events();
                 });
+                let scene_manager = &mut threaded_state.scene_manager;
+                threaded_state
+                    .render_stage_update_thread_handlers
+                    .iter_mut()
+                    .for_each(|e| {
+                        e.process_events(UpdateStageUpdateInput::new(
+                            resources.clone(),
+                            dispatcher.clone(),
+                            scene_manager,
+                        ))
+                    });
 
                 // Update render stage pre update fns.
-                for update_fn in &threaded_state.render_stage_pre_update_fns {
-                    let msg = (update_fn)(UpdateStageUpdateInput::new(
+                for update_handler in &mut threaded_state.render_stage_update_thread_handlers {
+                    let msg = update_handler.pre_update(UpdateStageUpdateInput::new(
                         resources.clone(),
                         dispatcher.clone(),
-                        &mut threaded_state.scene_manager,
+                        scene_manager,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -86,7 +94,7 @@ impl UpdateStagesRunner {
                     let msg = system.update(UpdateStageUpdateInput::new(
                         resources.clone(),
                         dispatcher.clone(),
-                        &mut threaded_state.scene_manager,
+                        scene_manager,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -96,11 +104,11 @@ impl UpdateStagesRunner {
                 }
 
                 // Update render stage post update fns.
-                for update_fn in &threaded_state.render_stage_post_update_fns {
-                    let msg = (update_fn)(UpdateStageUpdateInput::new(
+                for update_handler in &mut threaded_state.render_stage_update_thread_handlers {
+                    let msg = update_handler.post_update(UpdateStageUpdateInput::new(
                         resources.clone(),
                         dispatcher.clone(),
-                        &mut threaded_state.scene_manager,
+                        scene_manager,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;

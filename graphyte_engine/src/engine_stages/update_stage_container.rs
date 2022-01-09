@@ -11,6 +11,13 @@ pub struct UpdateStageContainer<T: UpdateStage> {
 pub struct UpdateStageMessageContext<'a> {
     phantom: PhantomData<fn(&'a u32)>,
 }
+impl<'a> Default for UpdateStageMessageContext<'a> {
+    fn default() -> Self {
+        Self {
+            phantom: Default::default(),
+        }
+    }
+}
 
 impl<T: UpdateStage> From<T> for UpdateStageContainer<T> {
     fn from(stage: T) -> Self {

@@ -1,5 +1,7 @@
 use crate::RenderPathType;
 use graphyte_engine::ecs::*;
+use graphyte_engine::scene_manager::SceneHandle;
+use graphyte_utils::handles::Handle;
 use serde::{Deserialize, Serialize};
 
 #[repr(u8)]
@@ -9,7 +11,12 @@ pub enum CameraKind {
     Perspective = 1,
 }
 
+pub type CameraHandle = Handle<Camera, u16>;
+
+#[derive(Clone)]
 pub struct Camera {
+    scene: SceneHandle,
+    handle: CameraHandle,
     kind: CameraKind,
     path: RenderPathType,
 }
@@ -24,8 +31,18 @@ impl Camera {
 }
 
 impl Camera {
-    pub fn new(kind: CameraKind, path: RenderPathType) -> Self {
-        Camera { kind, path }
+    pub(super) fn new(
+        scene: SceneHandle,
+        handle: CameraHandle,
+        kind: CameraKind,
+        path: RenderPathType,
+    ) -> Self {
+        Camera {
+            scene,
+            handle,
+            kind,
+            path,
+        }
     }
 }
 
