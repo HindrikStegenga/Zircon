@@ -57,6 +57,10 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         }
     }
 
+    fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        self.stage.update_thread_did_run(input)
+    }
+
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
         self.stage.render(input)
     }

@@ -68,6 +68,9 @@ pub trait RenderStage: Sized + 'static {
 
     fn register_message_handlers(&self, _registerer: RenderMessageRegisterer<'_, Self>) {}
     fn get_update_thread_handler(&mut self) -> Self::UpdateThreadHandler;
+    /// Runs on the main thread right after the update thread finished a single update.
+    fn update_thread_did_run(&mut self, _input: RenderStageUpdateInput) -> EngineUpdateResult { EngineUpdateResult::Ok }
+    /// Is called on the main thread.
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 
@@ -80,6 +83,7 @@ pub trait AnyRenderStage: 'static {
         _registerer: AnyMessageRegisterer<'_>,
     ) -> Box<dyn AnyRenderStageUpdateThreadHandler>;
     fn process_events(&mut self, input: RenderStageUpdateInput);
+    fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
 

@@ -52,8 +52,18 @@ impl EngineStateMachine<Running> {
                 .timings
                 .last_fixed_update_instant =
                 self.shared.internal_resources.timings.frame_start_instant;
+
+            for render_stage in &mut self.state.render_stages {
+                match render_stage.update_thread_did_run(RenderStageUpdateInput::new(interface)) {
+                    EngineUpdateResult::Ok => {},
+                    result => {
+                        return result;
+                    }
+                }
+            }
         }
 
+        // Process events on the render stage thread.
         self.state.render_stages.iter_mut().for_each(|s| {
             s.process_events(RenderStageUpdateInput::new(interface));
         });

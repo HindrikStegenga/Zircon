@@ -88,7 +88,3 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for Grap
         tagged_log!("Graphics", "WindowResized message received!");
     }
 }
-
-impl<'a> MessageHandler<RenderStageMessageContext<'a>, DidBindCamera> for GraphicsStage {
-    fn handle(&mut self, context: &mut RenderStageMessageContext<'a>, message: DidBindCamera) {}
-}
