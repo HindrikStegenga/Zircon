@@ -16,17 +16,17 @@ impl Default for EngineResourceManager {
 }
 
 impl EngineResourceManager {
-    pub fn add_engine_resource<T: Send + Sync + 'static>(&self, resource: T) {
+    pub fn add_resource<T: Send + Sync + 'static>(&self, resource: T) {
         self.engine_resources
             .insert(TypeId::of::<T>(), Arc::from(resource));
     }
 
-    pub fn remove_engine_resource<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
+    pub fn remove_resource<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         let (_key, value) = self.engine_resources.remove(&TypeId::of::<T>())?;
         Some(value.downcast::<T>().unwrap())
     }
 
-    pub fn get_engine_resource<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
+    pub fn get_resource<T: Send + Sync + 'static>(&self) -> Option<Arc<T>> {
         let value = self.engine_resources.get(&TypeId::of::<T>())?;
         Some(Arc::clone(value.value()).downcast::<T>().unwrap())
     }

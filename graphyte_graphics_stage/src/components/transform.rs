@@ -1,11 +1,12 @@
 use graphyte_engine::ecs::*;
 use graphyte_math::*;
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[repr(C)]
+#[derive(Debug, Copy, Clone, PartialEq, Component)]
 pub struct Transform {
     position: Vec3f,
-    rotation: Vec4f,
     scale: f32,
+    rotation: Vec4f,
 }
 
 impl Transform {
@@ -28,8 +29,4 @@ impl Transform {
             scale,
         }
     }
-}
-
-impl Component for Transform {
-    const NAME: &'static str = "Transform";
 }

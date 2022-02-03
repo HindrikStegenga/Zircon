@@ -13,7 +13,7 @@ pub enum CameraKind {
 
 pub type CameraHandle = Handle<Camera, u16>;
 
-#[derive(Clone)]
+#[derive(Clone, Component)]
 pub struct Camera {
     scene: SceneHandle,
     handle: CameraHandle,
@@ -44,8 +44,4 @@ impl Camera {
             path,
         }
     }
-}
-
-impl Component for Camera {
-    const NAME: &'static str = "Camera";
 }

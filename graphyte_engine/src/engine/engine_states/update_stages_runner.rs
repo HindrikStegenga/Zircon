@@ -3,9 +3,11 @@ use crate::scene_manager::{Scene, SceneManager};
 use crate::{engine::result::*, engine_stages::*};
 use graphyte_utils::dispatcher::Dispatcher;
 use std::sync::{Arc, Condvar, Mutex};
+use crate::resource_manager::ThreadLocalResourceManager;
 
 pub(super) struct UpdateStagesThreadedState {
     scene_manager: SceneManager,
+    thread_local_resources: ThreadLocalResourceManager,
     /// The update stages.
     stages: Vec<Box<dyn AnyUpdateStage>>,
     /// Last result of the threaded loop.
@@ -25,6 +27,7 @@ impl UpdateStagesRunner {
         scene_manager: SceneManager,
         stages: Vec<Box<dyn AnyUpdateStage>>,
         render_stage_update_thread_handlers: Vec<Box<dyn AnyRenderStageUpdateThreadHandler>>,
+        thread_local_resources: ThreadLocalResourceManager,
         dispatch_system: Arc<Dispatcher>,
     ) -> Self {
         Self {
@@ -33,6 +36,7 @@ impl UpdateStagesRunner {
                     false,
                     UpdateStagesThreadedState {
                         scene_manager,
+                        thread_local_resources,
                         stages,
                         last_result: None,
                         render_stage_update_thread_handlers,
@@ -64,6 +68,7 @@ impl UpdateStagesRunner {
                     s.process_events();
                 });
                 let scene_manager = &mut threaded_state.scene_manager;
+                let thread_local_resources = &mut threaded_state.thread_local_resources;
                 threaded_state
                     .render_stage_update_thread_handlers
                     .iter_mut()
@@ -72,6 +77,7 @@ impl UpdateStagesRunner {
                             resources.clone(),
                             dispatcher.clone(),
                             scene_manager,
+                            thread_local_resources
                         ))
                     });
 
@@ -81,6 +87,8 @@ impl UpdateStagesRunner {
                         resources.clone(),
                         dispatcher.clone(),
                         scene_manager,
+                        thread_local_resources
+
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -95,6 +103,7 @@ impl UpdateStagesRunner {
                         resources.clone(),
                         dispatcher.clone(),
                         scene_manager,
+                        thread_local_resources
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -109,6 +118,7 @@ impl UpdateStagesRunner {
                         resources.clone(),
                         dispatcher.clone(),
                         scene_manager,
+                        thread_local_resources
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;

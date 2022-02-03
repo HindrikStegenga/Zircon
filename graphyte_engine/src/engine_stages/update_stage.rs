@@ -1,6 +1,6 @@
 use super::*;
 use crate::message_bus::{AnyMessageRegisterer, RenderMessageRegisterer};
-use crate::resource_manager::EngineResourceManager;
+use crate::resource_manager::{EngineResourceManager, ThreadLocalResourceManager};
 use crate::scene_manager::{Scene, SceneManager};
 use crate::{EngineUpdateResult, PlatformInterface, UpdateMessageRegisterer};
 use graphyte_utils::dispatcher::Dispatcher;
@@ -30,10 +30,14 @@ impl<'a> UpdateStageConstructorInput<'a> {
 pub struct UpdateStageUpdateInput<'a> {
     scene_manager: &'a mut SceneManager,
     resources: Arc<EngineResourceManager>,
+    update_thread_resources: &'a mut ThreadLocalResourceManager,
     dispatcher: Arc<Dispatcher>,
 }
 
 impl<'a> UpdateStageUpdateInput<'a> {
+    pub fn thread_local_resources(&mut self) -> &mut ThreadLocalResourceManager {
+        self.update_thread_resources
+    }
     pub fn resources(&self) -> &Arc<EngineResourceManager> {
         &self.resources
     }
@@ -53,10 +57,12 @@ impl<'a> UpdateStageUpdateInput<'a> {
         resources: Arc<EngineResourceManager>,
         dispatcher: Arc<Dispatcher>,
         scene_manager: &'a mut SceneManager,
+        thread_local_resources: &'a mut ThreadLocalResourceManager
     ) -> Self {
         Self {
             scene_manager,
             resources,
+            update_thread_resources: thread_local_resources,
             dispatcher,
         }
     }

@@ -1,17 +1,16 @@
-use std::ffi::CString;
 use std::{sync::Arc, vec};
 
 use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
 use graphyte_graphics_stage::*;
-use graphyte_scripting_stage::{NativeScriptSet, NativeScriptingStage};
+use graphyte_scripting_stage::{NativeScriptingStage};
 use graphyte_winit_platform::WinitPlatform;
 
 fn create_graphics_stage<'r>(
-    mut input: RenderStageConstructorInput<'r>,
+    input: RenderStageConstructorInput<'r>,
 ) -> Box<dyn AnyRenderStage> {
     let asset_system: Arc<AssetSystem> =
-        match input.resources().get_engine_resource::<AssetSystem>() {
+        match input.resources().get_resource::<AssetSystem>() {
             Some(v) => v,
             None => {
                 failure!("This system requires an asset system to be present!")

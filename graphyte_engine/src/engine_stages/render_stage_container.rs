@@ -1,10 +1,8 @@
-use crate::engine_stages::{
-    AnyRenderStage, AnyRenderStageUpdateThreadHandler, RenderStage, RenderStageUpdateInput,
-    RenderStageUpdateThreadHandler, UpdateStageUpdateInput, UpdateThreadHandlerContainer,
-};
+use crate::engine_stages::{AnyRenderStage, AnyRenderStageUpdateThreadHandler, RenderStage, RenderStageUpdateInput, RenderStageUpdateThreadHandler, RenderStageUpdateThreadHandlerCreateInfo, UpdateStageUpdateInput, UpdateThreadHandlerContainer};
 use crate::message_bus::*;
 use crate::{EngineUpdateResult, PlatformInterface};
 use std::marker::PhantomData;
+use crate::resource_manager::ThreadLocalResourceManager;
 
 pub struct RenderStageContainer<T: RenderStage> {
     stage: T,
@@ -35,12 +33,13 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         self.stage.register_message_handlers(registerer);
     }
 
-    fn get_update_thread_handler(
+    fn create_update_thread_handler(
         &mut self,
+        create_info: RenderStageUpdateThreadHandlerCreateInfo<'_>,
         registerer: AnyMessageRegisterer<'_>,
     ) -> Box<dyn AnyRenderStageUpdateThreadHandler> {
         let mut item = Box::new(UpdateThreadHandlerContainer::from(
-            self.stage.get_update_thread_handler(),
+            self.stage.create_update_thread_handler(create_info),
         ));
         item.register_message_handlers(registerer);
         item

@@ -34,9 +34,9 @@ impl EngineStateMachine<Uninitialized> {
             Some(v) => v,
             None => Default::default(),
         };
-        resources.add_engine_resource(asset_system);
-        resources.add_engine_resource(dispatch_system);
-        resources.add_engine_resource(SceneManager::default());
+        resources.add_resource(asset_system);
+        resources.add_resource(dispatch_system);
+        resources.add_resource(SceneManager::default());
 
         Self {
             shared: EngineSharedState {
@@ -76,7 +76,7 @@ impl Into<EngineStateMachine<Initialized>>
 {
     fn into(self) -> EngineStateMachine<Initialized> {
         let (uninit, interface) = self;
-
+        let mut update_thread_local_resources = ThreadLocalResourceManager::default();
         log!("Initializing game engine...");
         let (mut update_stages, mut render_stages) = {
             let create_info = &uninit.shared.create_info;
@@ -124,14 +124,16 @@ impl Into<EngineStateMachine<Initialized>>
         let mut render_stage_update_handlers = render_stages
             .iter_mut()
             .map(|e| {
-                e.get_update_thread_handler(AnyMessageRegisterer::new(
+                e.create_update_thread_handler(
+                    RenderStageUpdateThreadHandlerCreateInfo::new(&mut update_thread_local_resources),
+                    AnyMessageRegisterer::new(
                     &mut builder,
                     MessageHandlerType::Update,
                 ))
             })
             .collect::<Vec<_>>();
 
-        uninit.shared.resources.add_engine_resource(builder.build());
+        uninit.shared.resources.add_resource(builder.build());
 
         success!("Initialized engine.");
         EngineStateMachine {
@@ -139,6 +141,7 @@ impl Into<EngineStateMachine<Initialized>>
             state: Initialized {
                 update_stages,
                 render_stages,
+                update_thread_resources: update_thread_local_resources,
                 render_stage_update_handlers,
             },
         }

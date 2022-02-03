@@ -15,5 +15,5 @@ graphyte_utils = { path = "../graphyte_utils" }
 graphyte_asset_library = { path = "../graphyte_asset_library" }
 raw-window-handle = "0.4"
 dashmap = "4.0"
-shard-ecs = "0.2"
+shard-ecs = { version = "0.2.6", features = ["derive"] }
 crossbeam = "0.8"

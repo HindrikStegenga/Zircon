@@ -33,7 +33,7 @@ impl Platform for WinitPlatform {
         let message_bus = controller
             .shared()
             .resources
-            .get_engine_resource::<MessageBus>()
+            .get_resource::<MessageBus>()
             .expect("Requires a message bus!");
 
         let window_resize_sender = message_bus.get_sender::<WindowDidResize>();

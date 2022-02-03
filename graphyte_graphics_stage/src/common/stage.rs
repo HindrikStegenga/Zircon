@@ -6,7 +6,7 @@ use crate::render_target::*;
 use crate::*;
 use ash::extensions::ext::DebugUtils;
 use ash::vk::DebugUtilsMessengerEXT;
-use graphyte_engine::engine_stages::RenderStageMessageContext;
+use graphyte_engine::engine_stages::{RenderStageMessageContext, RenderStageUpdateThreadHandlerCreateInfo};
 use graphyte_engine::*;
 use std::sync::mpsc::Receiver;
 use std::sync::Arc;
@@ -59,10 +59,19 @@ impl RenderStage for GraphicsStage {
         registerer.register::<WindowDidClose>();
     }
 
-    fn get_update_thread_handler(&mut self) -> Self::UpdateThreadHandler {
+    fn create_update_thread_handler(&mut self, mut create_info: RenderStageUpdateThreadHandlerCreateInfo) -> Self::UpdateThreadHandler {
         let (sender, receiver) = std::sync::mpsc::channel();
+        create_info.resources().add_resource(CameraManager::new());
         self.camera_states_update_receiver = Some(receiver);
         Self::UpdateThreadHandler::new(sender)
+    }
+
+    fn update_thread_did_run(&mut self, _input: RenderStageUpdateInput) -> EngineUpdateResult {
+        if let Some(receiver) = &self.camera_states_update_receiver {
+
+        }
+
+        EngineUpdateResult::Ok
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
