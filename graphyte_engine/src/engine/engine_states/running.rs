@@ -55,7 +55,7 @@ impl EngineStateMachine<Running> {
 
             for render_stage in &mut self.state.render_stages {
                 match render_stage.update_thread_did_run(RenderStageUpdateInput::new(interface)) {
-                    EngineUpdateResult::Ok => {},
+                    EngineUpdateResult::Ok => {}
                     result => {
                         return result;
                     }

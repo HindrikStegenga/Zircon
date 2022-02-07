@@ -76,6 +76,12 @@ impl Into<EngineStateMachine<Initialized>>
 {
     fn into(self) -> EngineStateMachine<Initialized> {
         let (uninit, interface) = self;
+        let dispatch_system = match uninit.shared.resources.get_resource::<Dispatcher>() {
+            Some(v) => Arc::clone(&v),
+            None => {
+                failure!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");
+            }
+        };
         let mut update_thread_local_resources = ThreadLocalResourceManager::default();
         log!("Initializing game engine...");
         let (mut update_stages, mut render_stages) = {
@@ -125,22 +131,53 @@ impl Into<EngineStateMachine<Initialized>>
             .iter_mut()
             .map(|e| {
                 e.create_update_thread_handler(
-                    RenderStageUpdateThreadHandlerCreateInfo::new(&mut update_thread_local_resources),
-                    AnyMessageRegisterer::new(
-                    &mut builder,
-                    MessageHandlerType::Update,
-                ))
+                    RenderStageUpdateThreadHandlerCreateInfo::new(
+                        &mut update_thread_local_resources,
+                    ),
+                    AnyMessageRegisterer::new(&mut builder, MessageHandlerType::Update),
+                )
             })
             .collect::<Vec<_>>();
 
         uninit.shared.resources.add_resource(builder.build());
 
+        let mut scene_manager = SceneManager::default();
+
+        for stage in &mut update_stages {
+            match stage.engine_did_initialize(EngineDidInitInput {
+                platform_interface: interface,
+                scene_manager: &mut scene_manager,
+                resources: Arc::clone(&uninit.shared.resources),
+                update_thread_resources: &mut update_thread_local_resources,
+                dispatcher: Arc::clone(&dispatch_system),
+            }) {
+                EngineUpdateResult::Ok => continue,
+                _ => {
+                    failure!("Engine initialization failed.")
+                }
+            }
+        }
+        for stage in &mut render_stages {
+            match stage.engine_did_initialize(EngineDidInitInput {
+                platform_interface: interface,
+                scene_manager: &mut scene_manager,
+                resources: Arc::clone(&uninit.shared.resources),
+                update_thread_resources: &mut update_thread_local_resources,
+                dispatcher: Arc::clone(&dispatch_system),
+            }) {
+                EngineUpdateResult::Ok => continue,
+                _ => {
+                    failure!("Engine initialization failed.")
+                }
+            }
+        }
         success!("Initialized engine.");
         EngineStateMachine {
             shared: uninit.shared,
             state: Initialized {
                 update_stages,
                 render_stages,
+                scene_manager,
                 update_thread_resources: update_thread_local_resources,
                 render_stage_update_handlers,
             },

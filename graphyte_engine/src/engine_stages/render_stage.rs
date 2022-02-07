@@ -1,4 +1,5 @@
 use super::*;
+use crate::engine_stages::inputs::RenderStageConstructorInput;
 use crate::message_bus::*;
 use crate::resource_manager::{EngineResourceManager, ThreadLocalResourceManager};
 use crate::{EngineUpdateResult, PlatformInterface};
@@ -7,42 +8,9 @@ use std::sync::Arc;
 pub type RenderStageConstructor =
     dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
 
-pub struct RenderStageConstructorInput<'a> {
-    pub platform_interface: &'a mut dyn PlatformInterface,
-    resources: Arc<EngineResourceManager>,
-}
-
-impl<'a> RenderStageConstructorInput<'a> {
-    pub fn resources(&self) -> &Arc<EngineResourceManager> {
-        &self.resources
-    }
-}
-
-impl<'a> RenderStageConstructorInput<'a> {
-    pub fn new(
-        platform_interface: &'a mut dyn PlatformInterface,
-        resources: Arc<EngineResourceManager>,
-    ) -> Self {
-        RenderStageConstructorInput {
-            platform_interface,
-            resources,
-        }
-    }
-}
-
-pub struct RenderStageUpdateInput<'a> {
-    pub platform: &'a mut dyn PlatformInterface
-}
-
-impl<'a> RenderStageUpdateInput<'a> {
-    pub fn new(platform: &'a mut dyn PlatformInterface) -> Self {
-        Self { platform }
-    }
-}
-
 /// Bundles the available mutable state that can be modified during creation of a render stage update thread handler.
 pub struct RenderStageUpdateThreadHandlerCreateInfo<'a> {
-    resources: &'a mut ThreadLocalResourceManager
+    resources: &'a mut ThreadLocalResourceManager,
 }
 
 impl<'a> RenderStageUpdateThreadHandlerCreateInfo<'a> {
@@ -53,7 +21,6 @@ impl<'a> RenderStageUpdateThreadHandlerCreateInfo<'a> {
         self.resources
     }
 }
-
 
 /// Deals with logic from a render stage within the update thread.
 /// To send messages to the render thread, use the message bus or a channel.
@@ -86,10 +53,31 @@ pub trait RenderStage: Sized + 'static {
     const IDENTIFIER: &'static str;
     type UpdateThreadHandler: RenderStageUpdateThreadHandler;
 
-    fn register_message_handlers(&self, _registerer: RenderMessageRegisterer<'_, Self>) {}
-    fn create_update_thread_handler(&mut self, create_info: RenderStageUpdateThreadHandlerCreateInfo<'_>) -> Self::UpdateThreadHandler;
+    /// Executed after the engine is initialized but before running. Runs on the main thread.
+    #[allow(unused_variables)]
+    fn engine_did_initialize(&mut self, input: EngineDidInitInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
+    #[allow(unused_variables)]
+    fn engine_will_suspend(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
+    #[allow(unused_variables)]
+    fn engine_will_resume(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
+
+    #[allow(unused_variables)]
+    fn register_message_handlers(&self, registerer: RenderMessageRegisterer<'_, Self>) {}
+    fn create_update_thread_handler(
+        &mut self,
+        create_info: RenderStageUpdateThreadHandlerCreateInfo<'_>,
+    ) -> Self::UpdateThreadHandler;
     /// Runs on the main thread right after the update thread finished a single update.
-    fn update_thread_did_run(&mut self, _input: RenderStageUpdateInput) -> EngineUpdateResult { EngineUpdateResult::Ok }
+    #[allow(unused_variables)]
+    fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
+    }
     /// Is called on the main thread.
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 }
@@ -101,8 +89,17 @@ pub trait AnyRenderStage: 'static {
     fn create_update_thread_handler(
         &mut self,
         create_info: RenderStageUpdateThreadHandlerCreateInfo<'_>,
-        _registerer: AnyMessageRegisterer<'_>,
+        registerer: AnyMessageRegisterer<'_>,
     ) -> Box<dyn AnyRenderStageUpdateThreadHandler>;
+
+    /// Executed after the engine is initialized but before running. Runs on the main thread.
+    #[allow(unused_variables)]
+    fn engine_did_initialize(&mut self, input: EngineDidInitInput) -> EngineUpdateResult;
+    #[allow(unused_variables)]
+    fn engine_will_suspend(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
+    #[allow(unused_variables)]
+    fn engine_will_resume(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
+
     fn process_events(&mut self, input: RenderStageUpdateInput);
     fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;

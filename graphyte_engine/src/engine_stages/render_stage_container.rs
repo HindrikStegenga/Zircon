@@ -1,8 +1,12 @@
-use crate::engine_stages::{AnyRenderStage, AnyRenderStageUpdateThreadHandler, RenderStage, RenderStageUpdateInput, RenderStageUpdateThreadHandler, RenderStageUpdateThreadHandlerCreateInfo, UpdateStageUpdateInput, UpdateThreadHandlerContainer};
+use crate::engine_stages::{
+    AnyRenderStage, AnyRenderStageUpdateThreadHandler, EngineDidInitInput, RenderStage,
+    RenderStageUpdateInput, RenderStageUpdateThreadHandler,
+    RenderStageUpdateThreadHandlerCreateInfo, UpdateStageUpdateInput, UpdateThreadHandlerContainer,
+};
 use crate::message_bus::*;
+use crate::resource_manager::ThreadLocalResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
 use std::marker::PhantomData;
-use crate::resource_manager::ThreadLocalResourceManager;
 
 pub struct RenderStageContainer<T: RenderStage> {
     stage: T,
@@ -43,6 +47,18 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         ));
         item.register_message_handlers(registerer);
         item
+    }
+
+    fn engine_did_initialize(&mut self, input: EngineDidInitInput) -> EngineUpdateResult {
+        self.stage.engine_did_initialize(input)
+    }
+
+    fn engine_will_suspend(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        self.stage.engine_will_suspend(input)
+    }
+
+    fn engine_will_resume(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        self.stage.engine_will_resume(input)
     }
 
     fn process_events(&mut self, input: RenderStageUpdateInput) {

@@ -1,34 +1,50 @@
+use crate::common::update_receiver::UpdateReceiver;
 use crate::common::*;
-use crate::{CameraManager, CameraStatesUpdate};
+use crate::{CameraIsBoundToWindow, CameraIsUnbound, CameraManager, CameraStateUpdate};
+use crossbeam::channel::*;
 use graphyte_engine::engine_stages::{RenderStageUpdateThreadHandler, UpdateStageMessageContext};
+use graphyte_engine::resource_manager::ThreadLocalResourceManager;
 use graphyte_engine::{
     EngineUpdateResult, MessageHandler, UpdateMessageRegisterer, UpdateStageUpdateInput,
     WindowDidOpen, WindowDidResize,
 };
 use graphyte_utils::*;
-use std::sync::mpsc::Sender;
 
-pub struct GraphicsStageUpdateThreadHandler {
-    cameras_updated_sender: Sender<CameraStatesUpdate>,
-}
+pub struct GraphicsStageUpdateThreadHandler {}
 
 impl GraphicsStageUpdateThreadHandler {
-    pub(crate) fn new(cameras_updated_sender: Sender<CameraStatesUpdate>) -> Self {
-        Self {
+    pub(crate) fn new(resources: &mut ThreadLocalResourceManager) -> (Self, UpdateReceiver) {
+        let (cameras_updated_sender, cameras_updated_receiver) = unbounded();
+        let (camera_is_bound_sender, camera_is_bound_receiver) = unbounded();
+        let (camera_is_unbound_sender, camera_is_unbound_receiver) = unbounded();
+
+        resources.add_resource(CameraManager::new(
             cameras_updated_sender,
-        }
+            camera_is_bound_sender,
+            camera_is_unbound_sender,
+        ));
+        let handler = Self {};
+        let receiver = UpdateReceiver::new(
+            cameras_updated_receiver,
+            camera_is_bound_receiver,
+            camera_is_unbound_receiver,
+        );
+        (handler, receiver)
     }
 }
 
 impl RenderStageUpdateThreadHandler for GraphicsStageUpdateThreadHandler {
     fn register_message_handlers(&self, mut registerer: UpdateMessageRegisterer<'_, Self>) {}
 
-    fn pre_update(&mut self, mut input: UpdateStageUpdateInput) -> EngineUpdateResult {
-        let camera_manager = match input.thread_local_resources().get_resource_mut::<CameraManager>() {
+    fn post_update(&mut self, mut input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        let camera_manager = match input
+            .update_thread_resources
+            .get_resource_mut::<CameraManager>()
+        {
             Some(v) => v,
             None => return EngineUpdateResult::Stop,
         };
-
+        camera_manager.update_cameras(input.scene_manager.active_scene_mut().registry_mut());
         EngineUpdateResult::Ok
     }
 }

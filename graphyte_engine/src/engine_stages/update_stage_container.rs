@@ -1,6 +1,8 @@
-use crate::engine_stages::{AnyUpdateStage, UpdateStage, UpdateStageUpdateInput};
+use crate::engine_stages::{
+    AnyUpdateStage, EngineDidInitInput, UpdateStage, UpdateStageUpdateInput,
+};
 use crate::message_bus::*;
-use crate::EngineUpdateResult;
+use crate::{EngineUpdateResult, RenderStageUpdateInput};
 use std::marker::PhantomData;
 
 pub struct UpdateStageContainer<T: UpdateStage> {
@@ -52,5 +54,17 @@ impl<T: UpdateStage> AnyUpdateStage for UpdateStageContainer<T> {
 
     fn update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
         self.stage.update(input)
+    }
+
+    fn engine_did_initialize(&mut self, input: EngineDidInitInput) -> EngineUpdateResult {
+        self.stage.engine_did_initialize(input)
+    }
+
+    fn engine_will_suspend(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        self.stage.engine_will_suspend(input)
+    }
+
+    fn engine_will_resume(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
+        self.stage.engine_will_resume(input)
     }
 }

@@ -43,8 +43,6 @@ impl Platform for WinitPlatform {
             interface.set_message_sender(window_open_sender);
         }
 
-        interface.request_window(1025, 768, "Primary window");
-
         fn find_window(
             platform: &mut WinitPlatform,
             window_id: WindowId,

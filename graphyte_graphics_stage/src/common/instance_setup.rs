@@ -189,7 +189,8 @@ pub(super) fn setup_debug_utils_messenger(
         )
         .message_type(
             //vk::DebugUtilsMessageTypeFlagsEXT::GENERAL
-                /*|*/ vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
+            /*|*/
+            vk::DebugUtilsMessageTypeFlagsEXT::PERFORMANCE
                 | vk::DebugUtilsMessageTypeFlagsEXT::VALIDATION,
         )
         .pfn_user_callback(Some(vulkan_debug_utils_callback));

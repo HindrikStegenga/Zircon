@@ -49,11 +49,23 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
         }
     }
 
+    fn get_window_handle_by_tag(&self, tag: &str) -> Option<PlatformWindowHandle> {
+        self.platform.windows.iter().find(|w| {
+            return if let Some(wtag) = &w.tag {
+                wtag == tag
+            } else {
+                false
+            };
+        });
+        return None;
+    }
+
     fn request_window(
         &mut self,
         width: u32,
         height: u32,
         title: &str,
+        tag: Option<String>,
     ) -> Option<&dyn PlatformWindow> {
         return match self.platform.window_id_counter != u16::MAX {
             true => {
@@ -67,7 +79,7 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                 let window = WinitPlatformWindow {
                     window,
                     handle: PlatformWindowHandle::from(id),
-                    intent: None,
+                    tag,
                 };
                 if let Some(v) = &self.window_open_sender {
                     v.send(WindowDidOpen {

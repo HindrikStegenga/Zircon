@@ -1,9 +1,9 @@
 use super::*;
+use crate::resource_manager::ThreadLocalResourceManager;
 use crate::scene_manager::{Scene, SceneManager};
 use crate::{engine::result::*, engine_stages::*};
 use graphyte_utils::dispatcher::Dispatcher;
 use std::sync::{Arc, Condvar, Mutex};
-use crate::resource_manager::ThreadLocalResourceManager;
 
 pub(super) struct UpdateStagesThreadedState {
     scene_manager: SceneManager,
@@ -77,7 +77,7 @@ impl UpdateStagesRunner {
                             resources.clone(),
                             dispatcher.clone(),
                             scene_manager,
-                            thread_local_resources
+                            thread_local_resources,
                         ))
                     });
 
@@ -87,8 +87,7 @@ impl UpdateStagesRunner {
                         resources.clone(),
                         dispatcher.clone(),
                         scene_manager,
-                        thread_local_resources
-
+                        thread_local_resources,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -103,7 +102,7 @@ impl UpdateStagesRunner {
                         resources.clone(),
                         dispatcher.clone(),
                         scene_manager,
-                        thread_local_resources
+                        thread_local_resources,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -118,7 +117,7 @@ impl UpdateStagesRunner {
                         resources.clone(),
                         dispatcher.clone(),
                         scene_manager,
-                        thread_local_resources
+                        thread_local_resources,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;

@@ -3,7 +3,7 @@ use graphyte_asset_library::handles::*;
 pub use raw_window_handle::*;
 
 pub trait PlatformWindow: HasRawWindowHandle {
-    fn intent(&self) -> Option<&str>;
+    fn tag(&self) -> Option<&str>;
     fn width(&self) -> u32;
     fn height(&self) -> u32;
     fn handle(&self) -> PlatformWindowHandle;
@@ -47,10 +47,13 @@ pub trait PlatformInterface: std::fmt::Debug {
     fn get_window(&self, handle: PlatformWindowHandle) -> Option<&dyn PlatformWindow>;
     fn get_window_mut(&mut self, handle: PlatformWindowHandle) -> Option<&mut dyn PlatformWindow>;
 
+    fn get_window_handle_by_tag(&self, tag: &str) -> Option<PlatformWindowHandle>;
+
     fn request_window(
         &mut self,
         width: u32,
         height: u32,
         title: &str,
+        tag: Option<String>,
     ) -> Option<&dyn PlatformWindow>;
 }

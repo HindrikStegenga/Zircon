@@ -5,7 +5,7 @@ use winit::window::Window;
 pub struct WinitPlatformWindow {
     pub(crate) window: Window,
     pub(crate) handle: PlatformWindowHandle,
-    pub(crate) intent: Option<String>,
+    pub(crate) tag: Option<String>,
 }
 
 unsafe impl HasRawWindowHandle for WinitPlatformWindow {
@@ -15,8 +15,8 @@ unsafe impl HasRawWindowHandle for WinitPlatformWindow {
 }
 
 impl PlatformWindow for WinitPlatformWindow {
-    fn intent(&self) -> Option<&str> {
-        return if let Some(v) = &self.intent {
+    fn tag(&self) -> Option<&str> {
+        return if let Some(v) = &self.tag {
             Some(v.as_str())
         } else {
             None
