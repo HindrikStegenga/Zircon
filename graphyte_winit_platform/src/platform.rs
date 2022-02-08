@@ -5,19 +5,24 @@ use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
+use graphyte_engine::engine_stages::PlatformPreDidInitInput;
 
 /// Platform using the `winit` windowing library.
 #[derive(Debug)]
 pub struct WinitPlatform {
     pub(crate) window_id_counter: u16,
     pub(crate) windows: Vec<WinitPlatformWindow>,
+    pub(crate) window_did_resize_sender: Option<MessageSender<WindowDidResize>>,
+    pub(crate) window_did_close_sender: Option<MessageSender<WindowDidClose>>
 }
 
 impl Default for WinitPlatform {
     fn default() -> Self {
         Self {
             windows: vec![],
+            window_did_resize_sender: None,
             window_id_counter: 0,
+            window_did_close_sender: None
         }
     }
 }
@@ -27,21 +32,11 @@ impl Platform for WinitPlatform {
         let mut controller = controller;
         let event_loop = EventLoop::new();
         let mut interface = WinitPlatformInterface::new(&mut self, &event_loop);
-        controller.initialize(&mut interface);
+        controller.initialize(&mut interface, pre_did_init_hook);
         controller.run();
 
-        let message_bus = controller
-            .shared()
-            .resources
-            .get_resource::<MessageBus>()
-            .expect("Requires a message bus!");
-
-        let window_resize_sender = message_bus.get_sender::<WindowDidResize>();
-        let window_close_sender = message_bus.get_sender::<WindowDidClose>();
-
-        if let Some(window_open_sender) = message_bus.get_sender::<WindowDidOpen>() {
-            interface.set_message_sender(window_open_sender);
-        }
+        let window_did_close_sender = self.window_did_close_sender.clone();
+        let window_did_resize_sender = self.window_did_resize_sender.clone();
 
         fn find_window(
             platform: &mut WinitPlatform,
@@ -57,6 +52,17 @@ impl Platform for WinitPlatform {
             {
                 (closure)(platform, window_idx);
             }
+        }
+
+        fn pre_did_init_hook(interface: &mut WinitPlatformInterface, input: PlatformPreDidInitInput) {
+            let message_bus = input
+                .resources
+                .get_resource::<MessageBus>()
+                .expect("Requires a message bus!");
+
+            interface.platform.window_did_resize_sender = message_bus.get_sender::<WindowDidResize>();
+            interface.platform.window_did_close_sender = message_bus.get_sender::<WindowDidClose>();
+            interface.window_open_sender = message_bus.get_sender::<WindowDidOpen>();
         }
 
         event_loop.run(move |event, window_target, control_flow| {
@@ -76,7 +82,7 @@ impl Platform for WinitPlatform {
                     window_id,
                 } => {
                     find_window(&mut self, window_id, |platform, window_idx| {
-                        if let Some(resize_handler) = &window_resize_sender {
+                        if let Some(resize_handler) = &window_did_resize_sender {
                             let handle = platform.windows[window_idx].handle;
                             tagged_log!(
                                 "Winit",
@@ -97,7 +103,7 @@ impl Platform for WinitPlatform {
                     window_id,
                 } => {
                     find_window(&mut self, window_id, |platform, window_idx| {
-                        if let Some(resize_handler) = &window_close_sender {
+                        if let Some(resize_handler) = &window_did_close_sender {
                             let handle = platform.windows[window_idx].handle;
                             tagged_log!("Winit", "Window closed.");
                             resize_handler.send(WindowDidClose { window: handle })
@@ -129,7 +135,7 @@ impl Platform for WinitPlatform {
                     if let Some(key) = virtual_keycode {
                         if key == VirtualKeyCode::R {
                             controller.reset();
-                            controller.initialize(&mut interface);
+                            controller.initialize(&mut interface, pre_did_init_hook);
                             controller.run();
                         }
                         if key == VirtualKeyCode::Q {
@@ -153,7 +159,7 @@ impl Platform for WinitPlatform {
                         }
                         EngineUpdateResult::Restart => {
                             controller.reset();
-                            controller.initialize(&mut interface);
+                            controller.initialize(&mut interface, pre_did_init_hook);
                             controller.run();
                         }
                         _ => {}

@@ -1,4 +1,4 @@
-use crate::common::update_receiver::UpdateReceiver;
+use crate::common::update_receivers::UpdateReceivers;
 use crate::common::*;
 use crate::{CameraIsBoundToWindow, CameraIsUnbound, CameraManager, CameraStateUpdate};
 use crossbeam::channel::*;
@@ -13,7 +13,7 @@ use graphyte_utils::*;
 pub struct GraphicsStageUpdateThreadHandler {}
 
 impl GraphicsStageUpdateThreadHandler {
-    pub(crate) fn new(resources: &mut ThreadLocalResourceManager) -> (Self, UpdateReceiver) {
+    pub(crate) fn new(resources: &mut ThreadLocalResourceManager) -> (Self, UpdateReceivers) {
         let (cameras_updated_sender, cameras_updated_receiver) = unbounded();
         let (camera_is_bound_sender, camera_is_bound_receiver) = unbounded();
         let (camera_is_unbound_sender, camera_is_unbound_receiver) = unbounded();
@@ -24,7 +24,7 @@ impl GraphicsStageUpdateThreadHandler {
             camera_is_unbound_sender,
         ));
         let handler = Self {};
-        let receiver = UpdateReceiver::new(
+        let receiver = UpdateReceivers::new(
             cameras_updated_receiver,
             camera_is_bound_receiver,
             camera_is_unbound_receiver,

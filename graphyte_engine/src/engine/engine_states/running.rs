@@ -30,6 +30,12 @@ impl EngineStateMachine<Running> {
         let fixed_update_step_duration = Duration::from_millis(1000)
             / (self.shared.internal_resources.timings.update_tick_rate as u32);
 
+        // Process events on the render stage thread.
+        self.state.render_stages.iter_mut().for_each(|s| {
+            s.process_events(RenderStageUpdateInput::new(interface));
+        });
+
+        // Tick the async executor so it executes stuff on a thread.
         self.state.dispatch_system.tick_async_executor();
 
         // Trigger the update thread if necessary.
@@ -62,11 +68,6 @@ impl EngineStateMachine<Running> {
                 }
             }
         }
-
-        // Process events on the render stage thread.
-        self.state.render_stages.iter_mut().for_each(|s| {
-            s.process_events(RenderStageUpdateInput::new(interface));
-        });
 
         // Trigger the render thread.
         for stage in &mut self.state.render_stages {

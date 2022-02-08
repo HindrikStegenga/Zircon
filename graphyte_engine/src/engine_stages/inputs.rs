@@ -4,6 +4,13 @@ use crate::PlatformInterface;
 use graphyte_utils::dispatcher::Dispatcher;
 use std::sync::Arc;
 
+pub struct PlatformPreDidInitInput<'a> {
+    pub resources: Arc<EngineResourceManager>,
+    pub scene_manager: &'a mut SceneManager,
+    pub update_thread_resources: &'a mut ThreadLocalResourceManager,
+    pub dispatcher: Arc<Dispatcher>,
+}
+
 pub struct EngineDidInitInput<'a> {
     pub platform_interface: &'a mut dyn PlatformInterface,
     pub resources: Arc<EngineResourceManager>,

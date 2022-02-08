@@ -2,6 +2,7 @@ use crate::*;
 use graphyte_engine::message_bus::*;
 use graphyte_engine::*;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};
+use graphyte_engine::engine_stages::EngineDidInitInput;
 
 #[derive(Debug)]
 pub struct WinitPlatformInterface<'a> {
@@ -18,12 +19,10 @@ impl<'a> WinitPlatformInterface<'a> {
             event_loop,
         }
     }
-    pub fn set_message_sender(&mut self, sender: MessageSender<WindowDidOpen>) {
-        self.window_open_sender = Some(sender);
-    }
 }
 
 impl PlatformInterface for WinitPlatformInterface<'_> {
+
     fn get_windows(&self) -> Vec<PlatformWindowHandle> {
         self.platform.windows.iter().map(|e| e.handle()).collect()
     }

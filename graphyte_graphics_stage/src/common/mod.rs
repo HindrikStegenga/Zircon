@@ -5,7 +5,7 @@ mod graphics_options;
 mod instance_setup;
 mod messages;
 mod stage;
-mod update_receiver;
+mod update_receivers;
 mod update_thread_handler;
 mod vk_library_wrapper;
 

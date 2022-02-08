@@ -1,7 +1,9 @@
+use std::ffi::CStr;
 use super::device_selection::*;
 use super::queue_types::*;
 use crate::GraphicsOptions;
 use ash::*;
+use graphyte_utils::*;
 
 pub(super) struct DeviceCreationResult {
     pub(super) device: Device,
@@ -89,6 +91,15 @@ pub(super) fn setup_device(
             vec![]
         }
     };
+
+    tagged_log!("Graphics", "Selected GPU: {:#?}", graphics_device.device_name());
+    for extension in extension_names {
+        unsafe {
+            let cstr = CStr::from_ptr(extension);
+            tagged_log!("Graphics", "Enabled device extension: {:#?}", cstr);
+        }
+    }
+    tagged_success!("Graphics", "Successfully set-up vulkan device!");
 
     Some(DeviceCreationResult {
         device,

@@ -58,7 +58,7 @@ fn check_and_get_surface_info(
     let qf_index = device.graphics_queue().qf_index;
     unsafe {
         // Check device surface support.
-        if loader
+        if !loader
             .get_physical_device_surface_support(phys_device, qf_index, surface)
             .ok()?
         {

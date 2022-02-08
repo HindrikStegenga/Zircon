@@ -6,6 +6,7 @@ use crate::{ForwardRenderPath, GraphicsOptions, RenderPath, RenderPathDescriptor
 use ash::*;
 use std::sync::Arc;
 use std::vec::Vec;
+use graphyte_utils::tagged_log;
 
 pub(crate) struct GraphicsDevice {
     instance: Arc<Instance>,

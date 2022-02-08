@@ -68,14 +68,15 @@ impl EngineStateMachine<Uninitialized> {
     }
 }
 
-impl Into<EngineStateMachine<Initialized>>
+impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)> Into<EngineStateMachine<Initialized>>
     for (
         EngineStateMachine<Uninitialized>,
-        &mut dyn PlatformInterface,
+        &mut P,
+        F,
     )
 {
     fn into(self) -> EngineStateMachine<Initialized> {
-        let (uninit, interface) = self;
+        let (uninit, interface, init_func) = self;
         let dispatch_system = match uninit.shared.resources.get_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {
@@ -140,9 +141,17 @@ impl Into<EngineStateMachine<Initialized>>
             .collect::<Vec<_>>();
 
         uninit.shared.resources.add_resource(builder.build());
-
         let mut scene_manager = SceneManager::default();
 
+        // Run the platform pre did init function.
+        (init_func)(interface, PlatformPreDidInitInput {
+            scene_manager: &mut scene_manager,
+            resources: Arc::clone(&uninit.shared.resources),
+            update_thread_resources: &mut update_thread_local_resources,
+            dispatcher: Arc::clone(&dispatch_system),
+        });
+
+        // Run the did init function for all update stages.
         for stage in &mut update_stages {
             match stage.engine_did_initialize(EngineDidInitInput {
                 platform_interface: interface,
@@ -157,6 +166,7 @@ impl Into<EngineStateMachine<Initialized>>
                 }
             }
         }
+        // Run the did init function for all render stages.
         for stage in &mut render_stages {
             match stage.engine_did_initialize(EngineDidInitInput {
                 platform_interface: interface,

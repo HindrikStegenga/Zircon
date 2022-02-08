@@ -98,29 +98,29 @@ impl CameraManager {
 
 #[derive(Clone)]
 pub(crate) struct CameraState {
-    previous_cycle_position: Vec3f,
-    previous_cycle_rotation: Vec4f,
-    camera: Camera,
+    pub(crate) previous_cycle_position: Vec3f,
+    pub(crate) previous_cycle_rotation: Vec4f,
+    pub(crate) camera: Camera,
 }
 
 #[derive(Clone)]
 pub(crate) struct CameraStateUpdate {
-    previous_cycle_position: Vec3f,
-    previous_cycle_rotation: Vec4f,
-    current_cycle_position: Vec3f,
-    current_cycle_rotation: Vec4f,
-    camera_handle: CameraHandle,
+    pub(crate) previous_cycle_position: Vec3f,
+    pub(crate) previous_cycle_rotation: Vec4f,
+    pub(crate) current_cycle_position: Vec3f,
+    pub(crate) current_cycle_rotation: Vec4f,
+    pub(crate) camera_handle: CameraHandle,
 }
 
 #[derive(Clone)]
 pub(crate) struct CameraIsBoundToWindow {
-    position: Vec3f,
-    rotation: Vec4f,
-    camera: Camera,
-    window_handle: PlatformWindowHandle,
+    pub(crate) position: Vec3f,
+    pub(crate) rotation: Vec4f,
+    pub(crate) camera: Camera,
+    pub(crate) window_handle: PlatformWindowHandle,
 }
 
 #[derive(Clone)]
 pub(crate) struct CameraIsUnbound {
-    camera: CameraHandle,
+    pub(crate) camera: CameraHandle,
 }
