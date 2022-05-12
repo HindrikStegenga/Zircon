@@ -1,11 +1,11 @@
 use crate::*;
+use graphyte_engine::engine_stages::PlatformPreDidInitInput;
 use graphyte_engine::{engine::controller::EngineController, *};
 use winit::window::WindowId;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
     event_loop::{ControlFlow, EventLoop},
 };
-use graphyte_engine::engine_stages::PlatformPreDidInitInput;
 
 /// Platform using the `winit` windowing library.
 #[derive(Debug)]
@@ -13,7 +13,7 @@ pub struct WinitPlatform {
     pub(crate) window_id_counter: u16,
     pub(crate) windows: Vec<WinitPlatformWindow>,
     pub(crate) window_did_resize_sender: Option<MessageSender<WindowDidResize>>,
-    pub(crate) window_did_close_sender: Option<MessageSender<WindowDidClose>>
+    pub(crate) window_did_close_sender: Option<MessageSender<WindowDidClose>>,
 }
 
 impl Default for WinitPlatform {
@@ -22,7 +22,7 @@ impl Default for WinitPlatform {
             windows: vec![],
             window_did_resize_sender: None,
             window_id_counter: 0,
-            window_did_close_sender: None
+            window_did_close_sender: None,
         }
     }
 }
@@ -54,13 +54,17 @@ impl Platform for WinitPlatform {
             }
         }
 
-        fn pre_did_init_hook(interface: &mut WinitPlatformInterface, input: PlatformPreDidInitInput) {
+        fn pre_did_init_hook(
+            interface: &mut WinitPlatformInterface,
+            input: PlatformPreDidInitInput,
+        ) {
             let message_bus = input
                 .resources
                 .get_resource::<MessageBus>()
                 .expect("Requires a message bus!");
 
-            interface.platform.window_did_resize_sender = message_bus.get_sender::<WindowDidResize>();
+            interface.platform.window_did_resize_sender =
+                message_bus.get_sender::<WindowDidResize>();
             interface.platform.window_did_close_sender = message_bus.get_sender::<WindowDidClose>();
             interface.window_open_sender = message_bus.get_sender::<WindowDidOpen>();
         }

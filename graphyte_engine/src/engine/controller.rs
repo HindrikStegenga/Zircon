@@ -1,5 +1,5 @@
-use crate::*;
 use crate::engine_stages::PlatformPreDidInitInput;
+use crate::*;
 
 use super::engine_states::{
     EngineSharedState, EngineState, Initialized, Running, StateMachine, Suspended, Uninitialized,
@@ -29,7 +29,11 @@ impl EngineController {
     pub fn resume(&mut self) {
         self.engine.state.resume();
     }
-    pub fn initialize<P: PlatformInterface>(&mut self, interface: &mut P, init_func: impl Fn(&mut P, PlatformPreDidInitInput)) {
+    pub fn initialize<P: PlatformInterface>(
+        &mut self,
+        interface: &mut P,
+        init_func: impl Fn(&mut P, PlatformPreDidInitInput),
+    ) {
         self.engine.state.initialize(interface, init_func);
     }
     pub fn reset(&mut self) {

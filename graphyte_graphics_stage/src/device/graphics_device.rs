@@ -4,13 +4,13 @@ use crate::device::device_selection::{
 use crate::device::queue_types::DeviceQueue;
 use crate::{ForwardRenderPath, GraphicsOptions, RenderPath, RenderPathDescriptor};
 use ash::*;
+use graphyte_utils::tagged_log;
 use std::sync::Arc;
 use std::vec::Vec;
-use graphyte_utils::tagged_log;
 
 pub(crate) struct GraphicsDevice {
     instance: Arc<Instance>,
-    device: Device,
+    device: Arc<Device>,
     graphics_queue: DeviceQueue,
     transfer_queues: Vec<DeviceQueue>,
     physical_device: vk::PhysicalDevice,
@@ -19,6 +19,9 @@ pub(crate) struct GraphicsDevice {
 impl GraphicsDevice {
     pub fn device(&self) -> &Device {
         &self.device
+    }
+    pub fn device_arc(&self) -> Arc<Device> {
+        Arc::clone(&self.device)
     }
     pub fn graphics_queue(&self) -> &DeviceQueue {
         &self.graphics_queue
@@ -49,7 +52,7 @@ impl GraphicsDevice {
 
         Self {
             instance: Arc::clone(&create_info.instance),
-            device: creation_result.device,
+            device: Arc::new(creation_result.device),
             graphics_queue: creation_result.graphics_queue,
             transfer_queues: creation_result.transfer_queues,
             physical_device: graphics_device.device,

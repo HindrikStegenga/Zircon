@@ -1,8 +1,5 @@
 use graphyte_asset_library::handles::*;
-
 pub use raw_window_handle::*;
-use crate::engine_stages::EngineDidInitInput;
-use crate::Platform;
 
 pub trait PlatformWindow: HasRawWindowHandle {
     fn tag(&self) -> Option<&str>;
@@ -44,7 +41,6 @@ unsafe impl HasRawWindowHandle for RawPlatformWindow {
 pub type PlatformWindowHandle = Handle<*const dyn PlatformWindow, u16>;
 
 pub trait PlatformInterface: std::fmt::Debug {
-
     fn get_windows(&self) -> Vec<PlatformWindowHandle>;
 
     fn get_window(&self, handle: PlatformWindowHandle) -> Option<&dyn PlatformWindow>;

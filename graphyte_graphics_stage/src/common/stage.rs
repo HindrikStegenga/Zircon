@@ -74,15 +74,22 @@ impl RenderStage for GraphicsStage {
     fn update_thread_did_run(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
         if let Some(receiver) = &mut self.update_receiver {
             // is camera unbound?
-            while let Ok(is_unbound) = receiver.camera_is_unbound.try_recv() {
-
-            }
+            while let Ok(is_unbound) = receiver.camera_is_unbound.try_recv() {}
 
             // is camera bound?
             while let Ok(is_bound) = receiver.camera_is_bound.try_recv() {
-                if let Some(idx) = self.available_window_targets.iter().enumerate().find_map(|(idx, item)|{
-                    return if item.window() == is_bound.window_handle { Some(idx) } else { None }
-                }) {
+                if let Some(idx) =
+                    self.available_window_targets
+                        .iter()
+                        .enumerate()
+                        .find_map(|(idx, item)| {
+                            return if item.window() == is_bound.window_handle {
+                                Some(idx)
+                            } else {
+                                None
+                            };
+                        })
+                {
                     let target = self.available_window_targets.swap_remove(idx);
                     let wrtb = match WindowRenderTargetBinding::new(
                         self.vk.instance(),
@@ -90,11 +97,14 @@ impl RenderStage for GraphicsStage {
                         &is_bound.camera,
                         input.platform,
                         target,
-                        &self.graphics_options
+                        &self.graphics_options,
                     ) {
                         Ok(v) => v,
                         Err(rt) => {
-                            tagged_warn!("Graphics", "Failed setting up window render target binding!");
+                            tagged_warn!(
+                                "Graphics",
+                                "Failed setting up window render target binding!"
+                            );
                             self.available_window_targets.push(rt);
                             continue;
                         }
@@ -125,7 +135,6 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for Graphi
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidClose) {
         tagged_log!("Graphics", "WindowDidClose message received!");
-
     }
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for GraphicsStage {

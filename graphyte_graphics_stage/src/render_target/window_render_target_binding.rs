@@ -48,11 +48,9 @@ impl WindowRenderTargetBinding {
         // Create a render path
         let render_path = match camera.path() {
             RenderPathType::Forward => {
-                match ForwardRenderPath::instantiate(RenderPathCreateInfo {
-                    options
-                }) {
+                match ForwardRenderPath::instantiate(RenderPathCreateInfo { options }) {
                     Some(v) => v,
-                    None => { return Err(window_render_target) }
+                    None => return Err(window_render_target),
                 }
             }
         };
@@ -61,7 +59,7 @@ impl WindowRenderTargetBinding {
             window_render_target,
             camera: camera.clone(),
             swap_chain,
-            render_path: Box::new(render_path)
+            render_path: Box::new(render_path),
         })
     }
 }

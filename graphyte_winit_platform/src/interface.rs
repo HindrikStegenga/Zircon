@@ -1,8 +1,8 @@
 use crate::*;
+use graphyte_engine::engine_stages::EngineDidInitInput;
 use graphyte_engine::message_bus::*;
 use graphyte_engine::*;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};
-use graphyte_engine::engine_stages::EngineDidInitInput;
 
 #[derive(Debug)]
 pub struct WinitPlatformInterface<'a> {
@@ -22,7 +22,6 @@ impl<'a> WinitPlatformInterface<'a> {
 }
 
 impl PlatformInterface for WinitPlatformInterface<'_> {
-
     fn get_windows(&self) -> Vec<PlatformWindowHandle> {
         self.platform.windows.iter().map(|e| e.handle()).collect()
     }

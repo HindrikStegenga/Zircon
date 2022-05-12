@@ -1,13 +1,35 @@
+use std::sync::Arc;
 use crate::render_target::WindowRenderTarget;
 use crate::{GraphicsDevice, GraphicsOptions};
 use ash::extensions::khr::Surface;
-use ash::vk::SwapchainKHR;
+use ash::vk::{ImageView, SwapchainKHR};
 use ash::*;
 use graphyte_engine::PlatformWindow;
 
+pub(crate) struct FrameSyncData {
+    image_available_semaphore: vk::Semaphore,
+    render_finished_semaphore: vk::Semaphore,
+    render_finished_fence: vk::Fence,
+}
+
+impl FrameSyncData {
+    pub fn image_available_semaphore(&self) -> vk::Semaphore {
+        self.image_available_semaphore
+    }
+    pub fn render_finished_semaphore(&self) -> vk::Semaphore {
+        self.render_finished_semaphore
+    }
+    pub fn render_finished_fence(&self) -> vk::Fence {
+        self.render_finished_fence
+    }
+}
+
 pub(crate) struct SwapChain {
+    image_views: Vec<vk::ImageView>,
+    images: Vec<vk::Image>,
     swap_chain: vk::SwapchainKHR,
     loader: extensions::khr::Swapchain,
+    device: Arc<Device>
 }
 
 impl SwapChain {
@@ -21,23 +43,26 @@ impl SwapChain {
         let surface = window_target.surface();
         let loader = window_target.loader();
         let surface_info = check_and_get_surface_info(surface, loader, device)?;
+        let surface_format = select_surface_format();
         let (loader, swap_chain) = create_swap_chain(
             instance,
             device.device(),
             window,
             surface,
+            surface_format,
             SwapchainKHR::null(),
             &surface_info,
             options,
         )?;
-
-        Self { swap_chain, loader }.into()
+        let (images, image_views) = create_images_and_views(device.device(), &loader, swap_chain, surface_format).ok()?;
+        Self { image_views, images, swap_chain, loader, device: device.device_arc() }.into()
     }
 }
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
         unsafe {
+            destroy_image_views(&self.device, &mut self.image_views);
             self.loader.destroy_swapchain(self.swap_chain, None);
         }
     }
@@ -138,11 +163,11 @@ fn create_swap_chain(
     device: &Device,
     window: &dyn PlatformWindow,
     surface: vk::SurfaceKHR,
+    surface_format: vk::SurfaceFormatKHR,
     old_swap_chain: vk::SwapchainKHR,
     surface_info: &SurfaceInfo,
     options: &GraphicsOptions,
 ) -> Option<(ash::extensions::khr::Swapchain, vk::SwapchainKHR)> {
-    let surface_format = select_surface_format();
     let create_info = vk::SwapchainCreateInfoKHR::builder()
         .surface(surface)
         .min_image_count(select_image_count(&surface_info.surface_caps))
@@ -162,4 +187,61 @@ fn create_swap_chain(
         let swap_chain = loader.create_swapchain(&create_info, None).ok()?;
         (loader, swap_chain).into()
     }
+}
+
+fn create_images_and_views(
+    device: &Device,
+    sw_loader: &ash::extensions::khr::Swapchain,
+    swap_chain: vk::SwapchainKHR,
+    surface_format: vk::SurfaceFormatKHR,
+) -> Result<(Vec<vk::Image>, Vec<vk::ImageView>), vk::Result> {
+    let images = unsafe { sw_loader.get_swapchain_images(swap_chain) }?;
+
+    let mut image_views : Vec<vk::ImageView> = vec![];
+    for swap_chain_image in &images {
+        let image_view_info = vk::ImageViewCreateInfo::builder()
+            .image(*swap_chain_image)
+            .format(surface_format.format)
+            .view_type(vk::ImageViewType::TYPE_2D)
+            .components(
+                vk::ComponentMapping::builder()
+                    .r(vk::ComponentSwizzle::IDENTITY)
+                    .g(vk::ComponentSwizzle::IDENTITY)
+                    .b(vk::ComponentSwizzle::IDENTITY)
+                    .a(vk::ComponentSwizzle::IDENTITY)
+                    .build())
+            .subresource_range(
+                vk::ImageSubresourceRange::builder()
+                    .aspect_mask(vk::ImageAspectFlags::COLOR)
+                    .base_mip_level(0)
+                    .level_count(1)
+                    .base_array_layer(0)
+                    .layer_count(1)
+                    .build()
+            );
+        let image_view = unsafe { device.create_image_view(&image_view_info, None)? };
+        image_views.push(image_view);
+    }
+
+    Ok((images, image_views))
+}
+
+fn destroy_image_views(device: &Device, image_views: &mut Vec<vk::ImageView>) {
+    image_views.iter().for_each(|img_view| unsafe {
+        device.destroy_image_view(*img_view, None);
+    });
+    image_views.clear();
+}
+
+fn create_synchronization_primitives(device: &Device, frames_in_flight: u32) -> Result<Vec<FrameSyncData>, vk::Result> {
+    let frames_in_flight = std::cmp::max(frames_in_flight, 1);
+    let mut frame_sync_data = vec![];
+
+    for _ in 0..frames_in_flight {
+        let semaphore_create_info = vk::SemaphoreCreateInfo::builder().build();
+        let semaphore = unsafe { device.create_semaphore(&semaphore_create_info, None)? };
+
+    }
+
+    Ok(frame_sync_data)
 }

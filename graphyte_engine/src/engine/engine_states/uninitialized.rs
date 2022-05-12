@@ -68,12 +68,8 @@ impl EngineStateMachine<Uninitialized> {
     }
 }
 
-impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)> Into<EngineStateMachine<Initialized>>
-    for (
-        EngineStateMachine<Uninitialized>,
-        &mut P,
-        F,
-    )
+impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)>
+    Into<EngineStateMachine<Initialized>> for (EngineStateMachine<Uninitialized>, &mut P, F)
 {
     fn into(self) -> EngineStateMachine<Initialized> {
         let (uninit, interface, init_func) = self;
@@ -144,12 +140,15 @@ impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)> Into<EngineSt
         let mut scene_manager = SceneManager::default();
 
         // Run the platform pre did init function.
-        (init_func)(interface, PlatformPreDidInitInput {
-            scene_manager: &mut scene_manager,
-            resources: Arc::clone(&uninit.shared.resources),
-            update_thread_resources: &mut update_thread_local_resources,
-            dispatcher: Arc::clone(&dispatch_system),
-        });
+        (init_func)(
+            interface,
+            PlatformPreDidInitInput {
+                scene_manager: &mut scene_manager,
+                resources: Arc::clone(&uninit.shared.resources),
+                update_thread_resources: &mut update_thread_local_resources,
+                dispatcher: Arc::clone(&dispatch_system),
+            },
+        );
 
         // Run the did init function for all update stages.
         for stage in &mut update_stages {
