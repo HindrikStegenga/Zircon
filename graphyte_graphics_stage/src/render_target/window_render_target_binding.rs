@@ -23,6 +23,15 @@ impl WindowRenderTargetBinding {
     pub fn render_path(&self) -> &Box<dyn RenderPath> {
         &self.render_path
     }
+
+    pub fn render(&mut self, device: &GraphicsDevice) -> bool {
+        self.render_path.render(
+            &self.camera,
+            &mut self.swap_chain,
+            &mut self.window_render_target,
+            device,
+        )
+    }
 }
 
 impl WindowRenderTargetBinding {

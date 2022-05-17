@@ -1,4 +1,7 @@
-use crate::{ForwardRenderPath, GraphicsOptions};
+use crate::{
+    render_target::{SwapChain, WindowRenderTarget},
+    Camera, ForwardRenderPath, GraphicsDevice, GraphicsOptions,
+};
 use ash::*;
 use serde::{Deserialize, Serialize};
 use std::ffi::{CStr, CString};
@@ -69,5 +72,11 @@ pub(crate) trait RenderPath {
     where
         Self: Sized;
 
-    fn render(&mut self);
+    fn render(
+        &mut self,
+        camera: &Camera,
+        swap_chain: &mut SwapChain,
+        window_render_target: &mut WindowRenderTarget,
+        device: &GraphicsDevice,
+    ) -> bool;
 }

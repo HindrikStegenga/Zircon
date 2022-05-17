@@ -1,39 +1,37 @@
-use std::sync::Arc;
 use crate::render_target::WindowRenderTarget;
-use crate::{GraphicsDevice, GraphicsOptions};
+use crate::{DeviceQueue, GraphicsDevice, GraphicsOptions};
 use ash::extensions::khr::Surface;
-use ash::vk::{ImageView, SwapchainKHR};
 use ash::*;
 use graphyte_engine::PlatformWindow;
-
-pub(crate) struct FrameSyncData {
-    image_available_semaphore: vk::Semaphore,
-    render_finished_semaphore: vk::Semaphore,
-    render_finished_fence: vk::Fence,
-}
-
-impl FrameSyncData {
-    pub fn image_available_semaphore(&self) -> vk::Semaphore {
-        self.image_available_semaphore
-    }
-    pub fn render_finished_semaphore(&self) -> vk::Semaphore {
-        self.render_finished_semaphore
-    }
-    pub fn render_finished_fence(&self) -> vk::Fence {
-        self.render_finished_fence
-    }
-}
+use std::sync::Arc;
 
 pub(crate) struct SwapChain {
+    current_frame_index: u32,
+    frames_in_flight: u32,
+    image_available_semaphores: Vec<vk::Semaphore>,
+    rendering_finished_semaphores: Vec<vk::Semaphore>,
+    in_flight_fences: Vec<vk::Fence>,
     image_views: Vec<vk::ImageView>,
     images: Vec<vk::Image>,
     swap_chain: vk::SwapchainKHR,
     loader: extensions::khr::Swapchain,
-    device: Arc<Device>
+    device: Arc<Device>,
+}
+
+pub(crate) struct AcquiredFrameInfo {
+    // Image index that needs to be passed to [`present_frame`].
+    pub image_index: u32,
+    // Semaphore that needs to be waited on before any rendering may occur.
+    pub wait_semaphore: vk::Semaphore,
+    // Semaphore that needs to be signaled when rendering is finished.
+    pub rendering_finished_semaphore: vk::Semaphore,
+    // Fence that needs to be signaled when rendering is finished.
+    // This is to synchronize the CPU and GPU.
+    pub rendering_finished_fence: vk::Fence,
 }
 
 impl SwapChain {
-    pub fn new(
+    pub(crate) fn new(
         instance: &Instance,
         device: &GraphicsDevice,
         window: &dyn PlatformWindow,
@@ -50,18 +48,108 @@ impl SwapChain {
             window,
             surface,
             surface_format,
-            SwapchainKHR::null(),
+            vk::SwapchainKHR::null(),
             &surface_info,
             options,
         )?;
-        let (images, image_views) = create_images_and_views(device.device(), &loader, swap_chain, surface_format).ok()?;
-        Self { image_views, images, swap_chain, loader, device: device.device_arc() }.into()
+        let (images, image_views) =
+            create_images_and_views(device.device(), &loader, swap_chain, surface_format).ok()?;
+        let (image_available_semaphores, rendering_finished_semaphores, in_flight_fences) =
+            create_synchronization_primitives(device.device(), options.preferred_frames_in_flight)
+                .ok()?;
+
+        Self {
+            image_views,
+            images,
+            swap_chain,
+            loader,
+            device: device.device_arc(),
+            image_available_semaphores,
+            rendering_finished_semaphores,
+            in_flight_fences,
+            current_frame_index: 0,
+            frames_in_flight: options.preferred_frames_in_flight,
+        }
+        .into()
+    }
+
+    // Each call of this function MUST be matched with a call to [`present_frame`].
+    // Unless a failure happens and the swap chain is recreated in which case it's not necessary.
+    pub(crate) unsafe fn acquire_next_frame(
+        &mut self,
+    ) -> Result<(AcquiredFrameInfo, bool), vk::Result> {
+        let device = self.device.as_ref();
+        const DEFAULT_TIME_OUT: u64 = 5_000_000_000;
+
+        // Wait for fence
+        device.wait_for_fences(
+            core::slice::from_ref(&self.in_flight_fences[self.current_frame_index as usize]),
+            true,
+            DEFAULT_TIME_OUT,
+        )?;
+
+        // Acquire an image
+        let (image_index, suboptimal) = self.loader.acquire_next_image(
+            self.swap_chain,
+            DEFAULT_TIME_OUT,
+            self.image_available_semaphores[self.current_frame_index as usize],
+            vk::Fence::null(),
+        )?;
+
+        // Reset the fence
+        device.reset_fences(core::slice::from_ref(
+            &self.in_flight_fences[self.current_frame_index as usize],
+        ))?;
+
+        Ok((
+            AcquiredFrameInfo {
+                wait_semaphore: self.image_available_semaphores[self.current_frame_index as usize],
+                rendering_finished_semaphore: self.rendering_finished_semaphores
+                    [self.current_frame_index as usize],
+                rendering_finished_fence: self.in_flight_fences[self.current_frame_index as usize],
+                image_index,
+            },
+            suboptimal,
+        ))
+    }
+
+    // Needs to be called in tandem with [`acquire_next_frame`].
+    pub(crate) unsafe fn present_frame(
+        &mut self,
+        image_index: u32,
+        present_queue: &DeviceQueue,
+    ) -> Result<bool, vk::Result> {
+        let current_frame_index = self.current_frame_index as usize;
+
+        let present_info = vk::PresentInfoKHR::builder()
+            .wait_semaphores(core::slice::from_ref(
+                &self.rendering_finished_semaphores[current_frame_index],
+            ))
+            .swapchains(core::slice::from_ref(&self.swap_chain))
+            .image_indices(core::slice::from_ref(&image_index));
+
+        let value = match {
+            self.loader
+                .queue_present(present_queue.queue, &present_info)
+        } {
+            Ok(is_sub_optimal) => Ok(is_sub_optimal),
+            Err(error) => Err(error),
+        };
+
+        self.current_frame_index = (self.current_frame_index + 1u32) % self.frames_in_flight;
+        return value;
     }
 }
 
 impl Drop for SwapChain {
     fn drop(&mut self) {
         unsafe {
+            destroy_syncronization_primitives(
+                &self.device,
+                &mut self.image_available_semaphores,
+                &mut self.rendering_finished_semaphores,
+                &mut self.in_flight_fences,
+            );
             destroy_image_views(&self.device, &mut self.image_views);
             self.loader.destroy_swapchain(self.swap_chain, None);
         }
@@ -197,7 +285,7 @@ fn create_images_and_views(
 ) -> Result<(Vec<vk::Image>, Vec<vk::ImageView>), vk::Result> {
     let images = unsafe { sw_loader.get_swapchain_images(swap_chain) }?;
 
-    let mut image_views : Vec<vk::ImageView> = vec![];
+    let mut image_views: Vec<vk::ImageView> = vec![];
     for swap_chain_image in &images {
         let image_view_info = vk::ImageViewCreateInfo::builder()
             .image(*swap_chain_image)
@@ -209,7 +297,8 @@ fn create_images_and_views(
                     .g(vk::ComponentSwizzle::IDENTITY)
                     .b(vk::ComponentSwizzle::IDENTITY)
                     .a(vk::ComponentSwizzle::IDENTITY)
-                    .build())
+                    .build(),
+            )
             .subresource_range(
                 vk::ImageSubresourceRange::builder()
                     .aspect_mask(vk::ImageAspectFlags::COLOR)
@@ -217,7 +306,7 @@ fn create_images_and_views(
                     .level_count(1)
                     .base_array_layer(0)
                     .layer_count(1)
-                    .build()
+                    .build(),
             );
         let image_view = unsafe { device.create_image_view(&image_view_info, None)? };
         image_views.push(image_view);
@@ -233,15 +322,91 @@ fn destroy_image_views(device: &Device, image_views: &mut Vec<vk::ImageView>) {
     image_views.clear();
 }
 
-fn create_synchronization_primitives(device: &Device, frames_in_flight: u32) -> Result<Vec<FrameSyncData>, vk::Result> {
+fn destroy_syncronization_primitives(
+    device: &Device,
+    image_available_semaphores: &mut Vec<vk::Semaphore>,
+    rendering_finished_semaphores: &mut Vec<vk::Semaphore>,
+    in_flight_fences: &mut Vec<vk::Fence>,
+) {
+    for semaphore in image_available_semaphores.iter() {
+        unsafe {
+            device.destroy_semaphore(*semaphore, None);
+        }
+    }
+    for semaphore in rendering_finished_semaphores.iter() {
+        unsafe {
+            device.destroy_semaphore(*semaphore, None);
+        }
+    }
+    for fence in in_flight_fences.iter() {
+        unsafe {
+            device.destroy_fence(*fence, None);
+        }
+    }
+    image_available_semaphores.clear();
+    rendering_finished_semaphores.clear();
+    in_flight_fences.clear();
+}
+
+fn create_synchronization_primitives(
+    device: &Device,
+    frames_in_flight: u32,
+) -> Result<(Vec<vk::Semaphore>, Vec<vk::Semaphore>, Vec<vk::Fence>), vk::Result> {
     let frames_in_flight = std::cmp::max(frames_in_flight, 1);
-    let mut frame_sync_data = vec![];
+
+    let mut image_available_semaphores: Vec<vk::Semaphore> =
+        Vec::with_capacity(frames_in_flight as usize);
+    let mut rendering_finished_semaphores: Vec<vk::Semaphore> =
+        Vec::with_capacity(frames_in_flight as usize);
+    let mut in_flight_fences: Vec<vk::Fence> = Vec::with_capacity(frames_in_flight as usize);
 
     for _ in 0..frames_in_flight {
-        let semaphore_create_info = vk::SemaphoreCreateInfo::builder().build();
-        let semaphore = unsafe { device.create_semaphore(&semaphore_create_info, None)? };
-
+        // Fill image available semaphore
+        let semaphore_builder = vk::SemaphoreCreateInfo::builder();
+        match { unsafe { device.create_semaphore(&semaphore_builder, None) } } {
+            Ok(v) => image_available_semaphores.push(v),
+            Err(e) => {
+                destroy_syncronization_primitives(
+                    device,
+                    &mut image_available_semaphores,
+                    &mut rendering_finished_semaphores,
+                    &mut in_flight_fences,
+                );
+                return Err(e);
+            }
+        }
+        // Fill render finished semaphore
+        match { unsafe { device.create_semaphore(&semaphore_builder, None) } } {
+            Ok(v) => rendering_finished_semaphores.push(v),
+            Err(e) => {
+                destroy_syncronization_primitives(
+                    device,
+                    &mut image_available_semaphores,
+                    &mut rendering_finished_semaphores,
+                    &mut in_flight_fences,
+                );
+                return Err(e);
+            }
+        }
+        // Fill fences for command buffers
+        let fence_builder = vk::FenceCreateInfo::builder().flags(vk::FenceCreateFlags::SIGNALED);
+        match { unsafe { device.create_fence(&fence_builder, None) } } {
+            Ok(v) => in_flight_fences.push(v),
+            Err(e) => {
+                destroy_syncronization_primitives(
+                    device,
+                    &mut image_available_semaphores,
+                    &mut rendering_finished_semaphores,
+                    &mut in_flight_fences,
+                );
+                return Err(e);
+            }
+        }
     }
 
-    Ok(frame_sync_data)
+    Ok((
+        image_available_semaphores,
+        rendering_finished_semaphores,
+        in_flight_fences,
+    ))
 }

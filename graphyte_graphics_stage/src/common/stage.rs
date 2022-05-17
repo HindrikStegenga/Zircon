@@ -118,6 +118,11 @@ impl RenderStage for GraphicsStage {
     }
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+        for render_target in &mut self.render_targets {
+            if !render_target.render(&self.device) {
+                return EngineUpdateResult::Restart;
+            }
+        }
         EngineUpdateResult::Ok
     }
 }
