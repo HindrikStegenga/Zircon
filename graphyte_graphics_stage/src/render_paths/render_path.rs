@@ -3,6 +3,7 @@ use crate::{
     Camera, ForwardRenderPath, GraphicsDevice, GraphicsOptions,
 };
 use ash::*;
+use graphyte_engine::RenderStageUpdateInput;
 use serde::{Deserialize, Serialize};
 use std::ffi::{CStr, CString};
 
@@ -82,5 +83,6 @@ pub(crate) trait RenderPath {
         swap_chain: &mut SwapChain,
         window_render_target: &mut WindowRenderTarget,
         device: &GraphicsDevice,
+        input: &mut RenderStageUpdateInput,
     ) -> bool;
 }

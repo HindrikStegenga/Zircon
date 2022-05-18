@@ -5,6 +5,7 @@ use ash::*;
 use graphyte_engine::PlatformWindow;
 use std::sync::Arc;
 
+// Wraps the vulkan swap chain and it's associated images and imageviews.
 pub(crate) struct SwapChain {
     current_frame_index: u32,
     current_extent: vk::Extent2D,

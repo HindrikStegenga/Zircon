@@ -49,6 +49,11 @@ impl UpdateStagesRunner {
     }
 
     pub fn update(&mut self, shared_state: &mut EngineSharedState) -> EngineUpdateResult {
+        // Amount of ticks per second.
+        let update_tick_rate = shared_state.internal_resources.timings.update_tick_rate;
+        // Amount of updates that have already occurred.
+        let update_counter_past_second = shared_state.internal_resources.timings.update_counter;
+
         // Possibly wait for previous iteration, getting it's message as well.
         let previous_message = self.wait_for_previous_update_completed();
 
@@ -78,6 +83,8 @@ impl UpdateStagesRunner {
                             dispatcher.clone(),
                             scene_manager,
                             thread_local_resources,
+                            update_tick_rate,
+                            update_counter_past_second,
                         ))
                     });
 
@@ -88,6 +95,8 @@ impl UpdateStagesRunner {
                         dispatcher.clone(),
                         scene_manager,
                         thread_local_resources,
+                        update_tick_rate,
+                        update_counter_past_second,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -103,6 +112,8 @@ impl UpdateStagesRunner {
                         dispatcher.clone(),
                         scene_manager,
                         thread_local_resources,
+                        update_tick_rate,
+                        update_counter_past_second,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;
@@ -118,6 +129,8 @@ impl UpdateStagesRunner {
                         dispatcher.clone(),
                         scene_manager,
                         thread_local_resources,
+                        update_tick_rate,
+                        update_counter_past_second,
                     ));
                     if msg == EngineUpdateResult::Ok {
                         continue;

@@ -197,6 +197,7 @@ impl RenderPath for ForwardRenderPath {
         swap_chain: &mut SwapChain,
         _window_render_target: &mut WindowRenderTarget,
         device: &GraphicsDevice,
+        input: &mut RenderStageUpdateInput,
     ) -> bool {
         unsafe {
             let (info, is_sub_optimal) = match swap_chain.acquire_next_frame() {
@@ -236,9 +237,13 @@ impl RenderPath for ForwardRenderPath {
                 .begin_command_buffer(main_command_buffer, &cmd_begin_info)
                 .ok();
 
+            let mut v = 1.0f32 / (input.update_tick_rate as f32)
+                * ((input.update_counter_past_second as f32)
+                    + (input.alpha_till_next_update * (1.0f32 / input.update_tick_rate as f32)));
+
             let clear_value = [vk::ClearValue {
                 color: vk::ClearColorValue {
-                    float32: [1.0, 1.0, 1.0, 1.0],
+                    float32: [v, v, v, 1.0],
                 },
             }];
 
@@ -283,7 +288,7 @@ impl RenderPath for ForwardRenderPath {
 
             match swap_chain.present_frame(info.image_index, &device.graphics_queue()) {
                 Ok(is_sub_optimal) => {
-                    tagged_log!("Graphics", "Surface became sub-optimal.");
+                    //tagged_log!("Graphics", "Surface became sub-optimal.");
                 }
                 Err(e) => {
                     // TODO: Handle swap resize/recreate!

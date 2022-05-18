@@ -1,8 +1,11 @@
 use crate::*;
 use std::time::*;
 pub struct EngineGameloopTimer {
+    // Amount of ticks the update is updated each second.
     pub update_tick_rate: u32,
+    // Amount of frames that may be skipped.
     pub max_skipped_frames: u32,
+    // Max framerate that the engine will be capped to.
     pub max_frame_rate: Option<u32>,
 
     pub previous_frame_instant: Instant,
@@ -16,8 +19,11 @@ pub struct EngineGameloopTimer {
 
     pub previous_sleep_time: Duration,
     pub negative_sleep_time: Duration,
+    // Counts total amount of update ticks in the past second.
     pub update_counter: u64,
+    // Counts total amount of frames in the past second.
     pub frame_counter: u64,
+    // Progress towards next update tick from 0 to 1.
     pub alpha: f32,
 
     pub total_sleep_time_last_second: Duration,

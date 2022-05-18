@@ -117,9 +117,9 @@ impl RenderStage for GraphicsStage {
         EngineUpdateResult::Ok
     }
 
-    fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
+    fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
         for render_target in &mut self.render_targets {
-            if !render_target.render(&self.device) {
+            if !render_target.render(&self.device, &mut input) {
                 return EngineUpdateResult::Restart;
             }
         }
@@ -144,7 +144,13 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for Graph
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidResize) {
-        let window = context.platform.get_window(message.window).unwrap();
+        let device = &self.device;
+        self.render_targets
+            .iter_mut()
+            .filter(|e| e.window_handle() == message.window)
+            .for_each(|binding| {
+                binding.window_did_resize(device, context.platform);
+            });
         tagged_log!("Graphics", "WindowDidResize message received!");
     }
 }

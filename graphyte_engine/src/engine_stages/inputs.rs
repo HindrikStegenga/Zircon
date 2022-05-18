@@ -38,11 +38,27 @@ impl<'a> RenderStageConstructorInput<'a> {
 
 pub struct RenderStageUpdateInput<'a> {
     pub platform: &'a mut dyn PlatformInterface,
+    pub update_tick_rate: u32,
+    pub alpha_till_next_update: f32,
+    pub frame_counter_past_second: u64,
+    pub update_counter_past_second: u64,
 }
 
 impl<'a> RenderStageUpdateInput<'a> {
-    pub fn new(platform: &'a mut dyn PlatformInterface) -> Self {
-        Self { platform }
+    pub fn new(
+        platform: &'a mut dyn PlatformInterface,
+        update_tick_rate: u32,
+        alpha_till_next_update: f32,
+        frame_counter_past_second: u64,
+        update_counter_past_second: u64,
+    ) -> Self {
+        Self {
+            platform,
+            update_tick_rate,
+            alpha_till_next_update,
+            frame_counter_past_second,
+            update_counter_past_second,
+        }
     }
 }
 
@@ -68,6 +84,8 @@ pub struct UpdateStageUpdateInput<'a> {
     pub resources: Arc<EngineResourceManager>,
     pub update_thread_resources: &'a mut ThreadLocalResourceManager,
     pub dispatcher: Arc<Dispatcher>,
+    pub update_tick_rate: u32,
+    pub update_counter_past_second: u64,
 }
 
 impl<'a> UpdateStageUpdateInput<'a> {
@@ -76,12 +94,16 @@ impl<'a> UpdateStageUpdateInput<'a> {
         dispatcher: Arc<Dispatcher>,
         scene_manager: &'a mut SceneManager,
         thread_local_resources: &'a mut ThreadLocalResourceManager,
+        update_tick_rate: u32,
+        update_counter_past_second: u64,
     ) -> Self {
         Self {
             scene_manager,
             resources,
             update_thread_resources: thread_local_resources,
             dispatcher,
+            update_tick_rate,
+            update_counter_past_second,
         }
     }
 }

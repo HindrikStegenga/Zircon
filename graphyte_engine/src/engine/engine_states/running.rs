@@ -27,13 +27,26 @@ impl EngineStateMachine<Running> {
     pub fn tick(&mut self, interface: &mut dyn PlatformInterface) -> EngineUpdateResult {
         self.shared.internal_resources.timings.frame_start();
 
+        let tick_rate = self.shared.internal_resources.timings.update_tick_rate;
+        let alpha = self.shared.internal_resources.timings.alpha;
+
         let fixed_update_step_duration = Duration::from_millis(1000)
             / (self.shared.internal_resources.timings.update_tick_rate as u32);
 
-        // Process events on the render stage thread.
-        self.state.render_stages.iter_mut().for_each(|s| {
-            s.process_events(RenderStageUpdateInput::new(interface));
-        });
+        {
+            let frame_counter_past_second = self.shared.internal_resources.timings.frame_counter;
+            let update_counter_past_second = self.shared.internal_resources.timings.update_counter;
+            // Process events on the render stage thread.
+            self.state.render_stages.iter_mut().for_each(|s| {
+                s.process_events(RenderStageUpdateInput::new(
+                    interface,
+                    tick_rate,
+                    alpha,
+                    frame_counter_past_second,
+                    update_counter_past_second,
+                ));
+            });
+        }
 
         // Tick the async executor so it executes stuff on a thread.
         self.state.dispatch_system.tick_async_executor();
@@ -59,8 +72,16 @@ impl EngineStateMachine<Running> {
                 .last_fixed_update_instant =
                 self.shared.internal_resources.timings.frame_start_instant;
 
+            let frame_counter_past_second = self.shared.internal_resources.timings.frame_counter;
+            let update_counter_past_second = self.shared.internal_resources.timings.update_counter;
             for render_stage in &mut self.state.render_stages {
-                match render_stage.update_thread_did_run(RenderStageUpdateInput::new(interface)) {
+                match render_stage.update_thread_did_run(RenderStageUpdateInput::new(
+                    interface,
+                    tick_rate,
+                    alpha,
+                    frame_counter_past_second,
+                    update_counter_past_second,
+                )) {
                     EngineUpdateResult::Ok => {}
                     result => {
                         return result;
@@ -70,8 +91,16 @@ impl EngineStateMachine<Running> {
         }
 
         // Trigger the render thread.
+        let frame_counter_past_second = self.shared.internal_resources.timings.frame_counter;
+        let update_counter_past_second = self.shared.internal_resources.timings.update_counter;
         for stage in &mut self.state.render_stages {
-            match stage.render(RenderStageUpdateInput::new(interface)) {
+            match stage.render(RenderStageUpdateInput::new(
+                interface,
+                tick_rate,
+                alpha,
+                frame_counter_past_second,
+                update_counter_past_second,
+            )) {
                 EngineUpdateResult::Ok => {}
                 result => {
                     return result;

@@ -91,7 +91,7 @@ fn main() {
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
         max_skipped_frames: 1,
-        max_frame_rate: Some(60),
+        max_frame_rate: None,
         update_stages: vec![Box::new(create_native_scripting_stage)],
         render_stages: vec![Box::new(create_graphics_stage)],
         asset_system: Some(asset_system),

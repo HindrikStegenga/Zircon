@@ -7,7 +7,7 @@ instance_validation_layer_names: [
 instance_extension_names: []
 #preferred_device: "Intel(R) UHD Graphics 630"
 prefer_integrated_gpu: false
-prevent_tearing: false
+prevent_tearing: true
 limit_frame_rate: false
 preferred_frames_in_flight: 2
 use_transfer_queues: true

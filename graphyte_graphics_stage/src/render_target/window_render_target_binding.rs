@@ -1,7 +1,9 @@
 use super::*;
 use crate::*;
 use ash::Instance;
-use graphyte_engine::PlatformInterface;
+use graphyte_engine::{
+    tagged_error, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput,
+};
 
 pub(crate) struct WindowRenderTargetBinding {
     camera: Camera,
@@ -11,25 +13,29 @@ pub(crate) struct WindowRenderTargetBinding {
 }
 
 impl WindowRenderTargetBinding {
-    pub fn window_render_target(&self) -> &WindowRenderTarget {
-        &self.window_render_target
-    }
-    pub fn camera(&self) -> &Camera {
-        &self.camera
-    }
-    pub fn swap_chain(&self) -> &SwapChain {
-        &self.swap_chain
-    }
-    pub fn render_path(&self) -> &Box<dyn RenderPath> {
-        &self.render_path
+    pub fn window_handle(&self) -> PlatformWindowHandle {
+        self.window_render_target.window()
     }
 
-    pub fn render(&mut self, device: &GraphicsDevice) -> bool {
+    pub fn window_did_resize(&mut self, device: &GraphicsDevice, platform: &dyn PlatformInterface) {
+        let window = match platform.get_window(self.window_render_target.window()) {
+            Some(v) => v,
+            None => {
+                tagged_error!("Graphics", "Using invalid window handle!");
+                return;
+            }
+        };
+        let width = window.width();
+        let height = window.height();
+    }
+
+    pub fn render(&mut self, device: &GraphicsDevice, input: &mut RenderStageUpdateInput) -> bool {
         self.render_path.render(
             &self.camera,
             &mut self.swap_chain,
             &mut self.window_render_target,
             device,
+            input,
         )
     }
 }
