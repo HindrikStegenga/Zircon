@@ -7,12 +7,14 @@ use std::sync::Arc;
 
 pub(crate) struct SwapChain {
     current_frame_index: u32,
+    current_extent: vk::Extent2D,
     frames_in_flight: u32,
     image_available_semaphores: Vec<vk::Semaphore>,
     rendering_finished_semaphores: Vec<vk::Semaphore>,
     in_flight_fences: Vec<vk::Fence>,
     image_views: Vec<vk::ImageView>,
     images: Vec<vk::Image>,
+    surface_format: vk::SurfaceFormatKHR,
     swap_chain: vk::SwapchainKHR,
     loader: extensions::khr::Swapchain,
     device: Arc<Device>,
@@ -42,7 +44,7 @@ impl SwapChain {
         let loader = window_target.loader();
         let surface_info = check_and_get_surface_info(surface, loader, device)?;
         let surface_format = select_surface_format();
-        let (loader, swap_chain) = create_swap_chain(
+        let (loader, swap_chain, extent) = create_swap_chain(
             instance,
             device.device(),
             window,
@@ -69,8 +71,18 @@ impl SwapChain {
             in_flight_fences,
             current_frame_index: 0,
             frames_in_flight: options.preferred_frames_in_flight,
+            surface_format,
+            current_extent: extent,
         }
         .into()
+    }
+
+    pub(crate) fn current_extent(&self) -> vk::Extent2D {
+        self.current_extent
+    }
+
+    pub(crate) fn image_view(&self, image_index: usize) -> vk::ImageView {
+        self.image_views[image_index]
     }
 
     // Each call of this function MUST be matched with a call to [`present_frame`].
@@ -138,6 +150,14 @@ impl SwapChain {
 
         self.current_frame_index = (self.current_frame_index + 1u32) % self.frames_in_flight;
         return value;
+    }
+
+    pub(crate) fn image_count(&self) -> u32 {
+        self.images.len() as u32
+    }
+
+    pub(crate) fn surface_format(&self) -> vk::SurfaceFormatKHR {
+        self.surface_format
     }
 }
 
@@ -255,25 +275,33 @@ fn create_swap_chain(
     old_swap_chain: vk::SwapchainKHR,
     surface_info: &SurfaceInfo,
     options: &GraphicsOptions,
-) -> Option<(ash::extensions::khr::Swapchain, vk::SwapchainKHR)> {
+) -> Option<(
+    ash::extensions::khr::Swapchain,
+    vk::SwapchainKHR,
+    vk::Extent2D,
+)> {
+    let image_count = select_image_count(&surface_info.surface_caps);
+    let extent = select_extent(&surface_info.surface_caps, window);
+    let present_mode = select_present_mode(&surface_info.present_modes, options);
+
     let create_info = vk::SwapchainCreateInfoKHR::builder()
         .surface(surface)
-        .min_image_count(select_image_count(&surface_info.surface_caps))
+        .min_image_count(image_count)
         .image_format(surface_format.format)
         .image_color_space(surface_format.color_space)
-        .image_extent(select_extent(&surface_info.surface_caps, window))
+        .image_extent(extent)
         .image_array_layers(1)
         .image_usage(vk::ImageUsageFlags::COLOR_ATTACHMENT)
         .image_sharing_mode(vk::SharingMode::EXCLUSIVE)
         .pre_transform(surface_info.surface_caps.current_transform)
         .composite_alpha(vk::CompositeAlphaFlagsKHR::OPAQUE)
-        .present_mode(select_present_mode(&surface_info.present_modes, options))
+        .present_mode(present_mode)
         .clipped(true)
         .old_swapchain(old_swap_chain);
     unsafe {
         let loader = ash::extensions::khr::Swapchain::new(instance, device);
         let swap_chain = loader.create_swapchain(&create_info, None).ok()?;
-        (loader, swap_chain).into()
+        (loader, swap_chain, extent).into()
     }
 }
 

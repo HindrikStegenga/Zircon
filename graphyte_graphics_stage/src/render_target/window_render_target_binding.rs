@@ -40,7 +40,7 @@ impl WindowRenderTargetBinding {
         device: &GraphicsDevice,
         camera: &Camera,
         platform_interface: &dyn PlatformInterface,
-        window_render_target: WindowRenderTarget,
+        mut window_render_target: WindowRenderTarget,
         options: &GraphicsOptions,
     ) -> Result<Self, WindowRenderTarget> {
         // Get the window
@@ -49,7 +49,7 @@ impl WindowRenderTargetBinding {
             None => return Err(window_render_target),
         };
         // Get the swap chain
-        let swap_chain =
+        let mut swap_chain =
             match SwapChain::new(instance, device, window, &window_render_target, options) {
                 Some(v) => v,
                 None => return Err(window_render_target),
@@ -57,7 +57,13 @@ impl WindowRenderTargetBinding {
         // Create a render path
         let render_path = match camera.path() {
             RenderPathType::Forward => {
-                match ForwardRenderPath::instantiate(RenderPathCreateInfo { options }) {
+                match ForwardRenderPath::instantiate(RenderPathCreateInfo {
+                    options,
+                    graphics_device: device,
+                    camera,
+                    swap_chain: &mut swap_chain,
+                    window_render_target: &mut window_render_target,
+                }) {
                     Some(v) => v,
                     None => return Err(window_render_target),
                 }

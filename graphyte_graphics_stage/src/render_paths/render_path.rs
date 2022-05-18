@@ -37,6 +37,10 @@ impl RenderPathDescriptor {
 
 pub(crate) struct RenderPathCreateInfo<'a> {
     pub options: &'a GraphicsOptions,
+    pub graphics_device: &'a GraphicsDevice,
+    pub camera: &'a Camera,
+    pub swap_chain: &'a mut SwapChain,
+    pub window_render_target: &'a mut WindowRenderTarget,
 }
 
 impl RenderPathDescriptor {
