@@ -34,7 +34,7 @@ fn create_native_scripting_stage<'r>(
                     &transform,
                 );
 
-                let mut registry = input.scene_manager.active_scene_mut().registry_mut();
+                let registry = input.scene_manager.active_scene_mut().registry_mut();
                 let entity = match registry.create_entity((transform, camera)) {
                     Ok(handle) => handle,
                     _ => return EngineUpdateResult::Stop,
@@ -87,14 +87,19 @@ fn main() {
     let application_info = asset_system
         .load_asset_as_type::<ApplicationInfo, _, _>("config", "game")
         .unwrap();
-
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
         max_skipped_frames: 1,
         max_frame_rate: None,
         update_stages: vec![Box::new(create_native_scripting_stage)],
         render_stages: vec![Box::new(create_graphics_stage)],
-        asset_system: Some(asset_system),
+        asset_system: Some(Box::new(|| {
+            let asset_system = AssetSystem::default();
+            asset_system
+                .load_files_from_directory("./graphyte_game/asset_archives/config", "config")
+                .unwrap();
+            asset_system
+        })),
         application_info,
     };
     let engine = Engine::from(create_info);

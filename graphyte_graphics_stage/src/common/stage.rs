@@ -119,7 +119,7 @@ impl RenderStage for GraphicsStage {
 
     fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
         for render_target in &mut self.render_targets {
-            if !render_target.render(&self.device, &mut input) {
+            if !render_target.render(&self.device, &mut input, &self.graphics_options) {
                 return EngineUpdateResult::Restart;
             }
         }
@@ -142,6 +142,7 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for Graph
         tagged_log!("Graphics", "WindowDidClose message received!");
     }
 }
+
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidResize) {
         let device = &self.device;
@@ -149,7 +150,10 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for Grap
             .iter_mut()
             .filter(|e| e.window_handle() == message.window)
             .for_each(|binding| {
-                binding.window_did_resize(device, context.platform);
+                match binding.window_did_resize(device, context.platform, &self.graphics_options) {
+                    Ok(_) => (),
+                    Err(e) => tagged_failure!("Graphics", "Could not handle resize event: {}", e),
+                };
             });
         tagged_log!("Graphics", "WindowDidResize message received!");
     }

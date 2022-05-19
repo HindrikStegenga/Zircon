@@ -1,3 +1,5 @@
+use std::sync::Arc;
+
 use super::*;
 use crate::engine_stages::PlatformPreDidInitInput;
 use crate::*;

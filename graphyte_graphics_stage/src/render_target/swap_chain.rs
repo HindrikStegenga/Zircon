@@ -1,8 +1,9 @@
 use crate::render_target::WindowRenderTarget;
 use crate::{DeviceQueue, GraphicsDevice, GraphicsOptions};
 use ash::extensions::khr::Surface;
+use ash::vk::Extent2D;
 use ash::*;
-use graphyte_engine::PlatformWindow;
+use graphyte_engine::{tagged_error, PlatformWindow};
 use std::sync::Arc;
 
 // Wraps the vulkan swap chain and it's associated images and imageviews.
@@ -17,7 +18,7 @@ pub(crate) struct SwapChain {
     images: Vec<vk::Image>,
     surface_format: vk::SurfaceFormatKHR,
     swap_chain: vk::SwapchainKHR,
-    loader: extensions::khr::Swapchain,
+    swapchain_loader: extensions::khr::Swapchain,
     device: Arc<Device>,
 }
 
@@ -31,10 +32,12 @@ pub(crate) struct AcquiredFrameInfo {
     // Fence that needs to be signaled when rendering is finished.
     // This is to synchronize the CPU and GPU.
     pub rendering_finished_fence: vk::Fence,
+    // Framebuffer size
+    pub current_extent: Extent2D,
 }
 
 impl SwapChain {
-    pub(crate) fn new(
+    pub fn new(
         instance: &Instance,
         device: &GraphicsDevice,
         window: &dyn PlatformWindow,
@@ -42,21 +45,35 @@ impl SwapChain {
         options: &GraphicsOptions,
     ) -> Option<Self> {
         let surface = window_target.surface();
-        let loader = window_target.loader();
-        let surface_info = check_and_get_surface_info(surface, loader, device)?;
-        let surface_format = select_surface_format();
-        let (loader, swap_chain, extent) = create_swap_chain(
-            instance,
+        let surface_loader = window_target.loader();
+        let surface_info = check_and_get_surface_info(surface, surface_loader, device).ok()?;
+
+        let surface_format = select_surface_format(&surface_info);
+        let swap_loader = ash::extensions::khr::Swapchain::new(instance, device.device());
+
+        let (swap_chain, extent) = match create_swap_chain(
             device.device(),
+            &swap_loader,
             window,
             surface,
             surface_format,
             vk::SwapchainKHR::null(),
             &surface_info,
             options,
-        )?;
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                tagged_error!(
+                    "Graphics",
+                    "Error occurred during swap chain creation: {}",
+                    e
+                );
+                return None;
+            }
+        };
         let (images, image_views) =
-            create_images_and_views(device.device(), &loader, swap_chain, surface_format).ok()?;
+            create_images_and_views(device.device(), &swap_loader, swap_chain, surface_format)
+                .ok()?;
         let (image_available_semaphores, rendering_finished_semaphores, in_flight_fences) =
             create_synchronization_primitives(device.device(), options.preferred_frames_in_flight)
                 .ok()?;
@@ -65,7 +82,7 @@ impl SwapChain {
             image_views,
             images,
             swap_chain,
-            loader,
+            swapchain_loader: swap_loader,
             device: device.device_arc(),
             image_available_semaphores,
             rendering_finished_semaphores,
@@ -78,19 +95,80 @@ impl SwapChain {
         .into()
     }
 
-    pub(crate) fn current_extent(&self) -> vk::Extent2D {
+    pub fn current_extent(&self) -> vk::Extent2D {
         self.current_extent
     }
 
-    pub(crate) fn image_view(&self, image_index: usize) -> vk::ImageView {
+    pub fn image_view(&self, image_index: usize) -> vk::ImageView {
         self.image_views[image_index]
+    }
+
+    pub fn resize_swap_chain(
+        &mut self,
+        window: &dyn PlatformWindow,
+        window_target: &WindowRenderTarget,
+        _width: u32,
+        _height: u32,
+        options: &GraphicsOptions,
+        device: &GraphicsDevice,
+    ) -> Result<(), vk::Result> {
+        let surface_loader = window_target.loader();
+        let surface_info =
+            check_and_get_surface_info(window_target.surface(), surface_loader, device)?;
+
+        for fb in &self.image_views {
+            unsafe {
+                self.device.destroy_image_view(*fb, None);
+            }
+        }
+        self.image_views.clear();
+        destroy_syncronization_primitives(
+            &self.device,
+            &mut self.image_available_semaphores,
+            &mut self.rendering_finished_semaphores,
+            &mut self.in_flight_fences,
+        );
+
+        self.current_frame_index = 0;
+        let (new_swap, new_extent) = create_swap_chain(
+            &self.device,
+            &self.swapchain_loader,
+            window,
+            window_target.surface(),
+            self.surface_format(),
+            self.swap_chain,
+            &surface_info,
+            options,
+        )?;
+        let old_swap = self.swap_chain;
+        self.swap_chain = new_swap;
+        self.current_extent = new_extent;
+
+        let (images, image_views) = create_images_and_views(
+            &self.device,
+            &self.swapchain_loader,
+            self.swap_chain,
+            self.surface_format,
+        )?;
+        self.images = images;
+        self.image_views = image_views;
+
+        let (image_available_semaphores, rendering_finished_semaphores, in_flight_fences) =
+            create_synchronization_primitives(&self.device, options.preferred_frames_in_flight)?;
+
+        self.image_available_semaphores = image_available_semaphores;
+        self.rendering_finished_semaphores = rendering_finished_semaphores;
+        self.in_flight_fences = in_flight_fences;
+
+        unsafe {
+            self.swapchain_loader.destroy_swapchain(old_swap, None);
+        }
+        Ok(())
     }
 
     // Each call of this function MUST be matched with a call to [`present_frame`].
     // Unless a failure happens and the swap chain is recreated in which case it's not necessary.
-    pub(crate) unsafe fn acquire_next_frame(
-        &mut self,
-    ) -> Result<(AcquiredFrameInfo, bool), vk::Result> {
+    pub unsafe fn acquire_next_frame(&mut self) -> Result<(AcquiredFrameInfo, bool), vk::Result> {
         let device = self.device.as_ref();
         const DEFAULT_TIME_OUT: u64 = 5_000_000_000;
 
@@ -102,7 +180,7 @@ impl SwapChain {
         )?;
 
         // Acquire an image
-        let (image_index, suboptimal) = self.loader.acquire_next_image(
+        let (image_index, suboptimal) = self.swapchain_loader.acquire_next_image(
             self.swap_chain,
             DEFAULT_TIME_OUT,
             self.image_available_semaphores[self.current_frame_index as usize],
@@ -121,13 +199,14 @@ impl SwapChain {
                     [self.current_frame_index as usize],
                 rendering_finished_fence: self.in_flight_fences[self.current_frame_index as usize],
                 image_index,
+                current_extent: self.current_extent(),
             },
             suboptimal,
         ))
     }
 
     // Needs to be called in tandem with [`acquire_next_frame`].
-    pub(crate) unsafe fn present_frame(
+    pub unsafe fn present_frame(
         &mut self,
         image_index: u32,
         present_queue: &DeviceQueue,
@@ -142,7 +221,7 @@ impl SwapChain {
             .image_indices(core::slice::from_ref(&image_index));
 
         let value = match {
-            self.loader
+            self.swapchain_loader
                 .queue_present(present_queue.queue, &present_info)
         } {
             Ok(is_sub_optimal) => Ok(is_sub_optimal),
@@ -153,11 +232,11 @@ impl SwapChain {
         return value;
     }
 
-    pub(crate) fn image_count(&self) -> u32 {
+    pub fn image_count(&self) -> u32 {
         self.images.len() as u32
     }
 
-    pub(crate) fn surface_format(&self) -> vk::SurfaceFormatKHR {
+    pub fn surface_format(&self) -> vk::SurfaceFormatKHR {
         self.surface_format
     }
 }
@@ -172,7 +251,8 @@ impl Drop for SwapChain {
                 &mut self.in_flight_fences,
             );
             destroy_image_views(&self.device, &mut self.image_views);
-            self.loader.destroy_swapchain(self.swap_chain, None);
+            self.swapchain_loader
+                .destroy_swapchain(self.swap_chain, None);
         }
     }
 }
@@ -187,29 +267,27 @@ fn check_and_get_surface_info(
     surface: vk::SurfaceKHR,
     loader: &Surface,
     device: &GraphicsDevice,
-) -> Option<SurfaceInfo> {
+) -> Result<SurfaceInfo, vk::Result> {
     let phys_device = device.physical_device();
     let qf_index = device.graphics_queue().qf_index;
     unsafe {
         // Check device surface support.
-        if !loader
-            .get_physical_device_surface_support(phys_device, qf_index, surface)
-            .ok()?
-        {
-            return None;
+        match loader.get_physical_device_surface_support(phys_device, qf_index, surface) {
+            Ok(v) => {
+                if !v {
+                    tagged_error!("Graphics", "Surface not supported");
+                    return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED);
+                }
+            }
+            Err(e) => return Err(e),
         };
-        SurfaceInfo {
-            surface_caps: loader
-                .get_physical_device_surface_capabilities(phys_device, surface)
-                .ok()?,
-            surface_formats: loader
-                .get_physical_device_surface_formats(phys_device, surface)
-                .ok()?,
+
+        Ok(SurfaceInfo {
+            surface_caps: loader.get_physical_device_surface_capabilities(phys_device, surface)?,
+            surface_formats: loader.get_physical_device_surface_formats(phys_device, surface)?,
             present_modes: loader
-                .get_physical_device_surface_present_modes(phys_device, surface)
-                .ok()?,
-        }
-        .into()
+                .get_physical_device_surface_present_modes(phys_device, surface)?,
+        })
     }
 }
 
@@ -260,7 +338,8 @@ fn select_present_mode(
         .unwrap_or(&vk::PresentModeKHR::FIFO)
 }
 
-fn select_surface_format() -> vk::SurfaceFormatKHR {
+fn select_surface_format(_surface_info: &SurfaceInfo) -> vk::SurfaceFormatKHR {
+    // TODO: Check actual supported surfaces!
     vk::SurfaceFormatKHR::builder()
         .format(vk::Format::B8G8R8A8_SRGB)
         .color_space(vk::ColorSpaceKHR::SRGB_NONLINEAR)
@@ -268,19 +347,15 @@ fn select_surface_format() -> vk::SurfaceFormatKHR {
 }
 
 fn create_swap_chain(
-    instance: &Instance,
     device: &Device,
+    swap_loader: &ash::extensions::khr::Swapchain,
     window: &dyn PlatformWindow,
     surface: vk::SurfaceKHR,
     surface_format: vk::SurfaceFormatKHR,
     old_swap_chain: vk::SwapchainKHR,
     surface_info: &SurfaceInfo,
     options: &GraphicsOptions,
-) -> Option<(
-    ash::extensions::khr::Swapchain,
-    vk::SwapchainKHR,
-    vk::Extent2D,
-)> {
+) -> Result<(vk::SwapchainKHR, vk::Extent2D), vk::Result> {
     let image_count = select_image_count(&surface_info.surface_caps);
     let extent = select_extent(&surface_info.surface_caps, window);
     let present_mode = select_present_mode(&surface_info.present_modes, options);
@@ -300,9 +375,8 @@ fn create_swap_chain(
         .clipped(true)
         .old_swapchain(old_swap_chain);
     unsafe {
-        let loader = ash::extensions::khr::Swapchain::new(instance, device);
-        let swap_chain = loader.create_swapchain(&create_info, None).ok()?;
-        (loader, swap_chain, extent).into()
+        let swap_chain = swap_loader.create_swapchain(&create_info, None)?;
+        Ok((swap_chain, extent))
     }
 }
 

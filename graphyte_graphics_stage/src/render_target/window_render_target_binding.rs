@@ -1,8 +1,8 @@
 use super::*;
 use crate::*;
-use ash::Instance;
+use ash::*;
 use graphyte_engine::{
-    tagged_error, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput,
+    tagged_error, tagged_log, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput,
 };
 
 pub(crate) struct WindowRenderTargetBinding {
@@ -10,6 +10,7 @@ pub(crate) struct WindowRenderTargetBinding {
     render_path: Box<dyn RenderPath>,
     swap_chain: SwapChain,
     window_render_target: WindowRenderTarget,
+    resize_on_sub_optimal: bool,
 }
 
 impl WindowRenderTargetBinding {
@@ -17,26 +18,136 @@ impl WindowRenderTargetBinding {
         self.window_render_target.window()
     }
 
-    pub fn window_did_resize(&mut self, device: &GraphicsDevice, platform: &dyn PlatformInterface) {
+    pub fn window_did_resize(
+        &mut self,
+        device: &GraphicsDevice,
+        platform: &dyn PlatformInterface,
+        graphics_options: &GraphicsOptions,
+    ) -> Result<(), vk::Result> {
         let window = match platform.get_window(self.window_render_target.window()) {
             Some(v) => v,
             None => {
                 tagged_error!("Graphics", "Using invalid window handle!");
-                return;
+                return Err(vk::Result::ERROR_INVALID_EXTERNAL_HANDLE_KHR);
             }
         };
+
+        let previous_width = self.swap_chain.current_extent().width;
+        let previous_height = self.swap_chain.current_extent().height;
+
         let width = window.width();
         let height = window.height();
-    }
 
-    pub fn render(&mut self, device: &GraphicsDevice, input: &mut RenderStageUpdateInput) -> bool {
-        self.render_path.render(
-            &self.camera,
+        tagged_log!(
+            "Graphics",
+            "Previous: {} - {} Current: {} - {}",
+            previous_width,
+            previous_height,
+            width,
+            height
+        );
+
+        unsafe {
+            device.device().device_wait_idle()?;
+        }
+        self.render_path.swapchain_will_be_resized();
+        self.swap_chain.resize_swap_chain(
+            window,
+            &self.window_render_target,
+            width,
+            height,
+            graphics_options,
+            device,
+        )?;
+        self.render_path.swapchain_did_resize(
+            &mut self.camera,
             &mut self.swap_chain,
             &mut self.window_render_target,
             device,
+        );
+        Ok(())
+    }
+
+    pub fn render(
+        &mut self,
+        device: &GraphicsDevice,
+        input: &mut RenderStageUpdateInput,
+        graphics_options: &GraphicsOptions,
+    ) -> bool {
+        if self.swap_chain.current_extent().width == 0
+            && self.swap_chain.current_extent().height == 0
+        {
+            return true;
+        }
+
+        // Acquire the swap chain image to render into
+        let (info, is_sub_optimal) = match unsafe { self.swap_chain.acquire_next_frame() } {
+            Ok(value) => value,
+            Err(e) => match e {
+                vk::Result::ERROR_OUT_OF_DATE_KHR => {
+                    if !self
+                        .window_did_resize(device, input.platform, graphics_options)
+                        .is_ok()
+                    {
+                        return false;
+                    };
+                    return true;
+                }
+                e => {
+                    tagged_error!("Graphics", "Error during acquiring of next frame: {}", e);
+                    return false;
+                }
+            },
+        };
+        if is_sub_optimal && self.resize_on_sub_optimal {
+            if !self
+                .window_did_resize(device, input.platform, graphics_options)
+                .is_ok()
+            {
+                return false;
+            };
+            return true;
+        }
+
+        self.render_path.render(
+            &self.camera,
+            &info,
+            &mut self.window_render_target,
+            device,
             input,
-        )
+        );
+
+        // Present the frame to the screen
+        match unsafe {
+            self.swap_chain
+                .present_frame(info.image_index, &device.graphics_queue())
+        } {
+            Ok(is_sub_optimal) => {
+                if is_sub_optimal && self.resize_on_sub_optimal {
+                    if !self
+                        .window_did_resize(device, input.platform, graphics_options)
+                        .is_ok()
+                    {
+                        return false;
+                    };
+                    return true;
+                }
+            }
+            Err(vk::Result::ERROR_OUT_OF_DATE_KHR) => {
+                if !self
+                    .window_did_resize(device, input.platform, graphics_options)
+                    .is_ok()
+                {
+                    return false;
+                };
+                return true;
+            }
+            Err(e) => {
+                tagged_error!("Graphics", "Presentation error: {}", e);
+                return false;
+            }
+        };
+        true
     }
 }
 
@@ -63,7 +174,7 @@ impl WindowRenderTargetBinding {
         // Create a render path
         let render_path = match camera.path() {
             RenderPathType::Forward => {
-                match ForwardRenderPath::instantiate(RenderPathCreateInfo {
+                match ForwardRenderPath::new(RenderPathCreateInfo {
                     options,
                     graphics_device: device,
                     camera,
@@ -81,6 +192,7 @@ impl WindowRenderTargetBinding {
             camera: camera.clone(),
             swap_chain,
             render_path: Box::new(render_path),
+            resize_on_sub_optimal: options.resize_on_sub_optimal,
         })
     }
 }

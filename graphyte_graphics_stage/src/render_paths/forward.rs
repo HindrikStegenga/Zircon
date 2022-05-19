@@ -1,5 +1,5 @@
 use crate::{
-    render_target::{SwapChain, WindowRenderTarget},
+    render_target::{AcquiredFrameInfo, SwapChain, WindowRenderTarget},
     Camera, GraphicsDevice, RenderPath, RenderPathCreateInfo,
 };
 
@@ -21,24 +21,61 @@ pub struct ForwardRenderPath {
 
 impl Drop for ForwardRenderPath {
     fn drop(&mut self) {
-        unsafe {
-            self.device.device_wait_idle().ok();
-
-            for fb in &self.frame_buffers {
-                self.device.destroy_framebuffer(*fb, None);
-            }
-
-            self.device.destroy_render_pass(self.render_pass, None);
-
-            for fcb in &self.frame_command_buffers {
-                self.device.destroy_command_pool(fcb.command_pool, None);
-            }
-            self.frame_command_buffers.clear();
-        }
+        self.clean_up_resources();
     }
 }
 
 impl ForwardRenderPath {
+    fn clean_up_resources(&mut self) {
+        unsafe {
+            for fb in &self.frame_buffers {
+                self.device.destroy_framebuffer(*fb, None);
+            }
+            self.device.destroy_render_pass(self.render_pass, None);
+            for fcb in &self.frame_command_buffers {
+                self.device.destroy_command_pool(fcb.command_pool, None);
+            }
+        }
+        self.frame_buffers.clear();
+        self.frame_command_buffers.clear();
+        self.render_pass = vk::RenderPass::null();
+    }
+
+    fn init_default_resources(
+        swap_chain: &mut SwapChain,
+        graphics_device: &GraphicsDevice,
+    ) -> Result<
+        (
+            vk::RenderPass,
+            Vec<FrameCommandBuffer>,
+            Vec<vk::Framebuffer>,
+        ),
+        vk::Result,
+    > {
+        let render_pass = Self::init_default_render_pass(
+            graphics_device.device(),
+            swap_chain.surface_format().format,
+        )?;
+
+        let mut frame_command_buffers = Vec::with_capacity(swap_chain.image_count() as usize);
+
+        for _ in 0..swap_chain.image_count() {
+            let command_pool = Self::init_default_command_pool(graphics_device)?;
+            // TODO: Handle proper destruction in case a cmd pool fails to be created.
+            let command_buffer =
+                Self::init_default_command_buffer(graphics_device.device(), command_pool)?;
+            frame_command_buffers.push(FrameCommandBuffer {
+                command_pool,
+                main_command_buffer: command_buffer,
+            })
+        }
+
+        let frame_buffers =
+            Self::init_default_frame_buffers(graphics_device.device(), render_pass, swap_chain)?;
+
+        Ok((render_pass, frame_command_buffers, frame_buffers))
+    }
+
     fn init_default_command_pool(device: &GraphicsDevice) -> Result<vk::CommandPool, vk::Result> {
         let queue = device.graphics_queue();
 
@@ -148,39 +185,13 @@ impl RenderPath for ForwardRenderPath {
         vk::PhysicalDeviceFeatures::default()
     }
 
-    fn instantiate(create_info: RenderPathCreateInfo) -> Option<Self>
+    fn new(create_info: RenderPathCreateInfo) -> Option<Self>
     where
         Self: Sized,
     {
-        let render_pass = Self::init_default_render_pass(
-            create_info.graphics_device.device(),
-            create_info.swap_chain.surface_format().format,
-        )
-        .ok()?;
-
-        let mut frame_command_buffers =
-            Vec::with_capacity(create_info.swap_chain.image_count() as usize);
-
-        for _ in 0..create_info.swap_chain.image_count() {
-            let command_pool = Self::init_default_command_pool(create_info.graphics_device).ok()?;
-            // TODO: Handle proper destruction in case a cmd pool fails to be created.
-            let command_buffer = Self::init_default_command_buffer(
-                create_info.graphics_device.device(),
-                command_pool,
-            )
-            .ok()?;
-            frame_command_buffers.push(FrameCommandBuffer {
-                command_pool,
-                main_command_buffer: command_buffer,
-            })
-        }
-
-        let frame_buffers = Self::init_default_frame_buffers(
-            create_info.graphics_device.device(),
-            render_pass,
-            create_info.swap_chain,
-        )
-        .ok()?;
+        let (render_pass, frame_command_buffers, frame_buffers) =
+            Self::init_default_resources(create_info.swap_chain, create_info.graphics_device)
+                .ok()?;
 
         Self {
             frame_command_buffers,
@@ -194,25 +205,12 @@ impl RenderPath for ForwardRenderPath {
     fn render(
         &mut self,
         _camera: &Camera,
-        swap_chain: &mut SwapChain,
+        info: &AcquiredFrameInfo,
         _window_render_target: &mut WindowRenderTarget,
         device: &GraphicsDevice,
         input: &mut RenderStageUpdateInput,
     ) -> bool {
         unsafe {
-            let (info, is_sub_optimal) = match swap_chain.acquire_next_frame() {
-                Ok(value) => value,
-                Err(e) => match e {
-                    vk::Result::ERROR_OUT_OF_DATE_KHR => {
-                        // TODO: Handle swap resize/recreate!
-                        return true;
-                    }
-                    _ => {
-                        return false;
-                    }
-                },
-            };
-
             // Start drawing
 
             let command_frame_buf = &self.frame_command_buffers[info.image_index as usize];
@@ -237,7 +235,7 @@ impl RenderPath for ForwardRenderPath {
                 .begin_command_buffer(main_command_buffer, &cmd_begin_info)
                 .ok();
 
-            let mut v = 1.0f32 / (input.update_tick_rate as f32)
+            let v = 1.0f32 / (input.update_tick_rate as f32)
                 * ((input.update_counter_past_second as f32)
                     + (input.alpha_till_next_update * (1.0f32 / input.update_tick_rate as f32)));
 
@@ -251,7 +249,7 @@ impl RenderPath for ForwardRenderPath {
                 .render_pass(self.render_pass)
                 .render_area(vk::Rect2D {
                     offset: vk::Offset2D { x: 0, y: 0 },
-                    extent: swap_chain.current_extent(),
+                    extent: info.current_extent,
                 })
                 .framebuffer(self.frame_buffers[info.image_index as usize])
                 .clear_values(&clear_value);
@@ -283,20 +281,37 @@ impl RenderPath for ForwardRenderPath {
                     info.rendering_finished_fence,
                 )
                 .ok();
-
-            // Present the frame to the screen
-
-            match swap_chain.present_frame(info.image_index, &device.graphics_queue()) {
-                Ok(is_sub_optimal) => {
-                    //tagged_log!("Graphics", "Surface became sub-optimal.");
-                }
-                Err(e) => {
-                    // TODO: Handle swap resize/recreate!
-                    tagged_error!("Graphics", "Presentation error: {}", e);
-                    return false;
-                }
-            }
         }
         return true;
+    }
+
+    fn swapchain_will_be_resized(&mut self) -> bool {
+        self.clean_up_resources();
+        true
+    }
+
+    fn swapchain_did_resize(
+        &mut self,
+        camera: &Camera,
+        swap_chain: &mut SwapChain,
+        window_render_target: &mut WindowRenderTarget,
+        device: &GraphicsDevice,
+    ) -> bool {
+        let (render_pass, frame_command_buffers, frame_buffers) =
+            match Self::init_default_resources(swap_chain, device) {
+                Ok(v) => v,
+                Err(e) => {
+                    tagged_error!(
+                        "Graphics",
+                        "Error re-creating resources after swap resize: {}",
+                        e
+                    );
+                    return false;
+                }
+            };
+        self.render_pass = render_pass;
+        self.frame_command_buffers = frame_command_buffers;
+        self.frame_buffers = frame_buffers;
+        true
     }
 }

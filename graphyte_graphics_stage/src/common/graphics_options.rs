@@ -16,4 +16,5 @@ pub struct GraphicsOptions {
     pub limit_frame_rate: bool,
     pub preferred_frames_in_flight: u32,
     pub use_transfer_queues: bool,
+    pub resize_on_sub_optimal: bool,
 }

@@ -30,8 +30,8 @@ impl EngineStateMachine<Uninitialized> {
         let instant = Instant::now();
         let resources = EngineResourceManager::default();
         let dispatch_system = Dispatcher::new(None);
-        let asset_system = match info.asset_system.take() {
-            Some(v) => v,
+        let asset_system = match info.asset_system {
+            Some(ref v) => (v)(),
             None => Default::default(),
         };
         resources.add_resource(asset_system);

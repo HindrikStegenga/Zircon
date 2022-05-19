@@ -1,5 +1,5 @@
 use crate::{
-    render_target::{SwapChain, WindowRenderTarget},
+    render_target::{AcquiredFrameInfo, SwapChain, WindowRenderTarget},
     Camera, ForwardRenderPath, GraphicsDevice, GraphicsOptions,
 };
 use ash::*;
@@ -17,7 +17,7 @@ pub enum RenderPathType {
 pub(crate) struct RenderPathDescriptor {
     required_features: vk::PhysicalDeviceFeatures,
     required_extensions: Vec<CString>,
-    instantiate_fn: fn(create_info: RenderPathCreateInfo) -> Option<Box<dyn RenderPath>>,
+    new_fn: fn(create_info: RenderPathCreateInfo) -> Option<Box<dyn RenderPath>>,
     identifier: CString,
 }
 
@@ -28,8 +28,8 @@ impl RenderPathDescriptor {
     pub fn required_features(&self) -> vk::PhysicalDeviceFeatures {
         self.required_features
     }
-    pub fn instantiate_fn(&self) -> fn(RenderPathCreateInfo) -> Option<Box<dyn RenderPath>> {
-        self.instantiate_fn
+    pub fn new_fn(&self) -> fn(RenderPathCreateInfo) -> Option<Box<dyn RenderPath>> {
+        self.new_fn
     }
     pub fn identifier(&self) -> &CStr {
         &self.identifier
@@ -49,8 +49,8 @@ impl RenderPathDescriptor {
         Self {
             required_features: T::required_device_features(),
             required_extensions: T::required_device_extensions(),
-            instantiate_fn: |create_info| {
-                return if let Some(value) = T::instantiate(create_info) {
+            new_fn: |create_info| {
+                return if let Some(value) = T::new(create_info) {
                     Some(Box::from(value))
                 } else {
                     None
@@ -73,14 +73,28 @@ pub(crate) trait RenderPath {
     fn required_device_features() -> vk::PhysicalDeviceFeatures
     where
         Self: Sized;
-    fn instantiate(create_info: RenderPathCreateInfo) -> Option<Self>
+    fn new(create_info: RenderPathCreateInfo) -> Option<Self>
     where
         Self: Sized;
+
+    // This is triggered right before the swap chain will be resized.
+    // This allows the render path to clean up resources that were associated with the swap chain.
+    fn swapchain_will_be_resized(&mut self) -> bool;
+
+    // Executed after the swapchain size has been adjusted.
+    // This allows the render path to set up required resources.
+    fn swapchain_did_resize(
+        &mut self,
+        camera: &Camera,
+        swap_chain: &mut SwapChain,
+        window_render_target: &mut WindowRenderTarget,
+        device: &GraphicsDevice,
+    ) -> bool;
 
     fn render(
         &mut self,
         camera: &Camera,
-        swap_chain: &mut SwapChain,
+        info: &AcquiredFrameInfo,
         window_render_target: &mut WindowRenderTarget,
         device: &GraphicsDevice,
         input: &mut RenderStageUpdateInput,

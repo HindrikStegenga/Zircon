@@ -1,7 +1,7 @@
 [package]
 name = "graphyte_asset_library"
 version = "0.1.0"
-edition = "2018"
+edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,7 +12,7 @@ format_toml = ["toml"]
 
 [dependencies]
 graphyte_utils = { path = "../graphyte_utils" }
-serde = { version = "1.0", features = ["derive"]}
+serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.8"
 serde_cbor = "0.11"
 lz4_flex = { version = "0.8.0", default-features = false }
