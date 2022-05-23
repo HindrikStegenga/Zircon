@@ -7,5 +7,7 @@ members = [
     "graphyte_graphics_stage",
     "graphyte_winit_platform",
     "graphyte_asset_library",
-    "graphyte_scripting_stage"
+    "graphyte_scripting_stage",
+    "mesh",
+    "tools/gltf_extract_meshes",
 ]

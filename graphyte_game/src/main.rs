@@ -87,6 +87,7 @@ fn main() {
     let application_info = asset_system
         .load_asset_as_type::<ApplicationInfo, _, _>("config", "game")
         .unwrap();
+
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
         max_skipped_frames: 1,
