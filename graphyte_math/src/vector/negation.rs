@@ -1,5 +1,5 @@
 use super::*;
-use std::ops::Neg;
+use core::ops::Neg;
 
 macro_rules! define_vector_negation_impl {
     ($t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident) => {

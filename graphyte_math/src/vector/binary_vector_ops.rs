@@ -1,5 +1,5 @@
 use super::*;
-use std::ops::*;
+use core::ops::*;
 
 macro_rules! define_vector_binary_operator_impl {
     ($op:tt, $trait_name:ident, $method_name:ident, $v2_name:ident, $v3_name:ident, $v4_name:ident) => {
