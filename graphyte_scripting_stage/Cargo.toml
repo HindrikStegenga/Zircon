@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 graphyte_engine = { path = "../graphyte_engine" }
+wasmtime = "0.37"

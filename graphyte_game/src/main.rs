@@ -4,8 +4,26 @@ use graphyte_engine::engine_stages::RenderStageContainer;
 use graphyte_engine::{engine::create_info::ApplicationInfo, engine_stages::*, *};
 use graphyte_graphics_stage::*;
 use graphyte_math::*;
-use graphyte_scripting_stage::NativeScriptingStage;
+use graphyte_scripting_stage::*;
 use graphyte_winit_platform::WinitPlatform;
+
+fn create_wasm_scripting_stage<'r>(
+    input: UpdateStageConstructorInput<'r>,
+) -> Box<dyn AnyUpdateStage> {
+    let asset_system: Arc<AssetSystem> = match input.resources.get_resource::<AssetSystem>() {
+        Some(v) => v,
+        None => {
+            failure!("This system requires an asset system to be present!")
+        }
+    };
+    let mut buffer = vec![];
+    let _ = asset_system
+        .load_asset_as_blob_into("config", "init_test", &mut buffer)
+        .unwrap();
+    let mut stage = WasmScriptingStage::default();
+    stage.add_engine_init_script(&buffer);
+    stage.into()
+}
 
 fn create_native_scripting_stage<'r>(
     _input: UpdateStageConstructorInput<'r>,
@@ -92,7 +110,10 @@ fn main() {
         update_tick_rate: 20,
         max_skipped_frames: 1,
         max_frame_rate: None,
-        update_stages: vec![Box::new(create_native_scripting_stage)],
+        update_stages: vec![
+            Box::new(create_native_scripting_stage),
+            Box::new(create_wasm_scripting_stage),
+        ],
         render_stages: vec![Box::new(create_graphics_stage)],
         asset_system: Some(Box::new(|| {
             let asset_system = AssetSystem::default();
