@@ -1,66 +1,83 @@
 use super::*;
 
-macro_rules! define_constructor_impl {
-    ($t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident) => {
-        impl $v2_name {
-            pub const fn from_scalar(v: $t) -> Self {
-                $v2_name { values: [v, v] }
-            }
+// Constructs from components
 
-            pub const fn new(x: $t, y: $t) -> Self {
-                $v2_name { values: [x, y] }
-            }
-        }
-
-        impl $v3_name {
-            pub const fn from_scalar(v: $t) -> Self {
-                $v3_name { values: [v, v, v] }
-            }
-
-            pub const fn new(x: $t, y: $t, z: $t) -> Self {
-                $v3_name { values: [x, y, z] }
-            }
-        }
-
-        impl $v4_name {
-            pub const fn from_scalar(v: $t) -> Self {
-                $v4_name {
-                    values: [v, v, v, v],
-                }
-            }
-
-            pub const fn new(x: $t, y: $t, z: $t, w: $t) -> Self {
-                $v4_name {
-                    values: [x, y, z, w],
-                }
+macro_rules! impl_from_components {
+    ($len:expr, $($label:ident), *) => {
+        impl <T> Vector<T, $len> {
+            pub const fn from_components($($label : T), *) -> Self {
+                Self::from_array([$($label), *])
             }
         }
     };
 }
 
-// Floating point types
+impl_from_components!(4, x, y, z, w);
+impl_from_components!(3, x, y, z);
+impl_from_components!(2, x, y);
 
-define_constructor_impl!(f32, Vector2f32, Vector3f32, Vector4f32);
-define_constructor_impl!(f64, Vector2f64, Vector3f64, Vector4f64);
+// Manual tuple conversions for small vectors
 
-// Unsigned integer types
+impl<T: Copy> Vector<T, 2> {
+    pub const fn from_tuple(tuple: (T, T)) -> Self {
+        Self::from_array([tuple.0, tuple.1])
+    }
 
-define_constructor_impl!(u8, Vector2u8, Vector3u8, Vector4u8);
-define_constructor_impl!(u16, Vector2u16, Vector3u16, Vector4u16);
-define_constructor_impl!(u32, Vector2u32, Vector3u32, Vector4u32);
-define_constructor_impl!(u64, Vector2u64, Vector3u64, Vector4u64);
+    pub const fn to_tuple(&self) -> (T, T) {
+        (self.values[0], self.values[1])
+    }
+}
 
-define_constructor_impl!(u128, Vector2u128, Vector3u128, Vector4u128);
+impl<T: Copy> Vector<T, 3> {
+    pub const fn from_tuple(tuple: (T, T, T)) -> Self {
+        Self::from_array([tuple.0, tuple.1, tuple.2])
+    }
 
-// Signed integer types
+    pub const fn to_tuple(&self) -> (T, T, T) {
+        (self.values[0], self.values[1], self.values[2])
+    }
+}
 
-define_constructor_impl!(i8, Vector2i8, Vector3i8, Vector4i8);
-define_constructor_impl!(i16, Vector2i16, Vector3i16, Vector4i16);
-define_constructor_impl!(i32, Vector2i32, Vector3i32, Vector4i32);
-define_constructor_impl!(i64, Vector2i64, Vector3i64, Vector4i64);
+impl<T: Copy> Vector<T, 4> {
+    pub const fn from_tuple(tuple: (T, T, T, T)) -> Self {
+        Self::from_array([tuple.0, tuple.1, tuple.2, tuple.3])
+    }
 
-define_constructor_impl!(i128, Vector2i128, Vector3i128, Vector4i128);
+    pub const fn to_tuple(&self) -> (T, T, T, T) {
+        (
+            self.values[0],
+            self.values[1],
+            self.values[2],
+            self.values[3],
+        )
+    }
+}
 
-// sized types
-define_constructor_impl!(usize, Vector2usz, Vector3usz, Vector4usz);
-define_constructor_impl!(isize, Vector2isz, Vector3isz, Vector4isz);
+// From / Into implementations for small vectors.
+
+impl<T> From<(T, T)> for Vector<T, 2>
+where
+    T: Copy,
+{
+    fn from(value: (T, T)) -> Self {
+        Self::from_tuple(value)
+    }
+}
+
+impl<T> From<(T, T, T)> for Vector<T, 3>
+where
+    T: Copy,
+{
+    fn from(value: (T, T, T)) -> Self {
+        Self::from_tuple(value)
+    }
+}
+
+impl<T> From<(T, T, T, T)> for Vector<T, 4>
+where
+    T: Copy,
+{
+    fn from(value: (T, T, T, T)) -> Self {
+        Self::from_tuple(value)
+    }
+}

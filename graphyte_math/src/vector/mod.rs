@@ -1,4 +1,12 @@
-use serde::{Deserialize, Serialize};
+use crate::functions::*;
+use alloc::format;
+use core::{
+    any::type_name,
+    fmt::{Debug, Display},
+    hash::Hash,
+    ops::{Index, IndexMut},
+};
+
 mod accessors;
 mod binary_scalar_ops;
 mod binary_vector_ops;
@@ -6,74 +14,119 @@ mod constants;
 mod constructors;
 mod dot_product;
 mod from;
-mod negation;
-mod properties;
+mod serialization;
+mod unary_scalar_ops;
 
-macro_rules! define_vector_defs {
-    ($t:ty, $v2_name:ident, $v3_name:ident, $v4_name:ident, { $($derive:ident),* }) => {
-        /// 2 dimensional column vector type.
-        /// This type is marked `repr(C)`.
-        #[repr(C)]
-        #[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, $($derive), *)]
-        pub struct $v2_name {
-            values: [$t; 2]
-        }
-        /// 3 dimensional column vector type.
-        /// This type is marked `repr(C)`.
-        #[repr(C)]
-        #[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, $($derive), *)]
-        pub struct $v3_name {
-            values: [$t; 3]
-        }
-        /// 4 dimensional column vector type.
-        /// This type is marked `repr(C)`.
-        #[repr(C)]
-        #[derive(Serialize, Deserialize, Debug, Copy, Clone, Default, PartialEq, $($derive), *)]
-        pub struct $v4_name {
-            values: [$t; 4]
-        }
-    };
+pub(crate) use serialization::FixedArrayVisitor;
+
+/// Generic vector type.
+/// This type is marked `repr(C)`.
+/// It's stored in Row Major ordering.
+/// Therefore it represents a 1 x N vector.
+/// Where N is the amount of columns.
+#[repr(C)]
+pub struct Vector<T, const N: usize> {
+    values: [T; N],
 }
 
-// Floating point types
+impl<T, const N: usize> Vector<T, N> {
+    pub fn build(f: impl Fn(usize) -> T) -> Self {
+        Vector {
+            values: build_array(f),
+        }
+    }
+}
 
-define_vector_defs!(f32, Vector2f32, Vector3f32, Vector4f32, {});
-define_vector_defs!(f64, Vector2f64, Vector3f64, Vector4f64, {});
+impl<T, const N: usize> Clone for Vector<T, N>
+where
+    T: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            values: self.values.clone(),
+        }
+    }
+}
 
-// Unsigned integer types
+impl<T, const N: usize> Copy for Vector<T, N> where T: Clone + Copy {}
 
-define_vector_defs!(u8, Vector2u8, Vector3u8, Vector4u8, { Eq });
-define_vector_defs!(u16, Vector2u16, Vector3u16, Vector4u16, { Eq });
-define_vector_defs!(u32, Vector2u32, Vector3u32, Vector4u32, { Eq });
-define_vector_defs!(u64, Vector2u64, Vector3u64, Vector4u64, { Eq });
+impl<T, const N: usize> Default for Vector<T, N>
+where
+    T: Default + Copy,
+{
+    fn default() -> Self {
+        Self {
+            values: [T::default(); N],
+        }
+    }
+}
 
-define_vector_defs!(u128, Vector2u128, Vector3u128, Vector4u128, { Eq });
+impl<T, const N: usize> Hash for Vector<T, N>
+where
+    T: Hash,
+{
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.values.hash(state);
+    }
+}
 
-// Signed integer types
+impl<T, const N: usize> Display for Vector<T, N>
+where
+    T: Display,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        write!(f, "(")?;
+        for i in 0..(N - 1) {
+            write!(f, "{},", self[i])?;
+        }
+        write!(f, "{})", self[N - 1])
+    }
+}
 
-define_vector_defs!(i8, Vector2i8, Vector3i8, Vector4i8, { Eq });
-define_vector_defs!(i16, Vector2i16, Vector3i16, Vector4i16, { Eq });
-define_vector_defs!(i32, Vector2i32, Vector3i32, Vector4i32, { Eq });
-define_vector_defs!(i64, Vector2i64, Vector3i64, Vector4i64, { Eq });
+impl<T, const N: usize> Debug for Vector<T, N>
+where
+    T: Debug,
+{
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        f.debug_struct(&format!("Vector<{},{}>", type_name::<T>(), N))
+            .field("values", &self.values)
+            .finish()
+    }
+}
 
-define_vector_defs!(i128, Vector2i128, Vector3i128, Vector4i128, { Eq });
+impl<T, const N: usize> PartialEq for Vector<T, N>
+where
+    T: PartialEq,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.values == other.values
+    }
+}
 
-// Size types
-define_vector_defs!(usize, Vector2usz, Vector3usz, Vector4usz, { Eq });
-define_vector_defs!(isize, Vector2isz, Vector3isz, Vector4isz, { Eq });
+impl<T, const N: usize> Eq for Vector<T, N> where T: PartialEq + Eq {}
 
-// Type defs
+impl<T, const N: usize> Index<usize> for Vector<T, N> {
+    type Output = T;
 
-pub type Vec2i = Vector2i32;
-pub type Vec2u = Vector2u32;
-pub type Vec2f = Vector2f32;
+    fn index(&self, index: usize) -> &Self::Output {
+        &self.values[index]
+    }
+}
 
-pub type Vec3i = Vector3i32;
-pub type Vec3u = Vector3u32;
-pub type Vec3f = Vector3f32;
+impl<T, const N: usize> IndexMut<usize> for Vector<T, N> {
+    fn index_mut(&mut self, index: usize) -> &mut Self::Output {
+        &mut self.values[index]
+    }
+}
 
-pub type Vec4i = Vector4i32;
-pub type Vec4u = Vector4u32;
-pub type Vec4f = Vector4f32;
+pub type Vec2i = Vector<i32, 2>;
+pub type Vec2u = Vector<u32, 2>;
+pub type Vec2f = Vector<f32, 2>;
 
-pub use dot_product::DotProduct;
+pub type Vec3i = Vector<i32, 3>;
+pub type Vec3u = Vector<u32, 3>;
+pub type Vec3f = Vector<f32, 3>;
+
+pub type Vec4i = Vector<i32, 4>;
+pub type Vec4u = Vector<u32, 4>;
+pub type Vec4f = Vector<f32, 4>;

@@ -8,11 +8,11 @@ use serde::{
     Deserialize, Serialize,
 };
 
-struct VectorTNVisitor<T, const N: usize> {
+pub(crate) struct FixedArrayVisitor<T, const N: usize> {
     marker: PhantomData<fn() -> [T; N]>,
 }
 
-impl<T, const N: usize> VectorTNVisitor<T, N> {
+impl<T, const N: usize> FixedArrayVisitor<T, N> {
     pub fn new() -> Self {
         Self {
             marker: PhantomData,
@@ -20,7 +20,7 @@ impl<T, const N: usize> VectorTNVisitor<T, N> {
     }
 }
 
-impl<'de, T, const N: usize> Visitor<'de> for VectorTNVisitor<T, N>
+impl<'de, T, const N: usize> Visitor<'de> for FixedArrayVisitor<T, N>
 where
     T: Deserialize<'de>,
 {
@@ -90,7 +90,7 @@ where
         D: serde::Deserializer<'de>,
     {
         deserializer
-            .deserialize_tuple_struct("values", N, VectorTNVisitor::new())
+            .deserialize_tuple_struct("values", N, FixedArrayVisitor::new())
             .map(|a| Vector::<T, N>::from(a))
     }
 }
