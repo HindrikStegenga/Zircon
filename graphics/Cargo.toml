@@ -1,0 +1,17 @@
+[package]
+name = "graphics"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+engine = { path = "../engine" }
+math = { path = "../math" }
+utils = { path = "../utils" }
+serde = { version = "1.0", features = ["derive"] }
+
+ash = { version = "0.37" }
+gpu-allocator = { version = "0.18", features = ["vulkan"] }
+ash-window = "0.10"
+crossbeam = "0.8"

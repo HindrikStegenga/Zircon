@@ -1,0 +1,19 @@
+[package]
+name = "engine"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[features]
+default = ["re_export_utils"]
+re_export_utils = []
+
+[dependencies]
+utils = { path = "../utils" }
+asset_library = { path = "../asset_library" }
+serde = { version = "1.0", features = ["derive"] }
+raw-window-handle = "0.4"
+dashmap = "4.0"
+shard-ecs = { version = "0.2.6", features = ["derive"] }
+crossbeam = "0.8"

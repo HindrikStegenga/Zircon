@@ -1,6 +1,6 @@
+use ::mesh::{AttributePurpose, BufferElementFormat, BufferView};
 use clap::*;
 use gltf::*;
-use graphyte_mesh::{AttributePurpose, BufferElementFormat, BufferView};
 
 #[derive(Parser, Debug)]
 #[clap(author, version, about, long_about = None)]
@@ -123,7 +123,7 @@ fn rebuild_buffers_views_and_accessors(
 
     let mut new_buffer: Vec<u8> = vec![];
     let mut new_views: Vec<(BufferView, gltf::buffer::View)> = vec![];
-    let mut new_accessors: Vec<(graphyte_mesh::Accessor, gltf::Accessor)> = vec![];
+    let mut new_accessors: Vec<(::mesh::Accessor, gltf::Accessor)> = vec![];
 
     for view in buffer_views {
         let buffer = buffers[view.buffer().index()].0.as_slice();
@@ -146,7 +146,7 @@ fn rebuild_buffers_views_and_accessors(
             .find(|&(_, (_, b))| b.index() == accessor.view().unwrap().index())
             .unwrap();
         new_accessors.push((
-            graphyte_mesh::Accessor::new(
+            ::mesh::Accessor::new(
                 new_view.0 as u32,
                 accessor.offset() as u32,
                 accessor.count() as u32,

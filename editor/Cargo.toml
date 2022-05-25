@@ -1,0 +1,13 @@
+[package]
+name = "editor"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+
+[dependencies]
+graphics = { path = "../graphics" }
+winit_platform = { path = "../winit_platform" }
+winit = "0.26"
+egui = { version = "0.18" }
+egui-winit-ash-integration = "0.2"
