@@ -99,7 +99,7 @@ impl AssetArchive {
             unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
             reader.read_exact(&mut temp_buffer)?;
             buffer.resize(*header.uncompressed_size() as usize, 0);
-            decompress_into(&temp_buffer, &mut buffer, 0)?;
+            decompress_into(&temp_buffer, &mut buffer)?;
             Ok(())
         }
     }
@@ -123,7 +123,7 @@ impl AssetArchive {
             unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
             reader.read_exact(&mut temp_buffer).await?;
             buffer.resize(*header.uncompressed_size() as usize, 0);
-            decompress_into(&temp_buffer, &mut buffer, 0)?;
+            decompress_into(&temp_buffer, &mut buffer)?;
             Ok(())
         }
     }
