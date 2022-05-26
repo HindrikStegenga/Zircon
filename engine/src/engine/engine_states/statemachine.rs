@@ -1,7 +1,4 @@
-use std::sync::Arc;
-
 use super::*;
-use crate::engine_stages::PlatformPreDidInitInput;
 use crate::*;
 
 pub struct StateMachine<State, SharedState = ()> {
@@ -46,14 +43,13 @@ impl EngineState {
     /// This function is executed before the did init handlers are executed.
     /// It is intended to set up platform specific event handling and such.
     /// This is so the platform/interface can integrate event handling before anything starts executing!
-    pub fn initialize<P: PlatformInterface>(
+    pub fn initialize<P: PlatformInterface + PlatformInitalizationHandler>(
         &mut self,
         interface: &mut P,
-        init_func: impl Fn(&mut P, PlatformPreDidInitInput),
     ) {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Uninitialized(s) => {
-                let s = EngineState::Initialized((s, interface, init_func).into());
+                let s = EngineState::Initialized((s, interface).into());
                 log!("EngineState changed: Initialized");
                 s
             }

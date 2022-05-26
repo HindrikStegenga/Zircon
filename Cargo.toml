@@ -11,5 +11,6 @@ members = [
     "scripting",
     "mesh",
     "tools/gltf_extract_meshes",
+    "tools/egui_base",
     "editor",
 ]

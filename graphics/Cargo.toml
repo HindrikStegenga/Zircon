@@ -15,3 +15,4 @@ ash = { version = "0.37" }
 gpu-allocator = { version = "0.18", features = ["vulkan"] }
 ash-window = "0.10"
 crossbeam = "0.8"
+mesh = { path = "../mesh" }

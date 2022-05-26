@@ -1,5 +1,6 @@
 pub mod interface;
 pub mod platform;
+pub mod plugin;
 pub mod window;
 
 pub use interface::*;

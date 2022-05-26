@@ -1,4 +1,4 @@
-use crate::engine_stages::PlatformPreDidInitInput;
+use crate::engine_stages::PlatformInitInput;
 use crate::*;
 
 use super::engine_states::{
@@ -29,12 +29,11 @@ impl EngineController {
     pub fn resume(&mut self) {
         self.engine.state.resume();
     }
-    pub fn initialize<P: PlatformInterface>(
+    pub fn initialize<P: PlatformInterface + PlatformInitalizationHandler>(
         &mut self,
         interface: &mut P,
-        init_func: impl Fn(&mut P, PlatformPreDidInitInput),
     ) {
-        self.engine.state.initialize(interface, init_func);
+        self.engine.state.initialize(interface);
     }
     pub fn reset(&mut self) {
         self.engine.state.reset();

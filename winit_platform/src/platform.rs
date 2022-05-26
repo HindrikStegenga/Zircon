@@ -1,5 +1,5 @@
+use crate::plugin::WinitPlatformPlugin;
 use crate::*;
-use engine::engine_stages::PlatformPreDidInitInput;
 use engine::*;
 use winit::window::WindowId;
 use winit::{
@@ -13,8 +13,7 @@ pub struct WinitPlatform {
     pub(crate) windows: Vec<WinitPlatformWindow>,
     pub(crate) window_did_resize_sender: Option<MessageSender<WindowDidResize>>,
     pub(crate) window_did_close_sender: Option<MessageSender<WindowDidClose>>,
-    // pub(crate) custom_event_handlers:
-    //     Vec<Box<dyn FnMut(&Event<()>, &mut WinitPlatformInterface) + 'static>>,
+    pub(crate) plugins: Vec<Box<dyn WinitPlatformPlugin>>,
 }
 
 impl Default for WinitPlatform {
@@ -24,66 +23,42 @@ impl Default for WinitPlatform {
             window_did_resize_sender: None,
             window_id_counter: 0,
             window_did_close_sender: None,
-            //custom_event_handlers: vec![],
+            plugins: vec![],
         }
     }
 }
 
-// impl WinitPlatform {
-//     pub fn add_custom_event_handler<F>(&mut self, event_handler: F)
-//     where
-//         F: FnMut(&Event<()>, &mut WinitPlatformInterface),
-//         F: 'static,
-//     {
-//         self.custom_event_handlers.push(Box::from(event_handler))
-//     }
-// }
+impl WinitPlatform {
+    pub fn add_plugin(&mut self, plugin: impl WinitPlatformPlugin + 'static) {
+        self.plugins.push(Box::from(plugin))
+    }
+}
+
+fn find_window(
+    platform: &mut WinitPlatform,
+    window_id: WindowId,
+    mut closure: impl FnMut(&mut WinitPlatform, usize),
+) {
+    if let Some(window_idx) = platform
+        .windows
+        .iter()
+        .enumerate()
+        .find(|(_, e)| window_id == e.window.id())
+        .map(|(idx, _)| idx)
+    {
+        (closure)(platform, window_idx);
+    }
+}
 
 impl Platform for WinitPlatform {
     fn run(mut self, controller: EngineController) {
         let mut controller = controller;
         let event_loop = EventLoop::new();
-        let mut interface = WinitPlatformInterface::new(&mut self, &event_loop);
-        controller.initialize(&mut interface, pre_did_init_hook);
+        controller.initialize(&mut WinitPlatformInterface::new(&mut self, &event_loop));
         controller.run();
-
-        fn find_window(
-            platform: &mut WinitPlatform,
-            window_id: WindowId,
-            mut closure: impl FnMut(&mut WinitPlatform, usize),
-        ) {
-            if let Some(window_idx) = platform
-                .windows
-                .iter()
-                .enumerate()
-                .find(|(_, e)| window_id == e.window.id())
-                .map(|(idx, _)| idx)
-            {
-                (closure)(platform, window_idx);
-            }
-        }
-
-        fn pre_did_init_hook(
-            interface: &mut WinitPlatformInterface,
-            input: PlatformPreDidInitInput,
-        ) {
-            let message_bus = input
-                .resources
-                .get_resource::<MessageBus>()
-                .expect("Requires a message bus!");
-
-            interface.platform.window_did_resize_sender =
-                message_bus.get_sender::<WindowDidResize>();
-            interface.platform.window_did_close_sender = message_bus.get_sender::<WindowDidClose>();
-            interface.window_open_sender = message_bus.get_sender::<WindowDidOpen>();
-        }
 
         event_loop.run(move |event, window_target, control_flow| {
             *control_flow = ControlFlow::Poll;
-            let mut interface = WinitPlatformInterface::new(&mut self, &window_target);
-            // for handler in &mut custom_event_handlers {
-            //     (handler)(&event, &mut interface);
-            // }
 
             match event {
                 Event::Suspended => {
@@ -151,12 +126,16 @@ impl Platform for WinitPlatform {
                 } => {
                     if let Some(key) = virtual_keycode {
                         if key == VirtualKeyCode::R {
+                            let mut interface =
+                                WinitPlatformInterface::new(&mut self, &window_target);
                             interface.clear_windows();
                             controller.reset();
-                            controller.initialize(&mut interface, pre_did_init_hook);
+                            controller.initialize(&mut interface);
                             controller.run();
                         }
                         if key == VirtualKeyCode::Q {
+                            let mut interface =
+                                WinitPlatformInterface::new(&mut self, &window_target);
                             interface.clear_windows();
                             *control_flow = ControlFlow::Exit;
                             return;
@@ -170,6 +149,7 @@ impl Platform for WinitPlatform {
                 }
                 Event::RedrawRequested(_) => {
                     let mut result = EngineUpdateResult::Ok;
+                    let mut interface = WinitPlatformInterface::new(&mut self, &window_target);
                     controller.as_running(|s| result = s.tick(&mut interface));
                     match result {
                         EngineUpdateResult::Stop => {
@@ -180,7 +160,7 @@ impl Platform for WinitPlatform {
                         EngineUpdateResult::Restart => {
                             interface.clear_windows();
                             controller.reset();
-                            controller.initialize(&mut interface, pre_did_init_hook);
+                            controller.initialize(&mut interface);
                             controller.run();
                         }
                         _ => {}

@@ -1,18 +1,23 @@
+use super::*;
 use crate::resource_manager::{EngineResourceManager, ThreadLocalResourceManager};
 use crate::scene_manager::SceneManager;
 use crate::PlatformInterface;
 use std::sync::Arc;
 use utils::dispatcher::Dispatcher;
 
-pub struct PlatformPreDidInitInput<'a> {
+pub struct PlatformInitInput<'a> {
     pub resources: Arc<EngineResourceManager>,
     pub scene_manager: &'a mut SceneManager,
     pub update_thread_resources: &'a mut ThreadLocalResourceManager,
     pub dispatcher: Arc<Dispatcher>,
+    pub update_stage_manager: UpdateStageManager<'a>,
+    pub render_stage_manager: RenderStageManager<'a>,
 }
 
 pub struct EngineDidInitInput<'a> {
     pub platform_interface: &'a mut dyn PlatformInterface,
+    pub update_stage_manager: UpdateStageManager<'a>,
+    pub render_stage_manager: RenderStageManager<'a>,
     pub resources: Arc<EngineResourceManager>,
     pub scene_manager: &'a mut SceneManager,
     pub update_thread_resources: &'a mut ThreadLocalResourceManager,

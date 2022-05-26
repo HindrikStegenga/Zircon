@@ -17,11 +17,27 @@ impl<'a> WinitPlatformInterface<'a> {
             event_loop,
         }
     }
-}
 
-impl<'a> WinitPlatformInterface<'a> {
     pub fn clear_windows(&mut self) {
         self.platform.windows.clear();
+    }
+}
+
+impl PlatformInitalizationHandler for WinitPlatformInterface<'_> {
+    fn systems_will_init(&mut self, input: engine_stages::PlatformInitInput) -> EngineUpdateResult {
+        let message_bus = input
+            .resources
+            .get_resource::<MessageBus>()
+            .expect("Requires a message bus!");
+
+        self.platform.window_did_resize_sender = message_bus.get_sender::<WindowDidResize>();
+        self.platform.window_did_close_sender = message_bus.get_sender::<WindowDidClose>();
+        self.window_open_sender = message_bus.get_sender::<WindowDidOpen>();
+        EngineUpdateResult::Ok
+    }
+
+    fn systems_did_init(&mut self, _input: engine_stages::PlatformInitInput) -> EngineUpdateResult {
+        EngineUpdateResult::Ok
     }
 }
 

@@ -7,13 +7,20 @@ pub struct Primitive {
     attributes: Vec<Attribute>,
     /// If mesh requires indexed rendering, a valid index into the accessor array must be provided.
     indices: Option<u32>,
+    /// Primitive rendering mode
+    mode: PrimitiveRenderingMode,
 }
 
 impl Primitive {
-    pub const fn new(attributes: Vec<Attribute>, indices: Option<u32>) -> Self {
+    pub const fn new(
+        attributes: Vec<Attribute>,
+        indices: Option<u32>,
+        mode: PrimitiveRenderingMode,
+    ) -> Self {
         Self {
             attributes,
             indices,
+            mode,
         }
     }
 

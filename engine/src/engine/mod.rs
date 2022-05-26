@@ -8,7 +8,7 @@ use crate::platform::*;
 use controller::EngineController;
 use create_info::EngineCreateInfo;
 use engine_states::*;
-/// An instance of the Magnetar game engine.
+/// An instance of the game engine.
 pub struct Engine {
     state: EngineState,
 }

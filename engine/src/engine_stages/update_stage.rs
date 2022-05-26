@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use super::*;
 use crate::message_bus::AnyMessageRegisterer;
 use crate::{EngineUpdateResult, UpdateMessageRegisterer};
@@ -26,6 +28,14 @@ pub trait UpdateStage: Sized + Send + 'static {
     fn engine_will_resume(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
         EngineUpdateResult::Ok
     }
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
 }
 
 /// TraitObject trait for Update Stages. Implemented for all T: UpdateStage.
@@ -42,6 +52,9 @@ pub trait AnyUpdateStage: Send + 'static {
     fn engine_will_suspend(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
     #[allow(unused_variables)]
     fn engine_will_resume(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
+
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 impl<T: UpdateStage> From<T> for Box<dyn AnyUpdateStage> {

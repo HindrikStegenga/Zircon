@@ -1,8 +1,7 @@
 mod common;
 mod components;
 mod device;
-#[cfg(feature = "editor")]
-mod editor_ui;
+mod pipeline_setup;
 
 mod render_paths;
 mod render_target;
@@ -10,6 +9,5 @@ mod render_target;
 pub use common::*;
 pub use components::*;
 pub(crate) use device::*;
-#[cfg(feature = "editor")]
-pub use editor_ui::*;
+pub use pipeline_setup::*;
 pub use render_paths::*;

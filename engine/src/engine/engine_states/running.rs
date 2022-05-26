@@ -3,6 +3,7 @@ use crate::{engine::result::*, engine_stages::*, PlatformInterface};
 use std::sync::Arc;
 use std::time::*;
 use utils::dispatcher::Dispatcher;
+use utils::split_view::*;
 
 pub struct Running {
     pub(crate) dispatch_system: Arc<Dispatcher>,
@@ -74,40 +75,48 @@ impl EngineStateMachine<Running> {
 
             let frame_counter_past_second = self.shared.internal_resources.timings.frame_counter;
             let update_counter_past_second = self.shared.internal_resources.timings.update_counter;
-            for render_stage in &mut self.state.render_stages {
-                match render_stage.update_thread_did_run(RenderStageUpdateInput::new(
+
+            if let Err(e) = SplitViewMut::for_each_until_error(
+                &mut self.state.render_stages,
+                |mut split_view| match split_view.item_mut().update_thread_did_run(
+                    RenderStageUpdateInput::new(
+                        interface,
+                        tick_rate,
+                        alpha,
+                        frame_counter_past_second,
+                        update_counter_past_second,
+                    ),
+                ) {
+                    EngineUpdateResult::Ok => Ok(()),
+                    result => Err(result),
+                },
+            ) {
+                return e;
+            };
+        }
+
+        // Trigger the render thread.
+        let frame_counter_past_second = self.shared.internal_resources.timings.frame_counter;
+        let update_counter_past_second = self.shared.internal_resources.timings.update_counter;
+
+        if let Err(e) =
+            SplitViewMut::for_each_until_error(&mut self.state.render_stages, |mut split_view| {
+                let (before, item, after) = split_view.components_mut();
+                let _manager = RenderStageManager::from_slices(before, after);
+                match item.render(RenderStageUpdateInput::new(
                     interface,
                     tick_rate,
                     alpha,
                     frame_counter_past_second,
                     update_counter_past_second,
                 )) {
-                    EngineUpdateResult::Ok => {}
-                    result => {
-                        return result;
-                    }
+                    EngineUpdateResult::Ok => Ok(()),
+                    result => Err(result),
                 }
-            }
+            })
+        {
+            return e;
         }
-
-        // Trigger the render thread.
-        let frame_counter_past_second = self.shared.internal_resources.timings.frame_counter;
-        let update_counter_past_second = self.shared.internal_resources.timings.update_counter;
-        for stage in &mut self.state.render_stages {
-            match stage.render(RenderStageUpdateInput::new(
-                interface,
-                tick_rate,
-                alpha,
-                frame_counter_past_second,
-                update_counter_past_second,
-            )) {
-                EngineUpdateResult::Ok => {}
-                result => {
-                    return result;
-                }
-            }
-        }
-
         self.shared.internal_resources.timings.frame_end();
 
         EngineUpdateResult::Ok

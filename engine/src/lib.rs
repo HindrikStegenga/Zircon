@@ -9,6 +9,7 @@ pub use asset_library::asset_system::AssetSystem;
 pub use engine::{
     controller::EngineController, create_info::*, result::EngineUpdateResult, Engine,
 };
+use engine_stages::RenderStageUpdateThreadHandler;
 pub use engine_stages::{
     RenderStage, RenderStageConstructor, RenderStageConstructorInput, RenderStageUpdateInput,
     UpdateStage, UpdateStageConstructor, UpdateStageConstructorInput, UpdateStageUpdateInput,

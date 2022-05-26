@@ -1,12 +1,13 @@
 use std::{sync::Arc, vec};
 
-use editor::*;
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
 use math::*;
 use scripting::*;
 use winit_platform::WinitPlatform;
+
+mod mesh_writing;
 
 fn create_wasm_scripting_stage<'r>(
     input: UpdateStageConstructorInput<'r>,
@@ -99,6 +100,7 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
 }
 
 fn main() {
+    mesh_writing::write_meshes();
     let asset_system = AssetSystem::default();
     asset_system
         .load_files_from_directory("./game/asset_archives/config", "config")
@@ -127,6 +129,5 @@ fn main() {
     };
     let engine = Engine::from(create_info);
     let platform = WinitPlatform::default();
-    //platform.add_custom_event_handler(setup_editor());
     engine.run(platform);
 }

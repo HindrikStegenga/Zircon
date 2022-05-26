@@ -1,12 +1,10 @@
 use crate::engine_stages::{
     AnyRenderStage, AnyRenderStageUpdateThreadHandler, EngineDidInitInput, RenderStage,
-    RenderStageUpdateInput, RenderStageUpdateThreadHandler,
-    RenderStageUpdateThreadHandlerCreateInfo, UpdateStageUpdateInput, UpdateThreadHandlerContainer,
+    RenderStageUpdateInput, RenderStageUpdateThreadHandlerCreateInfo, UpdateThreadHandlerContainer,
 };
 use crate::message_bus::*;
-use crate::resource_manager::ThreadLocalResourceManager;
 use crate::{EngineUpdateResult, PlatformInterface};
-use std::marker::PhantomData;
+use std::any::Any;
 
 pub struct RenderStageContainer<T: RenderStage> {
     stage: T,
@@ -78,5 +76,13 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
 
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
         self.stage.render(input)
+    }
+
+    fn as_any(&self) -> &dyn Any {
+        self.stage.as_any()
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self.stage.as_any_mut()
     }
 }

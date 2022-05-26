@@ -1,9 +1,9 @@
 use super::*;
 use crate::engine_stages::inputs::RenderStageConstructorInput;
 use crate::message_bus::*;
-use crate::resource_manager::{EngineResourceManager, ThreadLocalResourceManager};
-use crate::{EngineUpdateResult, PlatformInterface};
-use std::sync::Arc;
+use crate::resource_manager::ThreadLocalResourceManager;
+use crate::EngineUpdateResult;
+use std::any::Any;
 
 pub type RenderStageConstructor =
     dyn Fn(RenderStageConstructorInput) -> Box<dyn AnyRenderStage> + 'static;
@@ -80,6 +80,14 @@ pub trait RenderStage: Sized + 'static {
     }
     /// Is called on the main thread.
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
+
+    fn as_any(&self) -> &dyn Any {
+        self
+    }
+
+    fn as_any_mut(&mut self) -> &mut dyn Any {
+        self
+    }
 }
 
 /// TraitObject trait for Render Stages. Implemented for all T: RenderStage.
@@ -103,6 +111,9 @@ pub trait AnyRenderStage: 'static {
     fn process_events(&mut self, input: RenderStageUpdateInput);
     fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
+
+    fn as_any(&self) -> &dyn Any;
+    fn as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 impl<T: RenderStage> From<T> for Box<dyn AnyRenderStage> {

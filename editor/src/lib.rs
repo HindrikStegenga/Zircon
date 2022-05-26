@@ -1,6 +1,11 @@
-use egui_winit_ash_integration::*;
+use egui::*;
+use egui_winit::*;
 use winit::event::Event;
 use winit_platform::*;
+
+mod editor;
+
+pub use editor::*;
 
 fn setup(event: &Event<()>, platform_interface: &mut WinitPlatformInterface) {}
 

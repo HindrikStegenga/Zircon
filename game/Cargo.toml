@@ -13,3 +13,4 @@ graphics = { path = "../graphics" }
 scripting = { path = "../scripting" }
 math = { path = "../math" }
 mesh = { path = "../mesh" }
+serde_yaml = "0.8"

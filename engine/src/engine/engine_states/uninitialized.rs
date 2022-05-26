@@ -2,6 +2,7 @@ use super::*;
 use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType};
 use crate::scene_manager::SceneManager;
 use crate::{engine::gameloop_timer::*, engine_stages::*, resource_manager::*, *};
+use asset_library::split_view::SplitViewMut;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
@@ -11,7 +12,7 @@ use utils::dispatcher::Dispatcher;
 pub struct Uninitialized {}
 
 impl EngineStateMachine<Uninitialized> {
-    pub fn new(mut info: EngineCreateInfo) -> Self {
+    pub fn new(info: EngineCreateInfo) -> Self {
         log!(
             "Initializing {:#?} version {:#?}.{:#?}.{:#?}",
             info.application_info.engine_name,
@@ -68,11 +69,11 @@ impl EngineStateMachine<Uninitialized> {
     }
 }
 
-impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)>
-    Into<EngineStateMachine<Initialized>> for (EngineStateMachine<Uninitialized>, &mut P, F)
+impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachine<Initialized>>
+    for (EngineStateMachine<Uninitialized>, &mut P)
 {
     fn into(self) -> EngineStateMachine<Initialized> {
-        let (uninit, interface, init_func) = self;
+        let (uninit, interface) = self;
         let dispatch_system = match uninit.shared.resources.get_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {
@@ -124,7 +125,7 @@ impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)>
                 MessageHandlerType::Render,
             ));
         });
-        let mut render_stage_update_handlers = render_stages
+        let render_stage_update_handlers = render_stages
             .iter_mut()
             .map(|e| {
                 e.create_update_thread_handler(
@@ -140,46 +141,74 @@ impl<P: PlatformInterface, F: Fn(&mut P, PlatformPreDidInitInput)>
         let mut scene_manager = SceneManager::default();
 
         // Run the platform pre did init function.
-        (init_func)(
-            interface,
-            PlatformPreDidInitInput {
-                scene_manager: &mut scene_manager,
-                resources: Arc::clone(&uninit.shared.resources),
-                update_thread_resources: &mut update_thread_local_resources,
-                dispatcher: Arc::clone(&dispatch_system),
-            },
-        );
+        match interface.systems_will_init(PlatformInitInput {
+            scene_manager: &mut scene_manager,
+            resources: Arc::clone(&uninit.shared.resources),
+            update_thread_resources: &mut update_thread_local_resources,
+            dispatcher: Arc::clone(&dispatch_system),
+            update_stage_manager: UpdateStageManager::from_slice(&mut update_stages),
+            render_stage_manager: RenderStageManager::from_slice(&mut render_stages),
+        }) {
+            EngineUpdateResult::Ok => (),
+            e => tagged_failure!("Engine", "Engine initialization failed: {:#?}", e),
+        }
 
         // Run the did init function for all update stages.
-        for stage in &mut update_stages {
+        if let Err(e) = SplitViewMut::for_each_until_error(&mut update_stages, |mut split_view| {
+            let (before, stage, after) = split_view.components_mut();
+            let update_stage_manager = UpdateStageManager::from_slices(before, after);
+            let render_stage_manager = RenderStageManager::from_slice(&mut render_stages);
             match stage.engine_did_initialize(EngineDidInitInput {
                 platform_interface: interface,
                 scene_manager: &mut scene_manager,
                 resources: Arc::clone(&uninit.shared.resources),
                 update_thread_resources: &mut update_thread_local_resources,
                 dispatcher: Arc::clone(&dispatch_system),
+                update_stage_manager,
+                render_stage_manager,
             }) {
-                EngineUpdateResult::Ok => continue,
-                _ => {
-                    failure!("Engine initialization failed.")
-                }
+                EngineUpdateResult::Ok => Ok(()),
+                value => Err(value),
             }
+        }) {
+            tagged_failure!("Engine", "Engine initialization failed: {:#?}", e);
         }
+
         // Run the did init function for all render stages.
-        for stage in &mut render_stages {
+        if let Err(e) = SplitViewMut::for_each_until_error(&mut render_stages, |mut split_view| {
+            let (before, stage, after) = split_view.components_mut();
+            let update_stage_manager = UpdateStageManager::from_slice(&mut update_stages);
+            let render_stage_manager = RenderStageManager::from_slices(before, after);
+
             match stage.engine_did_initialize(EngineDidInitInput {
                 platform_interface: interface,
                 scene_manager: &mut scene_manager,
                 resources: Arc::clone(&uninit.shared.resources),
                 update_thread_resources: &mut update_thread_local_resources,
                 dispatcher: Arc::clone(&dispatch_system),
+                update_stage_manager,
+                render_stage_manager,
             }) {
-                EngineUpdateResult::Ok => continue,
-                _ => {
-                    failure!("Engine initialization failed.")
-                }
+                EngineUpdateResult::Ok => Ok(()),
+                value => Err(value),
             }
+        }) {
+            tagged_failure!("Engine", "Engine initialization failed: {:#?}", e);
+        };
+
+        // Run the platform post did init function.
+        match interface.systems_did_init(PlatformInitInput {
+            scene_manager: &mut scene_manager,
+            resources: Arc::clone(&uninit.shared.resources),
+            update_thread_resources: &mut update_thread_local_resources,
+            dispatcher: Arc::clone(&dispatch_system),
+            update_stage_manager: UpdateStageManager::from_slice(&mut update_stages),
+            render_stage_manager: RenderStageManager::from_slice(&mut render_stages),
+        }) {
+            EngineUpdateResult::Ok => (),
+            e => tagged_failure!("Engine", "Engine initialization failed: {:#?}", e),
         }
+
         success!("Initialized engine.");
         EngineStateMachine {
             shared: uninit.shared,
