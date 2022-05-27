@@ -12,4 +12,4 @@ pub mod vfs;
 pub mod format;
 pub use format::*;
 
-pub(crate) use basic_functions::*;
+pub use basic_functions::*;

@@ -1,6 +1,7 @@
 use super::*;
 use std::io::{BufWriter, Seek, SeekFrom, Write};
 
+#[derive(Debug)]
 pub struct AssetArchiveMountPointBuilder {
     mount_point: String,
     version: u64,
@@ -28,11 +29,14 @@ impl AssetArchiveMountPointBuilder {
         format: impl AsRef<str>,
         uncompressed_blob: &[u8],
         compression_format: AssetArchiveCompressionFormat,
-    ) -> Result<Self, AssetArchiveError> {
+    ) -> Result<Self, (Self, AssetArchiveError)> {
         use AssetArchiveCompressionFormat::{None, LZ4};
         match compression_format {
             None => {
-                self.archive_builder.writer.write(uncompressed_blob)?;
+                match self.archive_builder.writer.write(uncompressed_blob) {
+                    Ok(v) => v,
+                    Err(e) => return Err((self, AssetArchiveError::Io(e))),
+                };
                 self.written_files.push(AssetArchiveFileHeader::new(
                     identifier.as_ref().to_lowercase(),
                     format.as_ref().to_lowercase(),
@@ -46,7 +50,10 @@ impl AssetArchiveMountPointBuilder {
             }
             LZ4 => {
                 let compressed = lz4_flex::compress(uncompressed_blob);
-                self.archive_builder.writer.write(&compressed)?;
+                match self.archive_builder.writer.write(&compressed) {
+                    Ok(v) => v,
+                    Err(e) => return Err((self, AssetArchiveError::Io(e))),
+                };
                 self.written_files.push(AssetArchiveFileHeader::new(
                     identifier.as_ref().to_lowercase(),
                     format.as_ref().to_lowercase(),
@@ -73,6 +80,7 @@ impl AssetArchiveMountPointBuilder {
     }
 }
 
+#[derive(Debug)]
 pub struct AssetArchiveBuilder {
     writer: BufWriter<File>,
     written_mounts: Vec<AssetArchiveMountPointHeader>,
@@ -93,13 +101,13 @@ impl AssetArchiveBuilder {
         self,
         mount_point: impl AsRef<str>,
         version: u64,
-    ) -> Result<AssetArchiveMountPointBuilder, AssetArchiveError> {
+    ) -> Result<AssetArchiveMountPointBuilder, (Self, AssetArchiveError)> {
         match self
             .written_mounts
             .iter()
             .find(|e| e.mount_point() == mount_point.as_ref().to_lowercase())
         {
-            Some(_) => return Err(AssetArchiveError::InvalidMountPoint),
+            Some(_) => return Err((self, AssetArchiveError::InvalidMountPoint)),
             None => (),
         }
 

@@ -13,4 +13,9 @@ graphics = { path = "../graphics" }
 scripting = { path = "../scripting" }
 math = { path = "../math" }
 mesh = { path = "../mesh" }
+asset_library = { path = "../asset_library" }
 serde_yaml = "0.8"
+
+
+[build-dependencies]
+asset_library = { path = "../asset_library" }

@@ -4,7 +4,7 @@ use std::{fs::File, io::*};
 pub fn write_meshes() {
     write_mesh(
         &generate_2d_triangle_in_ndc(),
-        "./game/asset_archives/meshes/triangle_2d_ndc.yaml",
+        "./game/assets/meshes/triangle_2d_ndc.yaml",
     );
 }
 

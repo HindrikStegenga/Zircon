@@ -9,6 +9,7 @@ members = [
     "winit_platform",
     "asset_library",
     "scripting",
+    "shader",
     "mesh",
     "tools/gltf_extract_meshes",
     "tools/egui_base",

@@ -1,5 +1,7 @@
+use std::path::PathBuf;
 use std::{sync::Arc, vec};
 
+use asset_library::archive::AssetArchive;
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
@@ -20,7 +22,7 @@ fn create_wasm_scripting_stage<'r>(
     };
     let mut buffer = vec![];
     let _ = asset_system
-        .load_asset_as_blob_into("config", "init_test", &mut buffer)
+        .load_asset_as_blob_into("assets.wasm", "init_test", &mut buffer)
         .unwrap();
     let mut stage = WasmScriptingStage::default();
     stage.add_engine_init_script(&buffer);
@@ -81,11 +83,11 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
     };
 
     let options = asset_system
-        .load_asset_as_type::<GraphicsOptions, _, _>("config", "vulkan")
+        .load_asset_as_type::<GraphicsOptions, _, _>("assets.config", "vulkan")
         .unwrap();
 
     let application_info = asset_system
-        .load_asset_as_type::<ApplicationInfo, _, _>("config", "game")
+        .load_asset_as_type::<ApplicationInfo, _, _>("assets.config", "game")
         .unwrap();
 
     let create_info = GraphicsStageCreateInfo {
@@ -103,10 +105,10 @@ fn main() {
     mesh_writing::write_meshes();
     let asset_system = AssetSystem::default();
     asset_system
-        .load_files_from_directory("./game/asset_archives/config", "config")
+        .load_archives_from_directory("./game/asset_archives/", "harchive")
         .unwrap();
     let application_info = asset_system
-        .load_asset_as_type::<ApplicationInfo, _, _>("config", "game")
+        .load_asset_as_type::<ApplicationInfo, _, _>("assets.config", "game")
         .unwrap();
 
     let create_info = EngineCreateInfo {
@@ -121,7 +123,7 @@ fn main() {
         asset_system: Some(Box::new(|| {
             let asset_system = AssetSystem::default();
             asset_system
-                .load_files_from_directory("./game/asset_archives/config", "config")
+                .load_archives_from_directory("./game/asset_archives/", "harchive")
                 .unwrap();
             asset_system
         })),
