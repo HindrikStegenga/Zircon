@@ -7,6 +7,8 @@ fn main() {
         path.clone().join("assets"),
         "assets",
         path.clone().join("asset_archives").join("assets.harchive"),
+        0,
+        asset_library::archive::AssetArchiveCompressionFormat::ZSTD,
     )
     .unwrap();
 }

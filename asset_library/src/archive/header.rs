@@ -113,4 +113,5 @@ impl AssetArchiveFileHeader {
 pub enum AssetArchiveCompressionFormat {
     None = 0,
     LZ4 = 1,
+    ZSTD = 2,
 }

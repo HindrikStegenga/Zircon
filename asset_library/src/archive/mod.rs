@@ -51,7 +51,7 @@ impl AssetArchive {
         reader.seek(SeekFrom::End(-16 - compressed_header_size as i64))?;
         reader.read_exact(&mut compressed_header)?;
         let uncompressed_header =
-            lz4_flex::decompress(&compressed_header, uncompressed_header_size as usize)?;
+            zstd::bulk::decompress(&compressed_header, uncompressed_header_size as usize)?;
         let header = serde_cbor::from_slice::<AssetArchiveHeader>(&uncompressed_header)?;
         Ok(header)
     }
@@ -90,17 +90,28 @@ impl AssetArchive {
         let mut reader = BufReader::new(file);
         reader.seek(SeekFrom::Start(*header.offset()))?;
 
-        if *header.compression_format() == AssetArchiveCompressionFormat::None {
-            buffer.resize(*header.compressed_size() as usize, 0);
-            reader.read_exact(&mut buffer)?;
-            Ok(())
-        } else {
-            let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
-            unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
-            reader.read_exact(&mut temp_buffer)?;
-            buffer.resize(*header.uncompressed_size() as usize, 0);
-            decompress_into(&temp_buffer, &mut buffer)?;
-            Ok(())
+        match header.compression_format() {
+            AssetArchiveCompressionFormat::None => {
+                buffer.resize(*header.compressed_size() as usize, 0);
+                reader.read_exact(&mut buffer)?;
+                Ok(())
+            }
+            AssetArchiveCompressionFormat::LZ4 => {
+                let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+                unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+                reader.read_exact(&mut temp_buffer)?;
+                buffer.resize(*header.uncompressed_size() as usize, 0);
+                lz4_flex::decompress_into(&temp_buffer, &mut buffer)?;
+                Ok(())
+            }
+            AssetArchiveCompressionFormat::ZSTD => {
+                let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+                unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+                reader.read_exact(&mut temp_buffer)?;
+                buffer.resize(*header.uncompressed_size() as usize, 0);
+                zstd::bulk::decompress_to_buffer(&temp_buffer, &mut buffer)?;
+                Ok(())
+            }
         }
     }
 
@@ -114,17 +125,28 @@ impl AssetArchive {
         let mut reader = BufReader::new(file);
         reader.seek(SeekFrom::Start(*header.offset())).await?;
 
-        if *header.compression_format() == AssetArchiveCompressionFormat::None {
-            buffer.resize(*header.compressed_size() as usize, 0);
-            reader.read_exact(&mut buffer).await?;
-            Ok(())
-        } else {
-            let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
-            unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
-            reader.read_exact(&mut temp_buffer).await?;
-            buffer.resize(*header.uncompressed_size() as usize, 0);
-            decompress_into(&temp_buffer, &mut buffer)?;
-            Ok(())
+        match header.compression_format() {
+            AssetArchiveCompressionFormat::None => {
+                buffer.resize(*header.compressed_size() as usize, 0);
+                reader.read_exact(&mut buffer).await?;
+                Ok(())
+            }
+            AssetArchiveCompressionFormat::LZ4 => {
+                let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+                unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+                reader.read_exact(&mut temp_buffer).await?;
+                buffer.resize(*header.uncompressed_size() as usize, 0);
+                decompress_into(&temp_buffer, &mut buffer)?;
+                Ok(())
+            }
+            AssetArchiveCompressionFormat::ZSTD => {
+                let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+                unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+                reader.read_exact(&mut temp_buffer).await?;
+                buffer.resize(*header.uncompressed_size() as usize, 0);
+                zstd::bulk::decompress_to_buffer(&temp_buffer, &mut buffer)?;
+                Ok(())
+            }
         }
     }
 

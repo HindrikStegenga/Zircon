@@ -16,11 +16,19 @@ pub fn archive_directory(
     path: impl AsRef<Path>,
     base_mount_point: impl AsRef<str>,
     out: impl AsRef<Path>,
+    version: u64,
+    compression_format: AssetArchiveCompressionFormat,
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
     let directory = fs::read_dir(path)?;
     let out_file = File::create(out)?;
     let archive = AssetArchiveBuilder::new(out_file)?;
-    let archive = match add_dir_to_archive(directory, archive, base_mount_point, 0, true) {
+    let archive = match add_dir_to_archive(
+        directory,
+        archive,
+        base_mount_point,
+        version,
+        compression_format,
+    ) {
         Ok(v) => v,
         Err((a, e)) => {
             println!("Error occured: {}", e);
@@ -36,7 +44,7 @@ pub fn add_dir_to_archive(
     mut builder: AssetArchiveBuilder,
     mount_point: impl AsRef<str>,
     version: u64,
-    compressed: bool,
+    compression_format: AssetArchiveCompressionFormat,
 ) -> std::result::Result<AssetArchiveBuilder, (AssetArchiveBuilder, Box<dyn std::error::Error>)> {
     let mount_point = mount_point.as_ref();
 
@@ -89,13 +97,14 @@ pub fn add_dir_to_archive(
             String::from(mount_point) + &(String::from(".") + &name)
         };
 
-        builder = match add_dir_to_archive(fs_dir, builder, sub_mnt_point, version, compressed) {
-            Ok(v) => v,
-            Err((a, e)) => {
-                println!("Error: {}", e);
-                a
+        builder =
+            match add_dir_to_archive(fs_dir, builder, sub_mnt_point, version, compression_format) {
+                Ok(v) => v,
+                Err((a, e)) => {
+                    println!("Error: {}", e);
+                    a
+                }
             }
-        }
     }
 
     if files.is_empty() {
@@ -123,13 +132,7 @@ pub fn add_dir_to_archive(
             None => String::from(""),
         };
 
-        mnt_point = match mnt_point.write_file(&fname, format, &buf, {
-            if compressed {
-                AssetArchiveCompressionFormat::LZ4
-            } else {
-                AssetArchiveCompressionFormat::None
-            }
-        }) {
+        mnt_point = match mnt_point.write_file(&fname, format, &buf, compression_format) {
             Ok(v) => v,
             Err((a, e)) => {
                 println!("Could not add file: {} - {}", e, name);

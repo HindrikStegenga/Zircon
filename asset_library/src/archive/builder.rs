@@ -65,6 +65,26 @@ impl AssetArchiveMountPointBuilder {
                 self.archive_builder.offset += compressed.len() as u64;
                 Ok(self)
             }
+            AssetArchiveCompressionFormat::ZSTD => {
+                let compressed = match zstd::bulk::compress(uncompressed_blob, 0) {
+                    Ok(v) => v,
+                    Err(e) => return Err((self, AssetArchiveError::Io(e))),
+                };
+                match self.archive_builder.writer.write(&compressed) {
+                    Ok(v) => v,
+                    Err(e) => return Err((self, AssetArchiveError::Io(e))),
+                };
+                self.written_files.push(AssetArchiveFileHeader::new(
+                    identifier.as_ref().to_lowercase(),
+                    format.as_ref().to_lowercase(),
+                    self.archive_builder.offset,
+                    compressed.len() as u64,
+                    uncompressed_blob.len() as u64,
+                    AssetArchiveCompressionFormat::ZSTD,
+                ));
+                self.archive_builder.offset += compressed.len() as u64;
+                Ok(self)
+            }
         }
     }
 
@@ -122,7 +142,7 @@ impl AssetArchiveBuilder {
         let header = AssetArchiveHeader::new(self.written_mounts);
         let mut writer = self.writer;
         let cbor_header = serde_cbor::to_vec(&header)?;
-        let compressed_header = lz4_flex::compress(&cbor_header);
+        let compressed_header = zstd::bulk::compress(&cbor_header, 0)?;
         writer.write(&compressed_header)?;
         let uncompressed_size_bytes = u64::to_le_bytes(cbor_header.len() as u64);
         writer.write(&uncompressed_size_bytes)?;
