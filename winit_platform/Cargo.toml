@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 engine = { path = "../engine" }
 graphics = { path = "../graphics" }
+utils = { path = "../utils" }
 winit = "0.26"

@@ -69,11 +69,11 @@ impl<T: UpdateStage> AnyUpdateStage for UpdateStageContainer<T> {
         self.stage.engine_will_resume(input)
     }
 
-    fn as_any(&self) -> &dyn Any {
-        self.stage.as_any()
+    fn stage_as_any(&self) -> &dyn Any {
+        T::stage_as_any(&self.stage)
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self.stage.as_any_mut()
+    fn stage_as_any_mut(&mut self) -> &mut dyn Any {
+        T::stage_as_any_mut(&mut self.stage)
     }
 }

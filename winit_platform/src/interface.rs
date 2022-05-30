@@ -1,5 +1,5 @@
 use crate::*;
-use engine::message_bus::*;
+use engine::as_any::AsAny;
 use engine::*;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};
 
@@ -24,7 +24,18 @@ impl<'a> WinitPlatformInterface<'a> {
 }
 
 impl PlatformInitalizationHandler for WinitPlatformInterface<'_> {
-    fn systems_will_init(&mut self, input: engine_stages::PlatformInitInput) -> EngineUpdateResult {
+    fn systems_will_init(
+        &mut self,
+        mut input: engine_stages::PlatformInitInput,
+    ) -> EngineUpdateResult {
+        let mut plugins = self.platform.plugins.drain(..).collect::<Vec<_>>();
+        for plugin in &mut plugins {
+            match plugin.systems_will_init(self, &mut input) {
+                EngineUpdateResult::Ok => (),
+                v => return v,
+            }
+        }
+
         let message_bus = input
             .resources
             .get_resource::<MessageBus>()
@@ -33,10 +44,22 @@ impl PlatformInitalizationHandler for WinitPlatformInterface<'_> {
         self.platform.window_did_resize_sender = message_bus.get_sender::<WindowDidResize>();
         self.platform.window_did_close_sender = message_bus.get_sender::<WindowDidClose>();
         self.window_open_sender = message_bus.get_sender::<WindowDidOpen>();
+        self.platform.plugins = plugins.drain(..).collect();
         EngineUpdateResult::Ok
     }
 
-    fn systems_did_init(&mut self, _input: engine_stages::PlatformInitInput) -> EngineUpdateResult {
+    fn systems_did_init(
+        &mut self,
+        mut input: engine_stages::PlatformInitInput,
+    ) -> EngineUpdateResult {
+        let mut plugins = self.platform.plugins.drain(..).collect::<Vec<_>>();
+        for plugin in &mut plugins {
+            match plugin.systems_did_init(self, &mut input) {
+                EngineUpdateResult::Ok => (),
+                v => return v,
+            }
+        }
+        self.platform.plugins = plugins.drain(..).collect();
         EngineUpdateResult::Ok
     }
 }
@@ -113,5 +136,9 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                 None
             }
         };
+    }
+
+    fn platform_as_any(&mut self) -> &mut dyn std::any::Any {
+        self.platform.as_any_mut()
     }
 }

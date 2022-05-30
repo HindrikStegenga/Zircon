@@ -6,10 +6,12 @@ edition = "2021"
 [lib]
 
 [dependencies]
+engine = { path = "../engine" }
 graphics = { path = "../graphics" }
 winit_platform = { path = "../winit_platform" }
-egui = { version = "0.18" }
+
+ash = "0.37"
+egui = "0.18"
 winit = "0.26"
+gpu-allocator = "0.18"
 egui-winit = "0.18"
-egui-winit-ash-integration = "0.2"
-egui_base = { path = "../tools/egui_base/" }

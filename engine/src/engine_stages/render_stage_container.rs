@@ -5,6 +5,7 @@ use crate::engine_stages::{
 use crate::message_bus::*;
 use crate::{EngineUpdateResult, PlatformInterface};
 use std::any::Any;
+use utils::as_any::*;
 
 pub struct RenderStageContainer<T: RenderStage> {
     stage: T,
@@ -78,11 +79,11 @@ impl<T: RenderStage> AnyRenderStage for RenderStageContainer<T> {
         self.stage.render(input)
     }
 
-    fn as_any(&self) -> &dyn Any {
+    fn stage_as_any(&self) -> &dyn Any {
         self.stage.as_any()
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn Any {
+    fn stage_as_any_mut(&mut self) -> &mut dyn Any {
         self.stage.as_any_mut()
     }
 }

@@ -19,9 +19,10 @@ pub struct GraphicsStage {
     available_window_targets: Vec<WindowRenderTarget>,
     render_targets: Vec<WindowRenderTargetBinding>,
     device: GraphicsDevice,
-    debug_messenger: Option<DebugExtension>,
+    _debug_messenger: Option<DebugExtension>,
     vk: VkLibraryWrapper,
     graphics_options: GraphicsOptions,
+    render_plugins: Vec<RenderPluginDescriptor>,
 }
 
 impl GraphicsStage {
@@ -43,12 +44,18 @@ impl GraphicsStage {
             update_receiver: None,
             available_window_targets: vec![],
             vk: VkLibraryWrapper::new(instance, entry),
-            debug_messenger,
+            _debug_messenger: debug_messenger,
             graphics_options: create_info.options,
             device,
             render_targets: vec![],
+            render_plugins: vec![],
         }
         .into()
+    }
+
+    pub fn add_render_plugin<T: RenderPlugin>(&mut self) {
+        self.render_plugins
+            .push(RenderPluginDescriptor::new(T::create_plugin));
     }
 }
 
@@ -97,6 +104,7 @@ impl RenderStage for GraphicsStage {
                         &is_bound.camera,
                         input.platform,
                         target,
+                        &self.render_plugins,
                         &self.graphics_options,
                     ) {
                         Ok(v) => v,
@@ -140,6 +148,12 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for Graphi
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidClose) {
         tagged_log!("Graphics", "WindowDidClose message received!");
+        for i in (0..self.render_targets.len()).rev() {
+            let target = &self.render_targets[i];
+            if target.window_handle() == message.window {
+                self.render_targets.swap_remove(i);
+            }
+        }
     }
 }
 

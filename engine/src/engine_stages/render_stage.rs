@@ -80,14 +80,6 @@ pub trait RenderStage: Sized + 'static {
     }
     /// Is called on the main thread.
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
-
-    fn as_any(&self) -> &dyn Any {
-        self
-    }
-
-    fn as_any_mut(&mut self) -> &mut dyn Any {
-        self
-    }
 }
 
 /// TraitObject trait for Render Stages. Implemented for all T: RenderStage.
@@ -112,8 +104,8 @@ pub trait AnyRenderStage: 'static {
     fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
     fn render(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult;
 
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn stage_as_any(&self) -> &dyn Any;
+    fn stage_as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 impl<T: RenderStage> From<T> for Box<dyn AnyRenderStage> {

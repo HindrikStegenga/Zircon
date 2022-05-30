@@ -29,11 +29,11 @@ pub trait UpdateStage: Sized + Send + 'static {
         EngineUpdateResult::Ok
     }
 
-    fn as_any(&self) -> &dyn Any {
+    fn stage_as_any(&self) -> &dyn Any {
         self
     }
 
-    fn as_any_mut(&mut self) -> &mut dyn Any {
+    fn stage_as_any_mut(&mut self) -> &mut dyn Any {
         self
     }
 }
@@ -53,8 +53,8 @@ pub trait AnyUpdateStage: Send + 'static {
     #[allow(unused_variables)]
     fn engine_will_resume(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult;
 
-    fn as_any(&self) -> &dyn Any;
-    fn as_any_mut(&mut self) -> &mut dyn Any;
+    fn stage_as_any(&self) -> &dyn Any;
+    fn stage_as_any_mut(&mut self) -> &mut dyn Any;
 }
 
 impl<T: UpdateStage> From<T> for Box<dyn AnyUpdateStage> {

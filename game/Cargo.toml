@@ -8,9 +8,9 @@ edition = "2021"
 [dependencies]
 engine = { path = "../engine" }
 winit_platform = { path = "../winit_platform" }
-editor = { path = "../editor" }
 graphics = { path = "../graphics" }
 scripting = { path = "../scripting" }
+editor = { path = "../editor" }
 math = { path = "../math" }
 mesh = { path = "../mesh" }
 asset_library = { path = "../asset_library" }

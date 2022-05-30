@@ -1,3 +1,5 @@
+use std::any::Any;
+
 use super::window::*;
 use crate::{engine_stages::PlatformInitInput, EngineUpdateResult};
 
@@ -16,6 +18,8 @@ pub trait PlatformInterface {
         title: &str,
         tag: Option<String>,
     ) -> Option<&dyn PlatformWindow>;
+
+    fn platform_as_any(&mut self) -> &mut dyn Any;
 }
 
 pub trait PlatformInitalizationHandler {

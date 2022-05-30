@@ -2,7 +2,7 @@ use ash::extensions::khr::Surface;
 use ash::*;
 use engine::*;
 
-pub(crate) struct WindowRenderTarget {
+pub struct WindowRenderTarget {
     window: PlatformWindowHandle,
     surface: vk::SurfaceKHR,
     loader: Surface,

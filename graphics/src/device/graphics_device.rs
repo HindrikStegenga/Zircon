@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::vec::Vec;
 use utils::*;
 
-pub(crate) struct GraphicsDevice {
+pub struct GraphicsDevice {
     instance: Arc<Instance>,
     device: Arc<Device>,
     allocator: Allocator,

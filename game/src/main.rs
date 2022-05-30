@@ -1,7 +1,6 @@
-use std::path::PathBuf;
+use std::marker::PhantomData;
 use std::{sync::Arc, vec};
 
-use asset_library::archive::AssetArchive;
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
@@ -130,6 +129,7 @@ fn main() {
         application_info,
     };
     let engine = Engine::from(create_info);
-    let platform = WinitPlatform::default();
+    let mut platform = WinitPlatform::default();
+    platform.add_plugin(editor::EguiIntegration::new());
     engine.run(platform);
 }

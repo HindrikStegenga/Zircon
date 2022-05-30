@@ -43,7 +43,7 @@ impl QueueFamilySelectionInfo {
     }
 }
 
-pub(crate) struct DeviceQueue {
+pub struct DeviceQueue {
     pub(crate) queue: vk::Queue,
     pub(crate) qf_index: u32,
     pub(crate) family: vk::QueueFamilyProperties,

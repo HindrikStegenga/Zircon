@@ -1,14 +1,7 @@
-use egui::*;
-use egui_winit::*;
-use winit::event::Event;
-use winit_platform::*;
+mod integration;
+mod render_plugin;
+mod renderer;
 
-mod editor;
-
-pub use editor::*;
-
-fn setup(event: &Event<()>, platform_interface: &mut WinitPlatformInterface) {}
-
-pub fn setup_editor() -> Box<dyn FnMut(&Event<()>, &mut WinitPlatformInterface)> {
-    Box::from(setup)
-}
+pub use integration::*;
+pub use render_plugin::*;
+pub use renderer::*;

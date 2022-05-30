@@ -1,4 +1,6 @@
-use crate::plugin::WinitPlatformPlugin;
+use std::any::TypeId;
+
+use crate::plugin::*;
 use crate::*;
 use engine::*;
 use winit::window::WindowId;
@@ -13,7 +15,7 @@ pub struct WinitPlatform {
     pub(crate) windows: Vec<WinitPlatformWindow>,
     pub(crate) window_did_resize_sender: Option<MessageSender<WindowDidResize>>,
     pub(crate) window_did_close_sender: Option<MessageSender<WindowDidClose>>,
-    pub(crate) plugins: Vec<Box<dyn WinitPlatformPlugin>>,
+    pub(crate) plugins: Vec<Box<dyn AnyWinitPlatformPlugin>>,
 }
 
 impl Default for WinitPlatform {
@@ -29,8 +31,48 @@ impl Default for WinitPlatform {
 }
 
 impl WinitPlatform {
-    pub fn add_plugin(&mut self, plugin: impl WinitPlatformPlugin + 'static) {
-        self.plugins.push(Box::from(plugin))
+    pub fn add_plugin<P: WinitPlatformPlugin>(&mut self, plugin: P) {
+        if let Some(_) = self
+            .plugins
+            .iter()
+            .find(|e| e.plugin_type_id() == TypeId::of::<P>())
+        {
+            return;
+        }
+        self.plugins
+            .push(Box::from(WinitPlatformPluginContainer::new(plugin)))
+    }
+
+    pub fn get_plugin_instance<P: WinitPlatformPlugin>(&mut self) -> Option<&mut P> {
+        if let Some(item) = self
+            .plugins
+            .iter_mut()
+            .find(|p| p.plugin_type_id() == TypeId::of::<P>())
+        {
+            if let Some(v) = item.plugin_as_any().downcast_mut::<P>() {
+                return Some(v);
+            }
+        }
+        None
+    }
+
+    pub fn get_window(&self, handle: PlatformWindowHandle) -> Option<&WinitPlatformWindow> {
+        if let Some(window) = self.windows.iter().find(|e| e.handle == handle) {
+            Some(window)
+        } else {
+            None
+        }
+    }
+
+    pub fn get_window_mut(
+        &mut self,
+        handle: PlatformWindowHandle,
+    ) -> Option<&mut WinitPlatformWindow> {
+        if let Some(window) = self.windows.iter_mut().find(|e| e.handle == handle) {
+            Some(window)
+        } else {
+            None
+        }
     }
 }
 
@@ -59,6 +101,16 @@ impl Platform for WinitPlatform {
 
         event_loop.run(move |event, window_target, control_flow| {
             *control_flow = ControlFlow::Poll;
+
+            let mut is_event_captured = false;
+            for plugin in &mut self.plugins {
+                if plugin.process_event(&event) {
+                    is_event_captured = true;
+                }
+            }
+            if is_event_captured {
+                return;
+            }
 
             match event {
                 Event::Suspended => {

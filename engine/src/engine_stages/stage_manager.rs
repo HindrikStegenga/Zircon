@@ -1,5 +1,4 @@
 use crate::engine_stages::*;
-use utils::as_any::AsAny;
 
 macro_rules! impl_stage_manager {
     ($name:ident, $stage_any_trait:ident, $stage_trait:ident) => {
@@ -23,16 +22,18 @@ macro_rules! impl_stage_manager {
                 }
             }
 
-            pub fn get_stage<S: $stage_trait>(&'a mut self) -> Option<&'a mut S> {
+            pub fn get_stage<S: $stage_trait>(&mut self) -> Option<&mut S> {
                 for elem in self.before.iter_mut() {
-                    let any = elem.as_any_mut();
-                    if let Some(item) = any.downcast_mut::<S>() {
+                    if let Some(item) =
+                        $stage_any_trait::stage_as_any_mut(elem.as_mut()).downcast_mut::<S>()
+                    {
                         return Some(item);
                     }
                 }
                 for elem in self.after.iter_mut() {
-                    let any = elem.as_any_mut();
-                    if let Some(item) = any.downcast_mut::<S>() {
+                    if let Some(item) =
+                        $stage_any_trait::stage_as_any_mut(elem.as_mut()).downcast_mut::<S>()
+                    {
                         return Some(item);
                     }
                 }

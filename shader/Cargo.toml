@@ -7,5 +7,4 @@ edition = "2021"
 
 [dependencies]
 mesh = { path = "../mesh" }
-
 serde = { version = "1.0", features = ["derive"] }

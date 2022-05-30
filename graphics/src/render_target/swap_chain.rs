@@ -7,7 +7,7 @@ use engine::{tagged_error, PlatformWindow};
 use std::sync::Arc;
 
 // Wraps the vulkan swap chain and it's associated images and imageviews.
-pub(crate) struct SwapChain {
+pub struct SwapChain {
     current_frame_index: u32,
     current_extent: vk::Extent2D,
     frames_in_flight: u32,
@@ -22,7 +22,7 @@ pub(crate) struct SwapChain {
     device: Arc<Device>,
 }
 
-pub(crate) struct AcquiredFrameInfo {
+pub struct AcquiredFrameInfo {
     // Image index that needs to be passed to [`present_frame`].
     pub image_index: u32,
     // Semaphore that needs to be waited on before any rendering may occur.

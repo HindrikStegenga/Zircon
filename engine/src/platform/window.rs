@@ -1,11 +1,12 @@
 use asset_library::handles::*;
 pub use raw_window_handle::*;
 
-pub trait PlatformWindow: HasRawWindowHandle {
+pub trait PlatformWindow: HasRawWindowHandle + 'static {
     fn tag(&self) -> Option<&str>;
     fn width(&self) -> u32;
     fn height(&self) -> u32;
     fn handle(&self) -> PlatformWindowHandle;
+    fn pixels_per_point(&self) -> f32;
     fn raw_platform_handle(&self) -> RawPlatformWindow {
         RawPlatformWindow::new(self.handle(), Self::raw_window_handle(&self))
     }
