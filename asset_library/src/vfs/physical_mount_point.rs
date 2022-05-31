@@ -52,7 +52,7 @@ impl VfsPhysicalMountPoint {
                             break;
                         }
                         Err(err) => {
-                            tagged_warn!("VFS", "{:#?}", err)
+                            t_warn!("{:#?}", err)
                         }
                     }
                 }

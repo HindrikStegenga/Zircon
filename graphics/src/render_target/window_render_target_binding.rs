@@ -1,8 +1,9 @@
 use super::*;
 use crate::*;
 use ash::*;
+use utils::*;
 use engine::{
-    tagged_error, tagged_log, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput,
+    PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput,
 };
 
 pub(crate) struct WindowRenderTargetBinding {
@@ -28,7 +29,7 @@ impl WindowRenderTargetBinding {
         let window = match platform.get_window(self.window_render_target.window()) {
             Some(v) => v,
             None => {
-                tagged_error!("Graphics", "Using invalid window handle!");
+                t_error!("Using invalid window handle!");
                 return Err(vk::Result::ERROR_INVALID_EXTERNAL_HANDLE_KHR);
             }
         };
@@ -39,8 +40,7 @@ impl WindowRenderTargetBinding {
         let width = window.width();
         let height = window.height();
 
-        tagged_log!(
-            "Graphics",
+        t_info!(
             "Previous: {} - {} Current: {} - {}",
             previous_width,
             previous_height,
@@ -95,7 +95,7 @@ impl WindowRenderTargetBinding {
                     return true;
                 }
                 e => {
-                    tagged_error!("Graphics", "Error during acquiring of next frame: {}", e);
+                    t_error!("Error during acquiring of next frame: {}", e);
                     return false;
                 }
             },
@@ -176,7 +176,7 @@ impl WindowRenderTargetBinding {
                 return true;
             }
             Err(e) => {
-                tagged_error!("Graphics", "Presentation error: {}", e);
+                t_error!("Presentation error: {}", e);
                 return false;
             }
         };

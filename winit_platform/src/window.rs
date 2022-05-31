@@ -1,4 +1,5 @@
-use engine::{handles::Handle, platform::*};
+use utils::handles::*;
+use engine::platform::*;
 use winit::window::Window;
 
 #[derive(Debug)]

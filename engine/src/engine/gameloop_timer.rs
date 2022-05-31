@@ -1,4 +1,4 @@
-use crate::*;
+use utils::*;
 use std::time::*;
 pub struct EngineGameloopTimer {
     // Amount of ticks the update is updated each second.
@@ -53,7 +53,7 @@ impl EngineGameloopTimer {
                 Duration::from_millis(1000) / (max_frame_rate as u32);
             if self.previous_sleep_time > self.current_delta_time {
                 // This only occurs when the frame limit has been changed.
-                warn!("Frame limit changed!");
+                t_warn!("Frame limit changed!");
                 self.previous_sleep_time = Duration::new(0, 0);
             }
             let delta_time_without_sleep = self.current_delta_time - self.previous_sleep_time;
@@ -95,9 +95,9 @@ impl EngineGameloopTimer {
             .duration_since(self.previous_second_instant)
             > Duration::from_millis(1000)
         {
-            log!("Total update count: {}", self.update_counter);
-            log!("Total frame count: {}", self.frame_counter);
-            log!(
+            t_info!("Total update count: {}", self.update_counter);
+            t_info!("Total frame count: {}", self.frame_counter);
+            t_info!(
                 "Avg. frametime: {:#?}",
                 self.total_frame_time_last_second / (self.frame_counter as u32)
             );
@@ -107,7 +107,7 @@ impl EngineGameloopTimer {
                 let perc =
                     self.total_sleep_time_last_second.as_nanos() / (sum / 100 as u32).as_nanos();
 
-                log!(
+                info!(
                     "Avg. sleep: {:#?} ({}%)",
                     self.total_sleep_time_last_second / (self.frame_counter as u32),
                     perc

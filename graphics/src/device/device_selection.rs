@@ -6,7 +6,7 @@ use ash::prelude::VkResult;
 use ash::*;
 use std::ffi::{CStr, CString};
 use std::os::raw::c_char;
-use utils::tagged_log;
+use utils::log::*;
 
 #[derive(Clone)]
 pub(super) struct DeviceSelectionInfo {

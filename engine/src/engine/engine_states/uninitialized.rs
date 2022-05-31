@@ -1,4 +1,5 @@
 use super::*;
+use utils::*;
 use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType};
 use crate::scene_manager::SceneManager;
 use crate::{engine::gameloop_timer::*, engine_stages::*, resource_manager::*, *};
@@ -13,14 +14,14 @@ pub struct Uninitialized {}
 
 impl EngineStateMachine<Uninitialized> {
     pub fn new(info: EngineCreateInfo) -> Self {
-        log!(
+        t_info!(
             "Initializing {:#?} version {:#?}.{:#?}.{:#?}",
             info.application_info.engine_name,
             info.application_info.engine_major_version,
             info.application_info.engine_minor_version,
             info.application_info.engine_patch_version
         );
-        log!(
+        t_info!(
             "Executing application: {:#?} version {:#?}.{:#?}.{:#?}",
             info.application_info.application_name,
             info.application_info.application_major_version,
@@ -77,11 +78,11 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
         let dispatch_system = match uninit.shared.resources.get_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {
-                failure!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");
+                t_fatal!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");
             }
         };
         let mut update_thread_local_resources = ThreadLocalResourceManager::default();
-        log!("Initializing game engine...");
+        t_info!("Initializing game engine...");
         let (mut update_stages, mut render_stages) = {
             let create_info = &uninit.shared.create_info;
             let update_stages: Vec<Box<dyn AnyUpdateStage>> = create_info
@@ -92,7 +93,7 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
                         interface,
                         Arc::clone(&uninit.shared.resources),
                     ));
-                    success!("Constructed update stage: {}", stage.identifier());
+                    t_info!("Constructed update stage: {}", stage.identifier());
                     stage
                 })
                 .collect();
@@ -105,7 +106,7 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
                         interface,
                         Arc::clone(&uninit.shared.resources),
                     ));
-                    success!("Constructed render stage: {}", stage.identifier());
+                    t_info!("Constructed render stage: {}", stage.identifier());
                     stage
                 })
                 .collect();
@@ -150,7 +151,7 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
             render_stage_manager: RenderStageManager::from_slice(&mut render_stages),
         }) {
             EngineUpdateResult::Ok => (),
-            e => tagged_failure!("Engine", "Engine initialization failed: {:#?}", e),
+            e => t_fatal!("Engine initialization failed: {:#?}", e),
         }
 
         // Run the did init function for all update stages.
@@ -171,7 +172,7 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
                 value => Err(value),
             }
         }) {
-            tagged_failure!("Engine", "Engine initialization failed: {:#?}", e);
+            t_fatal!("Engine initialization failed: {:#?}", e);
         }
 
         // Run the did init function for all render stages.
@@ -193,7 +194,7 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
                 value => Err(value),
             }
         }) {
-            tagged_failure!("Engine", "Engine initialization failed: {:#?}", e);
+            t_fatal!("Engine initialization failed: {:#?}", e);
         };
 
         // Run the platform post did init function.
@@ -206,10 +207,10 @@ impl<P: PlatformInterface + PlatformInitalizationHandler> Into<EngineStateMachin
             render_stage_manager: RenderStageManager::from_slice(&mut render_stages),
         }) {
             EngineUpdateResult::Ok => (),
-            e => tagged_failure!("Engine", "Engine initialization failed: {:#?}", e),
+            e => t_fatal!("Engine initialization failed: {:#?}", e),
         }
 
-        success!("Initialized engine.");
+        t_info!("Initialized engine.");
         EngineStateMachine {
             shared: uninit.shared,
             state: Initialized {

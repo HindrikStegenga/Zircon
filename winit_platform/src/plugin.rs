@@ -1,6 +1,6 @@
 use std::any::TypeId;
-
-use engine::{as_any::AsAny, engine_stages::*, *};
+use utils::as_any::*;
+use engine::{engine_stages::*, *};
 use winit::{event::*, event_loop::EventLoop};
 
 use crate::WinitPlatformInterface;

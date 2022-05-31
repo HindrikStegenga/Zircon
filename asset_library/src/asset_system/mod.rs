@@ -63,8 +63,7 @@ impl AssetSystem {
             #[cfg(feature = "format_toml")]
             "toml" => toml::from_slice(&buffer).map_err(|e| AssetSystemError::Other(Box::from(e))),
             _ => {
-                tagged_warn!(
-                    "Asset System",
+                t_warn!(
                     "Tried to load asset {} with unknown format {} from {}.",
                     identifier.as_ref(),
                     descriptor.format(),
@@ -82,7 +81,7 @@ impl AssetSystem {
         buffer: &mut Vec<u8>,
     ) -> Result<AssetDescriptor, AssetSystemError> {
         let vfs = self.vfs.read().map_err(|e| {
-            tagged_warn!("Asset System", "{}", e);
+            t_warn!("{}", e);
             AssetSystemError::PoisonError
         })?;
 
@@ -97,21 +96,19 @@ impl AssetSystem {
     ) -> Result<(), AssetSystemError> {
         let mnt = VfsPhysicalMountPoint::new(&mount_point, &directory)?;
         let mut vfs = self.vfs.write().map_err(|e| {
-            tagged_warn!("Asset System", "{}", e);
+            t_warn!("{}", e);
             AssetSystemError::PoisonError
         })?;
 
         if !vfs.mount(mnt) {
-            tagged_warn!(
-                "Asset System",
+            t_warn!(
                 "Directory mount point was not mounted: {:#?} mount point: {:#?}",
                 directory.as_ref(),
                 mount_point.as_ref()
             );
             return Err(AssetSystemError::NotMounted);
         }
-        tagged_success!(
-            "Asset System",
+        t_trace!(
             "Mounted files from directory: {:#?} mount point: {:#?}",
             directory.as_ref(),
             mount_point.as_ref()
@@ -128,7 +125,7 @@ impl AssetSystem {
         let valid_dir_entries = dir
             .filter_map(|d| match d {
                 Err(e) => {
-                    tagged_warn!("Asset System", "Invalid directory entry found: {}", e);
+                    t_warn!("Invalid directory entry found: {}", e);
                     None
                 }
                 Ok(v) => Some(v),
@@ -154,7 +151,7 @@ impl AssetSystem {
                     false => None,
                 },
                 Err(e) => {
-                    tagged_warn!("Asset System", "Could not retrieve file metadata: {}", e);
+                    t_warn!("Could not retrieve file metadata: {}", e);
                     None
                 }
             })
@@ -162,7 +159,7 @@ impl AssetSystem {
 
         let mut counter = 0;
         let mut vfs = self.vfs.write().map_err(|e| {
-            tagged_warn!("Asset System", "{}", e);
+            t_warn!("{}", e);
             AssetSystemError::PoisonError
         })?;
         for dir_entry in valid_dir_entries {
@@ -171,8 +168,7 @@ impl AssetSystem {
                 let physical_mount =
                     ArchiveMountPoint::new(archive.path().into(), mount_point.clone());
                 if !vfs.mount(physical_mount) {
-                    tagged_warn!(
-                        "Asset System",
+                    t_warn!(
                         "Archive mount point was not mounted: {:#?}",
                         archive.path()
                     );
@@ -181,8 +177,7 @@ impl AssetSystem {
 
             counter += 1;
         }
-        tagged_success!(
-            "Asset System",
+        t_info!(
             "Loaded {} asset archives from: {:#?}",
             counter,
             directory.as_ref()

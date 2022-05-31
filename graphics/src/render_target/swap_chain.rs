@@ -3,7 +3,8 @@ use crate::{DeviceQueue, GraphicsDevice, GraphicsOptions};
 use ash::extensions::khr::Surface;
 use ash::vk::Extent2D;
 use ash::*;
-use engine::{tagged_error, PlatformWindow};
+use utils::*;
+use engine::{PlatformWindow};
 use std::sync::Arc;
 
 // Wraps the vulkan swap chain and it's associated images and imageviews.
@@ -63,8 +64,7 @@ impl SwapChain {
         ) {
             Ok(v) => v,
             Err(e) => {
-                tagged_error!(
-                    "Graphics",
+                t_error!(
                     "Error occurred during swap chain creation: {}",
                     e
                 );
@@ -170,27 +170,45 @@ impl SwapChain {
     // Unless a failure happens and the swap chain is recreated in which case it's not necessary.
     pub unsafe fn acquire_next_frame(&mut self) -> Result<(AcquiredFrameInfo, bool), vk::Result> {
         let device = self.device.as_ref();
-        const DEFAULT_TIME_OUT: u64 = 5_000_000_000;
+        const DEFAULT_TIME_OUT: u64 = u64::MAX;
 
         // Wait for fence
-        device.wait_for_fences(
+        match device.wait_for_fences(
             core::slice::from_ref(&self.in_flight_fences[self.current_frame_index as usize]),
             true,
             DEFAULT_TIME_OUT,
-        )?;
+        ) {
+            Ok(_) => (),
+            Err(e) => {
+                t_error!("Wait for fence error! {}", e);
+                return Err(e);
+            }
+        };
 
         // Acquire an image
-        let (image_index, suboptimal) = self.swapchain_loader.acquire_next_image(
+        let (image_index, suboptimal) = match self.swapchain_loader.acquire_next_image(
             self.swap_chain,
             DEFAULT_TIME_OUT,
             self.image_available_semaphores[self.current_frame_index as usize],
             vk::Fence::null(),
-        )?;
+        ) {
+            Ok(v) => v,
+            Err(e) => {
+                t_error!("Acquire error! {}", e);
+                return Err(e);
+            }
+        };
 
         // Reset the fence
-        device.reset_fences(core::slice::from_ref(
+        match device.reset_fences(core::slice::from_ref(
             &self.in_flight_fences[self.current_frame_index as usize],
-        ))?;
+        )) {
+            Ok(_) => (),
+            Err(e) => {
+                t_error!("Fence reset error! {}", e);
+                return Err(e);
+            },
+        };
 
         Ok((
             AcquiredFrameInfo {
@@ -275,7 +293,7 @@ fn check_and_get_surface_info(
         match loader.get_physical_device_surface_support(phys_device, qf_index, surface) {
             Ok(v) => {
                 if !v {
-                    tagged_error!("Graphics", "Surface not supported");
+                    t_error!("Surface not supported");
                     return Err(vk::Result::ERROR_FORMAT_NOT_SUPPORTED);
                 }
             }

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use egui::*;
 use egui_winit::*;
-use engine::*;
+use utils::*;
 use graphics::*;
 use winit_platform::WinitPlatform;
 
@@ -92,7 +92,7 @@ impl RenderPlugin for EguiRenderPlugin {
             Some(v) => v,
             None => return None,
         };
-        tagged_success!("EGUI", "Set-up the EGUI rendering plugin.");
+        t_info!("Set-up the EGUI rendering plugin.");
         Some(Box::new(Self {
             context,
             state: egui_winit_state,

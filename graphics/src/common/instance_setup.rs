@@ -63,15 +63,13 @@ pub(crate) fn setup_vulkan_instance(
     }
 
     required_layers.iter().for_each(|ptr| unsafe {
-        tagged_log!(
-            "Graphics",
+        t_info!(
             "Enabled instance layer: {:#?}",
             CStr::from_ptr(*ptr)
         );
     });
     required_extensions.iter().for_each(|ptr| unsafe {
-        tagged_log!(
-            "Graphics",
+        t_info!(
             "Enabled instance extension: {:#?}",
             CStr::from_ptr(*ptr)
         );
@@ -213,11 +211,11 @@ unsafe extern "system" fn vulkan_debug_utils_callback(
     if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::INFO)
         || message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::VERBOSE)
     {
-        tagged_log!("Vulkan", "[{}] {:#?}", ty, message);
+        t_info!("[{}] {:#?}", ty, message);
     } else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::WARNING) {
-        tagged_warn!("Vulkan", "[{}] {:#?}", ty, message);
+        t_warn!("[{}] {:#?}", ty, message);
     } else if message_severity.contains(DebugUtilsMessageSeverityFlagsEXT::ERROR) {
-        tagged_error!("Vulkan", "[{}] {:#?}", ty, message);
+        t_error!("[{}] {:#?}", ty, message);
     }
     vk::FALSE
 }

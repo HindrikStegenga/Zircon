@@ -9,7 +9,6 @@ pub use asset_library::asset_system::AssetSystem;
 pub use engine::{
     controller::EngineController, create_info::*, result::EngineUpdateResult, Engine,
 };
-use engine_stages::RenderStageUpdateThreadHandler;
 pub use engine_stages::{
     RenderStage, RenderStageConstructor, RenderStageConstructorInput, RenderStageUpdateInput,
     UpdateStage, UpdateStageConstructor, UpdateStageConstructorInput, UpdateStageUpdateInput,
@@ -19,8 +18,5 @@ pub use platform::*;
 
 pub use shard_ecs as ecs;
 
-#[cfg(feature = "re_export_utils")]
-pub use utils::*;
-
-#[cfg(not(feature = "re_export_utils"))]
-pub(crate) use graphyte_utils::*;
+#[allow(dead_code)]
+pub(crate) const IDENTIFIER: &'static str = "Engine";

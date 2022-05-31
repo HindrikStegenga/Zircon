@@ -2,7 +2,7 @@ use crate::{
     render_target::{AcquiredFrameInfo, SwapChain, WindowRenderTarget},
     Camera, GraphicsDevice, RenderPath, RenderPathCreateInfo,
 };
-
+use utils::*;
 use ash::*;
 use engine::*;
 use std::{ffi::CString, sync::Arc};
@@ -28,6 +28,10 @@ impl Drop for ForwardRenderPath {
 impl ForwardRenderPath {
     fn clean_up_resources(&mut self) {
         unsafe {
+            if let Err(e) = self.device.device_wait_idle() {
+                t_fatal!("{}", e);
+            };
+
             for fb in &self.frame_buffers {
                 self.device.destroy_framebuffer(*fb, None);
             }
@@ -301,8 +305,7 @@ impl RenderPath for ForwardRenderPath {
             match Self::init_default_resources(swap_chain, device) {
                 Ok(v) => v,
                 Err(e) => {
-                    tagged_error!(
-                        "Graphics",
+                    t_error!(
                         "Error re-creating resources after swap resize: {}",
                         e
                     );

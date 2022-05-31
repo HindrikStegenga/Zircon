@@ -5,9 +5,7 @@ use crate::common::update_thread_handler::GraphicsStageUpdateThreadHandler;
 use crate::common::vk_library_wrapper::VkLibraryWrapper;
 use crate::render_target::*;
 use crate::*;
-use ash::extensions::ext::DebugUtils;
-use ash::vk::DebugUtilsMessengerEXT;
-use crossbeam::channel::*;
+use utils::*;
 use engine::{
     engine_stages::{RenderStageMessageContext, RenderStageUpdateThreadHandlerCreateInfo},
     *,
@@ -32,7 +30,7 @@ impl GraphicsStage {
                 setup_vulkan_instance(&create_info.application_info, &create_info.options)?;
             (entry, Arc::new(instance))
         };
-        tagged_success!("Graphics", "Successfully set-up vulkan instance!");
+        t_info!("Successfully set-up vulkan instance!");
 
         let debug_messenger = setup_debug_utils_messenger(&entry, &instance, &create_info.options);
         let device = GraphicsDevice::new(GraphicsDeviceCreateInfo {
@@ -109,8 +107,7 @@ impl RenderStage for GraphicsStage {
                     ) {
                         Ok(v) => v,
                         Err(rt) => {
-                            tagged_warn!(
-                                "Graphics",
+                            t_warn!(
                                 "Failed setting up window render target binding!"
                             );
                             self.available_window_targets.push(rt);
@@ -128,7 +125,7 @@ impl RenderStage for GraphicsStage {
     fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
         for render_target in &mut self.render_targets {
             if !render_target.render(&self.device, &mut input, &self.graphics_options) {
-                return EngineUpdateResult::Restart;
+                return EngineUpdateResult::Stop;
             }
         }
         EngineUpdateResult::Ok
@@ -137,7 +134,7 @@ impl RenderStage for GraphicsStage {
 
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidOpen) {
-        tagged_log!("Graphics", "WindowDidOpen message received!");
+        t_info!("WindowDidOpen message received!");
         let window = context.platform.get_window(message.window).unwrap();
         let (entry, instance) = self.vk.entry_and_instance();
         if let Some(target) = WindowRenderTarget::new(entry, instance, window) {
@@ -147,7 +144,7 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for Graphi
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
     fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidClose) {
-        tagged_log!("Graphics", "WindowDidClose message received!");
+        t_info!("WindowDidClose message received!");
         for i in (0..self.render_targets.len()).rev() {
             let target = &self.render_targets[i];
             if target.window_handle() == message.window {
@@ -166,9 +163,9 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidResize> for Grap
             .for_each(|binding| {
                 match binding.window_did_resize(device, context.platform, &self.graphics_options) {
                     Ok(_) => (),
-                    Err(e) => tagged_failure!("Graphics", "Could not handle resize event: {}", e),
+                    Err(e) => t_fatal!("Could not handle resize event: {}", e),
                 };
             });
-        tagged_log!("Graphics", "WindowDidResize message received!");
+        t_info!("WindowDidResize message received!");
     }
 }

@@ -6,7 +6,7 @@ use super::*;
 use crate::engine_stages::*;
 use crate::resource_manager::ThreadLocalResourceManager;
 use crate::scene_manager::SceneManager;
-use crate::*;
+use utils::*;
 
 pub struct Initialized {
     pub(super) update_stages: Vec<Box<dyn AnyUpdateStage>>,
@@ -21,7 +21,7 @@ impl Into<EngineStateMachine<Running>> for EngineStateMachine<Initialized> {
         let dispatch_system = match self.shared.resources.get_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {
-                failure!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");
+                t_fatal!("Internal engine inconsistency! DispatchSystem should be added to the resource systems!");
             }
         };
         EngineStateMachine {

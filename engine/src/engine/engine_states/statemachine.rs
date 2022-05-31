@@ -1,5 +1,6 @@
 use super::*;
 use crate::*;
+use utils::*;
 
 pub struct StateMachine<State, SharedState = ()> {
     pub shared: SharedState,
@@ -35,7 +36,7 @@ impl EngineState {
             EngineState::Initialized(e) => &e.shared,
             EngineState::Running(e) => &e.shared,
             EngineState::Suspended(e) => &e.shared,
-            EngineState::Invalid => failure!("Cannot get shared state from invalid engine state."),
+            EngineState::Invalid => t_fatal!("Cannot get shared state from invalid engine state."),
         };
     }
 
@@ -50,11 +51,11 @@ impl EngineState {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Uninitialized(s) => {
                 let s = EngineState::Initialized((s, interface).into());
-                log!("EngineState changed: Initialized");
+                t_info!("EngineState changed: Initialized");
                 s
             }
             s => {
-                warn!("Cannot initialize game engine while not in Uninitialized state!");
+                t_warn!("Cannot initialize game engine while not in Uninitialized state!");
                 s
             }
         }
@@ -64,11 +65,11 @@ impl EngineState {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Initialized(s) => {
                 let s = EngineState::Running(s.into());
-                log!("EngineState changed: Running");
+                t_info!("EngineState changed: Running");
                 s
             }
             s => {
-                warn!("Cannot run game engine while not in Initialized state!");
+                t_warn!("Cannot run game engine while not in Initialized state!");
                 s
             }
         }
@@ -78,11 +79,11 @@ impl EngineState {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Running(s) => {
                 let s = EngineState::Suspended(s.into());
-                log!("EngineState changed: Suspended");
+                t_info!("EngineState changed: Suspended");
                 s
             }
             s => {
-                warn!("Cannot suspend game engine while not in Running state!");
+                t_warn!("Cannot suspend game engine while not in Running state!");
                 s
             }
         }
@@ -111,7 +112,7 @@ impl EngineState {
                 ))
             }
             EngineState::Invalid => {
-                failure!("Cannot take shared state on invalid enum!");
+                t_fatal!("Cannot take shared state on invalid enum!");
             }
         }
     }
@@ -120,11 +121,11 @@ impl EngineState {
         *self = match std::mem::replace(self, EngineState::Invalid) {
             EngineState::Suspended(s) => {
                 let s = EngineState::Running(s.into());
-                log!("EngineState changed: Running");
+                t_info!("EngineState changed: Running");
                 s
             }
             s => {
-                warn!("Cannot resume game engine while not in Suspended state!");
+                t_warn!("Cannot resume game engine while not in Suspended state!");
                 s
             }
         }

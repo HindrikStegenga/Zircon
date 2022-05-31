@@ -7,6 +7,7 @@ edition = "2021"
 
 [dependencies]
 engine = { path = "../engine" }
+utils = { path = "../utils" }
 winit_platform = { path = "../winit_platform" }
 graphics = { path = "../graphics" }
 scripting = { path = "../scripting" }

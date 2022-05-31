@@ -1,12 +1,11 @@
-use std::marker::PhantomData;
 use std::{sync::Arc, vec};
-
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
 use math::*;
 use scripting::*;
 use winit_platform::WinitPlatform;
+use utils::*;
 
 mod mesh_writing;
 
@@ -16,7 +15,7 @@ fn create_wasm_scripting_stage<'r>(
     let asset_system: Arc<AssetSystem> = match input.resources.get_resource::<AssetSystem>() {
         Some(v) => v,
         None => {
-            failure!("This system requires an asset system to be present!")
+            fatal!("This system requires an asset system to be present!");
         }
     };
     let mut buffer = vec![];
@@ -77,7 +76,7 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
     let asset_system: Arc<AssetSystem> = match input.resources.get_resource::<AssetSystem>() {
         Some(v) => v,
         None => {
-            failure!("This system requires an asset system to be present!")
+            fatal!("This system requires an asset system to be present!");
         }
     };
 
@@ -101,6 +100,8 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
 }
 
 fn main() {
+    setup_default_logger();
+
     mesh_writing::write_meshes();
     let asset_system = AssetSystem::default();
     asset_system

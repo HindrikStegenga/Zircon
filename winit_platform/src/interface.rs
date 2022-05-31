@@ -1,5 +1,5 @@
 use crate::*;
-use engine::as_any::AsAny;
+use utils::{*, as_any::*};
 use engine::*;
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};
 
@@ -132,7 +132,7 @@ impl PlatformInterface for WinitPlatformInterface<'_> {
                 Some(self.platform.windows.last_mut().unwrap())
             }
             false => {
-                tagged_warn!("WinitPlatform", "Constructed too many windows.");
+                t_warn!("Constructed too many windows.");
                 None
             }
         };

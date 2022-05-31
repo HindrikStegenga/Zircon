@@ -92,18 +92,17 @@ pub(super) fn setup_device(
         }
     };
 
-    tagged_log!(
-        "Graphics",
+    t_info!(
         "Selected GPU: {:#?}",
         graphics_device.device_name()
     );
     for extension in extension_names {
         unsafe {
             let cstr = CStr::from_ptr(extension);
-            tagged_log!("Graphics", "Enabled device extension: {:#?}", cstr);
+            t_info!("Enabled device extension: {:#?}", cstr);
         }
     }
-    tagged_success!("Graphics", "Successfully set-up vulkan device!");
+    t_info!("Successfully set-up vulkan device!");
 
     Some(DeviceCreationResult {
         device,

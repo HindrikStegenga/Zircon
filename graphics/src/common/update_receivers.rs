@@ -1,7 +1,7 @@
 use crate::{CameraIsBoundToWindow, CameraIsUnbound, CameraState, CameraStateUpdate};
 use crossbeam::channel::*;
 use engine::{EngineUpdateResult, RenderStageUpdateInput};
-use utils::tagged_log;
+use utils::*;
 
 pub(crate) struct UpdateReceivers {
     pub(crate) cameras_are_updated: Receiver<Vec<CameraStateUpdate>>,

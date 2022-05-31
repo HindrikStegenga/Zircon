@@ -62,7 +62,7 @@ impl GraphicsDevice {
         }) {
             Ok(v) => v,
             Err(e) => {
-                tagged_error!("Graphics", "Could not create device allocator: {}", e);
+                t_error!("Could not create device allocator: {}", e);
                 return None;
             }
         };

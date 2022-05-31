@@ -4,7 +4,7 @@ use engine::ecs::Registry;
 use engine::scene_manager::SceneHandle;
 use engine::PlatformWindowHandle;
 use math::{Vec3f, Vec4f};
-use utils::tagged_warn;
+use utils::*;
 
 pub struct CameraManager {
     handle_counter: u16,
@@ -91,7 +91,7 @@ impl CameraManager {
             }
         }
         if let Err(e) = self.cameras_updated_sender.send(camera_updates) {
-            tagged_warn!("Graphics", "Camera update failed!");
+            t_warn!("Camera update failed!");
         }
     }
 }

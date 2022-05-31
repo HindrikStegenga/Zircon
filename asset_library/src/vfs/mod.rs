@@ -34,8 +34,7 @@ impl Default for VirtualFileSystem {
 impl VirtualFileSystem {
     /// Mounts a new virtual mountpoint into the virtual file system.
     pub fn mount(&mut self, mountpoint: impl VfsMountPoint) -> bool {
-        tagged_debug_log!(
-            "VFS",
+        t_info!(
             "Mounting mountpoint: {} version: {}",
             mountpoint.identifier(),
             mountpoint.version()
@@ -43,7 +42,7 @@ impl VirtualFileSystem {
         match self.mounts.get_mut(mountpoint.identifier()) {
             Some(v) => match v.binary_search_by_key(&mountpoint.version(), |e| e.version()) {
                 Ok(_) => {
-                    tagged_warn!("VFS", "Attempted to mount a mountpoint with identical version to the same mountpoint.");
+                    t_warn!("Attempted to mount a mountpoint with identical version to the same mountpoint.");
                     return false;
                 }
                 Err(insertion_idx) => {
@@ -57,7 +56,7 @@ impl VirtualFileSystem {
                 self.mounts.insert(key, v);
             }
         }
-        tagged_debug_success!("VFS", "Mounting successfull!");
+        t_info!("Mounting successfull!");
         true
     }
 
@@ -87,7 +86,7 @@ impl VirtualFileSystem {
                 Ok(a) => return Ok(a),
                 Err(VfsError::FileNotFound) => continue,
                 Err(e) => {
-                    tagged_debug_warn!("VFS", "Error occurred while loading file: {}", e);
+                    t_warn!("Error occurred while loading file: {}", e);
                     return Err(e);
                 }
             }

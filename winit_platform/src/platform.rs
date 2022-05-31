@@ -1,5 +1,5 @@
 use std::any::TypeId;
-
+use utils::*;
 use crate::plugin::*;
 use crate::*;
 use engine::*;
@@ -114,11 +114,11 @@ impl Platform for WinitPlatform {
 
             match event {
                 Event::Suspended => {
-                    log!("Suspending game engine...");
+                    t_info!("Suspending game engine...");
                     controller.suspend();
                 }
                 Event::Resumed => {
-                    log!("Resuming game engine...");
+                    t_info!("Resuming game engine...");
                     controller.resume();
                 }
                 Event::WindowEvent {
@@ -128,8 +128,7 @@ impl Platform for WinitPlatform {
                     find_window(&mut self, window_id, |platform, window_idx| {
                         if let Some(resize_handler) = &platform.window_did_resize_sender {
                             let handle = platform.windows[window_idx].handle;
-                            tagged_log!(
-                                "Winit",
+                            t_info!(
                                 "Window resized: {} - {}",
                                 size.width,
                                 size.height
@@ -149,7 +148,7 @@ impl Platform for WinitPlatform {
                     find_window(&mut self, window_id, |platform, window_idx| {
                         if let Some(resize_handler) = &platform.window_did_close_sender {
                             let handle = platform.windows[window_idx].handle;
-                            tagged_log!("Winit", "Window closed.");
+                            t_info!("Window closed.");
                             resize_handler.send(WindowDidClose { window: handle })
                         }
                         platform.windows.remove(window_idx);
