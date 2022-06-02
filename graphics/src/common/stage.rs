@@ -5,14 +5,15 @@ use crate::common::update_thread_handler::GraphicsStageUpdateThreadHandler;
 use crate::common::vk_library_wrapper::VkLibraryWrapper;
 use crate::render_target::*;
 use crate::*;
-use utils::*;
 use engine::{
     engine_stages::{RenderStageMessageContext, RenderStageUpdateThreadHandlerCreateInfo},
     *,
 };
 use std::sync::Arc;
+use utils::*;
 
 pub struct GraphicsStage {
+    asset_system: Arc<AssetSystem>,
     update_receiver: Option<UpdateReceivers>,
     available_window_targets: Vec<WindowRenderTarget>,
     render_targets: Vec<WindowRenderTargetBinding>,
@@ -25,6 +26,8 @@ pub struct GraphicsStage {
 
 impl GraphicsStage {
     pub fn new(create_info: GraphicsStageCreateInfo) -> Option<Self> {
+        let asset_system = Arc::clone(&create_info.asset_system);
+
         let (entry, instance) = {
             let (entry, instance) =
                 setup_vulkan_instance(&create_info.application_info, &create_info.options)?;
@@ -47,6 +50,7 @@ impl GraphicsStage {
             device,
             render_targets: vec![],
             render_plugins: vec![],
+            asset_system: asset_system,
         }
         .into()
     }
@@ -100,6 +104,7 @@ impl RenderStage for GraphicsStage {
                         self.vk.instance(),
                         &self.device,
                         &is_bound.camera,
+                        Arc::clone(&self.asset_system),
                         input.platform,
                         target,
                         &self.render_plugins,
@@ -107,9 +112,7 @@ impl RenderStage for GraphicsStage {
                     ) {
                         Ok(v) => v,
                         Err(rt) => {
-                            t_warn!(
-                                "Failed setting up window render target binding!"
-                            );
+                            t_warn!("Failed setting up window render target binding!");
                             self.available_window_targets.push(rt);
                             continue;
                         }

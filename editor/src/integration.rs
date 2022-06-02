@@ -1,7 +1,7 @@
-use std::{cell::RefCell, rc::Weak};
-use utils::*;
 use engine::*;
 use graphics::*;
+use std::{cell::RefCell, rc::Weak};
+use utils::*;
 use winit_platform::{plugin::WinitPlatformPlugin, WinitPlatform, WinitPlatformInterface};
 
 pub struct EguiIntegration {
@@ -39,9 +39,7 @@ impl WinitPlatformPlugin for EguiIntegration {
         let _ = match interface.platform_as_any().downcast_mut::<WinitPlatform>() {
             Some(v) => v,
             None => {
-                t_error!(
-                    "This integration requires to be run on the `WinitPlatform` platform."
-                );
+                t_error!("This integration requires to be run on the `WinitPlatform` platform.");
                 return EngineUpdateResult::Stop;
             }
         };
@@ -49,9 +47,7 @@ impl WinitPlatformPlugin for EguiIntegration {
         let render_system = match input.render_stage_manager.get_stage::<GraphicsStage>() {
             Some(v) => v,
             None => {
-                t_error!(
-                    "This integration requires the stage `GraphicsStage` to be present."
-                );
+                t_error!("This integration requires the stage `GraphicsStage` to be present.");
                 return engine::EngineUpdateResult::Stop;
             }
         };

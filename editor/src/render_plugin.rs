@@ -2,8 +2,8 @@ use std::{cell::RefCell, rc::Rc};
 
 use egui::*;
 use egui_winit::*;
-use utils::*;
 use graphics::*;
+use utils::*;
 use winit_platform::WinitPlatform;
 
 use crate::{EguiIntegration, EguiRenderer};

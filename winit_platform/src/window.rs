@@ -1,5 +1,5 @@
-use utils::handles::*;
 use engine::platform::*;
+use utils::handles::*;
 use winit::window::Window;
 
 #[derive(Debug)]

@@ -12,6 +12,7 @@ re_export_utils = []
 [dependencies]
 utils = { path = "../utils" }
 asset_library = { path = "../asset_library" }
+asset_registry = { path = "../asset_registry" }
 serde = { version = "1.0", features = ["derive"] }
 raw-window-handle = "0.4"
 dashmap = "4.0"

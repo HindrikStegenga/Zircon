@@ -1,3 +1,5 @@
+use std::primitive;
+
 use crate::*;
 use itertools::*;
 use serde::{Deserialize, Serialize};
@@ -45,33 +47,44 @@ impl Mesh {
         self.primitives.as_ref()
     }
 
-    pub fn accessors_for(&self, primitive: &Primitive) -> Vec<&Accessor> {
+    pub fn accessors_for(&self, primitive: &Primitive) -> Vec<(&Accessor, u32)> {
         primitive
             .attributes()
             .into_iter()
             .map(|a| a.accessor_index())
             .unique()
-            .map(|i| &self.accessors[i as usize])
+            .map(|i| (&self.accessors[i as usize], i))
             .collect()
     }
 
-    pub fn buffer_views_for(&self, primitive: &Primitive) -> Vec<&BufferView> {
+    pub fn buffer_views_for(&self, primitive: &Primitive) -> Vec<(&BufferView, u32)> {
         let accessors = self.accessors_for(primitive);
         accessors
             .into_iter()
-            .map(|a| a.buffer_view_index())
+            .map(|(a, _)| a.buffer_view_index())
             .unique()
-            .map(|i| &self.views()[i as usize])
+            .map(|i| (&self.views()[i as usize], i))
             .collect()
     }
 
-    pub fn buffers_for(&self, primitive: &Primitive) -> Vec<&Buffer> {
+    pub fn buffers_for(&self, primitive: &Primitive) -> Vec<(&Buffer, u32)> {
         let buffers = self.buffer_views_for(primitive);
         buffers
             .into_iter()
-            .map(|bv| bv.buffer_index())
+            .map(|(bv, _)| bv.buffer_index())
             .unique()
-            .map(|i| &self.buffers()[i as usize])
+            .map(|i| (&self.buffers()[i as usize], i))
+            .collect()
+    }
+
+    pub fn accessors_for_buffer_view(
+        &self,
+        primitive: &Primitive,
+        buffer_view_index: u32,
+    ) -> Vec<(&Accessor, u32)> {
+        self.accessors_for(primitive)
+            .into_iter()
+            .filter(|(a, _)| a.buffer_view_index() == buffer_view_index)
             .collect()
     }
 }

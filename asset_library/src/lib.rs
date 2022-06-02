@@ -14,5 +14,4 @@ pub use format::*;
 
 pub use basic_functions::*;
 
-
 pub(crate) const IDENTIFIER: &'static str = "Asset System";

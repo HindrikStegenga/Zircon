@@ -17,3 +17,4 @@ ash-window = "0.10"
 crossbeam = "0.8"
 mesh = { path = "../mesh" }
 shader = { path = "../shader" }
+hashbrown = "0.12"

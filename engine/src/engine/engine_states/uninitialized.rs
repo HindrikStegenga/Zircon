@@ -1,5 +1,4 @@
 use super::*;
-use utils::*;
 use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType};
 use crate::scene_manager::SceneManager;
 use crate::{engine::gameloop_timer::*, engine_stages::*, resource_manager::*, *};
@@ -9,6 +8,7 @@ use std::{
     time::{Duration, Instant},
 };
 use utils::dispatcher::Dispatcher;
+use utils::*;
 
 pub struct Uninitialized {}
 

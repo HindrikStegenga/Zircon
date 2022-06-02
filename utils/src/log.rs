@@ -1,33 +1,30 @@
 use std::io::Write;
 
-use env::{Builder, fmt};
+use env::{fmt, Builder};
 pub use env_logger as env;
-pub use log as log;
-
+pub use log;
 
 pub fn setup_default_logger() {
     Builder::new()
-    .format(|buf, record| {
-        let level = record.level();
-        let target = record.target();
-        let args = record.args();
-        let file = record.file().unwrap_or("unknown");
-        let line = record.line().unwrap_or(0);
+        .format(|buf, record| {
+            let level = record.level();
+            let target = record.target();
+            let args = record.args();
+            let file = record.file().unwrap_or("unknown");
+            let line = record.line().unwrap_or(0);
 
-        (|buf : &mut fmt::Formatter, args : std::fmt::Arguments<'_>| {
-            let written_chars = args.to_string().len();
-            buf.write_fmt(args)?;
+            (|buf: &mut fmt::Formatter, args: std::fmt::Arguments<'_>| {
+                let written_chars = args.to_string().len();
+                buf.write_fmt(args)?;
 
-            for _ in 0..(144 - written_chars) {
-                write!(buf, " ")?;
-            }
-            writeln!(buf, "{}:{}", file, line)
-        })(buf, format_args!("[{}][{}] - {}", level, target, args))
-
-
-    })
-    .filter_level(log::LevelFilter::Info)
-    .init();
+                for _ in 0..(144 - written_chars) {
+                    write!(buf, " ")?;
+                }
+                writeln!(buf, "{}:{}", file, line)
+            })(buf, format_args!("[{}][{}] - {}", level, target, args))
+        })
+        .filter_level(log::LevelFilter::Info)
+        .init();
 }
 
 #[macro_export]
@@ -69,7 +66,7 @@ macro_rules! fatal {
 #[macro_export]
 macro_rules! t_trace {
     ($( $args:expr ),*) => {
-        
+
         $crate::log::log::trace!(target: { use crate::IDENTIFIER; crate::IDENTIFIER }, $($args), *);
     };
 }

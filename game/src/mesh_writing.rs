@@ -28,12 +28,7 @@ pub fn generate_2d_triangle_in_ndc() -> Mesh {
         .collect::<Vec<_>>();
 
     let buffers = vec![Buffer::new(vertex_data)];
-    let buffer_views = vec![BufferView::new(
-        0,
-        0,
-        buffers[0].buffer().len() as u32,
-        None,
-    )];
+    let buffer_views = vec![BufferView::new(0, 0, buffers[0].buffer().len() as u32, 8)];
     let accessors = vec![Accessor::new(0, 0, 3, BufferElementFormat::F32x2)];
     let attributes = vec![Attribute::new(0, AttributePurpose::Position2D)];
     let primitives = vec![Primitive::new(
@@ -42,5 +37,9 @@ pub fn generate_2d_triangle_in_ndc() -> Mesh {
         PrimitiveRenderingMode::Triangles,
     )];
 
-    Mesh::new(buffers, buffer_views, accessors, primitives)
+    let mesh = Mesh::new(buffers, buffer_views, accessors, primitives);
+
+    graphics::vertex_input_layout::extract_input_state_from_mesh(&mesh);
+
+    mesh
 }

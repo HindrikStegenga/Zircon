@@ -13,5 +13,7 @@ pub use pipeline::*;
 pub use render_paths::*;
 pub use render_target::*;
 
+pub mod vertex_input_layout;
+
 #[allow(dead_code)]
 pub(crate) const IDENTIFIER: &'static str = "Graphics";

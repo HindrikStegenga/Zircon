@@ -1,5 +1,5 @@
-use utils::*;
 use std::time::*;
+use utils::*;
 pub struct EngineGameloopTimer {
     // Amount of ticks the update is updated each second.
     pub update_tick_rate: u32,

@@ -1,8 +1,8 @@
-use std::any::TypeId;
-use utils::*;
 use crate::plugin::*;
 use crate::*;
 use engine::*;
+use std::any::TypeId;
+use utils::*;
 use winit::window::WindowId;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -128,11 +128,7 @@ impl Platform for WinitPlatform {
                     find_window(&mut self, window_id, |platform, window_idx| {
                         if let Some(resize_handler) = &platform.window_did_resize_sender {
                             let handle = platform.windows[window_idx].handle;
-                            t_info!(
-                                "Window resized: {} - {}",
-                                size.width,
-                                size.height
-                            );
+                            t_info!("Window resized: {} - {}", size.width, size.height);
                             resize_handler.send(WindowDidResize {
                                 window: handle,
                                 new_width: size.width,

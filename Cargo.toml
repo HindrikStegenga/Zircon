@@ -8,6 +8,7 @@ members = [
     "utils",
     "graphics",
     "winit_platform",
+    "asset_registry",
     "asset_library",
     "scripting",
     "shader",

@@ -168,10 +168,7 @@ impl AssetSystem {
                 let physical_mount =
                     ArchiveMountPoint::new(archive.path().into(), mount_point.clone());
                 if !vfs.mount(physical_mount) {
-                    t_warn!(
-                        "Archive mount point was not mounted: {:#?}",
-                        archive.path()
-                    );
+                    t_warn!("Archive mount point was not mounted: {:#?}", archive.path());
                 }
             }
 

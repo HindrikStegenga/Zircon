@@ -1,11 +1,11 @@
-use std::{sync::Arc, vec};
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
 use math::*;
 use scripting::*;
-use winit_platform::WinitPlatform;
+use std::{sync::Arc, vec};
 use utils::*;
+use winit_platform::WinitPlatform;
 
 mod mesh_writing;
 

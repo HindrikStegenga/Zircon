@@ -3,9 +3,9 @@ use crate::{DeviceQueue, GraphicsDevice, GraphicsOptions};
 use ash::extensions::khr::Surface;
 use ash::vk::Extent2D;
 use ash::*;
-use utils::*;
-use engine::{PlatformWindow};
+use engine::PlatformWindow;
 use std::sync::Arc;
+use utils::*;
 
 // Wraps the vulkan swap chain and it's associated images and imageviews.
 pub struct SwapChain {
@@ -64,10 +64,7 @@ impl SwapChain {
         ) {
             Ok(v) => v,
             Err(e) => {
-                t_error!(
-                    "Error occurred during swap chain creation: {}",
-                    e
-                );
+                t_error!("Error occurred during swap chain creation: {}", e);
                 return None;
             }
         };
@@ -207,7 +204,7 @@ impl SwapChain {
             Err(e) => {
                 t_error!("Fence reset error! {}", e);
                 return Err(e);
-            },
+            }
         };
 
         Ok((

@@ -134,7 +134,7 @@ fn rebuild_buffers_views_and_accessors(
                 0,
                 offset as u32,
                 view.length() as u32,
-                view.stride().map(|f| f as u32),
+                0, //TODO //view.stride().map(|f| f as u32).or(0),
             ),
             view,
         ));

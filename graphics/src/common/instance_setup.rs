@@ -63,16 +63,10 @@ pub(crate) fn setup_vulkan_instance(
     }
 
     required_layers.iter().for_each(|ptr| unsafe {
-        t_info!(
-            "Enabled instance layer: {:#?}",
-            CStr::from_ptr(*ptr)
-        );
+        t_info!("Enabled instance layer: {:#?}", CStr::from_ptr(*ptr));
     });
     required_extensions.iter().for_each(|ptr| unsafe {
-        t_info!(
-            "Enabled instance extension: {:#?}",
-            CStr::from_ptr(*ptr)
-        );
+        t_info!("Enabled instance extension: {:#?}", CStr::from_ptr(*ptr));
     });
 
     let instance_create_info = vk::InstanceCreateInfo::builder()

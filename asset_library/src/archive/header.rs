@@ -1,13 +1,18 @@
-use serde::*;
+use ::serde::*;
+use uuid::*;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct AssetArchiveHeader {
+    uuid: Uuid,
     mount_points: Vec<AssetArchiveMountPointHeader>,
 }
 
 impl AssetArchiveHeader {
     pub fn new(mount_points: Vec<AssetArchiveMountPointHeader>) -> Self {
-        Self { mount_points }
+        Self {
+            mount_points,
+            uuid: Uuid::new_v4(),
+        }
     }
 
     /// Get a reference to the asset archive header's mount points.

@@ -92,10 +92,7 @@ pub(super) fn setup_device(
         }
     };
 
-    t_info!(
-        "Selected GPU: {:#?}",
-        graphics_device.device_name()
-    );
+    t_info!("Selected GPU: {:#?}", graphics_device.device_name());
     for extension in extension_names {
         unsafe {
             let cstr = CStr::from_ptr(extension);

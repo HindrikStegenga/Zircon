@@ -1,6 +1,6 @@
 mod camera;
 mod camera_manager;
-mod meshrenderer;
+mod mesh_renderer;
 mod transform;
 
 pub use camera::*;

@@ -1,6 +1,6 @@
 use crate::*;
-use utils::{*, as_any::*};
 use engine::*;
+use utils::{as_any::*, *};
 use winit::{dpi::PhysicalSize, event_loop::EventLoopWindowTarget, window::WindowBuilder};
 
 pub struct WinitPlatformInterface<'a> {

@@ -1,10 +1,10 @@
+use std::sync::Arc;
+
 use super::*;
 use crate::*;
 use ash::*;
+use engine::{AssetSystem, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput};
 use utils::*;
-use engine::{
-    PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput,
-};
 
 pub(crate) struct WindowRenderTargetBinding {
     camera: Camera,
@@ -189,6 +189,7 @@ impl WindowRenderTargetBinding {
         instance: &Instance,
         graphics_device: &GraphicsDevice,
         camera: &Camera,
+        asset_system: Arc<AssetSystem>,
         platform_interface: &mut dyn PlatformInterface,
         mut window_render_target: WindowRenderTarget,
         plugin_descriptors: &[RenderPluginDescriptor],
@@ -219,6 +220,7 @@ impl WindowRenderTargetBinding {
                     camera,
                     swap_chain: &mut swap_chain,
                     window_render_target: &mut window_render_target,
+                    asset_system,
                 }) {
                     Some(v) => v,
                     None => return Err(window_render_target),

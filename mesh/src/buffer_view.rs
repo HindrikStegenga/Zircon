@@ -27,7 +27,11 @@ pub struct BufferView {
     buffer_index: u32,
     byte_offset: u32,
     byte_length: u32,
-    byte_stride: Option<u32>,
+    /// The byte stride is the size of each element in the buffer.
+    /// Where element is defined by the sum of accessor sizes.
+    /// (vec2f, vec2f) => byte_stride = 8.
+    /// (vec3f) => byte_stride = 4.
+    byte_stride: u32,
 }
 
 impl BufferView {
@@ -35,7 +39,7 @@ impl BufferView {
         buffer_index: u32,
         byte_offset: u32,
         byte_length: u32,
-        byte_stride: Option<u32>,
+        byte_stride: u32,
     ) -> Self {
         Self {
             buffer_index,
@@ -60,8 +64,8 @@ impl BufferView {
         self.byte_length
     }
 
-    /// Get a reference to the buffer view's byte stride.
-    pub const fn byte_stride(&self) -> Option<u32> {
+    /// Get a reference to the buffer view's byte stride. (Element size)
+    pub const fn byte_stride(&self) -> u32 {
         self.byte_stride
     }
 }

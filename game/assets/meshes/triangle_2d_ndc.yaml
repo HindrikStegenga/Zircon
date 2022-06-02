@@ -29,7 +29,7 @@ views:
   - buffer_index: 0
     byte_offset: 0
     byte_length: 24
-    byte_stride: ~
+    byte_stride: 8
 accessors:
   - buffer_view_index: 0
     byte_offset: 0
