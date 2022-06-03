@@ -115,40 +115,40 @@ impl AssetArchive {
         }
     }
 
-    pub async fn async_read_file_into(
-        path: impl AsRef<Path>,
-        header: &AssetArchiveFileHeader,
-        mut buffer: &mut Vec<u8>,
-    ) -> Result<(), AssetArchiveError> {
-        use utils::smol::{fs::*, io::*};
-        let file = File::open(path.as_ref()).await?;
-        let mut reader = BufReader::new(file);
-        reader.seek(SeekFrom::Start(*header.offset())).await?;
+    // pub async fn async_read_file_into(
+    //     path: impl AsRef<Path>,
+    //     header: &AssetArchiveFileHeader,
+    //     mut buffer: &mut Vec<u8>,
+    // ) -> Result<(), AssetArchiveError> {
+    //     use utils::smol::{fs::*, io::*};
+    //     let file = File::open(path.as_ref()).await?;
+    //     let mut reader = BufReader::new(file);
+    //     reader.seek(SeekFrom::Start(*header.offset())).await?;
 
-        match header.compression_format() {
-            AssetArchiveCompressionFormat::None => {
-                buffer.resize(*header.compressed_size() as usize, 0);
-                reader.read_exact(&mut buffer).await?;
-                Ok(())
-            }
-            AssetArchiveCompressionFormat::LZ4 => {
-                let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
-                unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
-                reader.read_exact(&mut temp_buffer).await?;
-                buffer.resize(*header.uncompressed_size() as usize, 0);
-                decompress_into(&temp_buffer, &mut buffer)?;
-                Ok(())
-            }
-            AssetArchiveCompressionFormat::ZSTD => {
-                let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
-                unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
-                reader.read_exact(&mut temp_buffer).await?;
-                buffer.resize(*header.uncompressed_size() as usize, 0);
-                zstd::bulk::decompress_to_buffer(&temp_buffer, &mut buffer)?;
-                Ok(())
-            }
-        }
-    }
+    //     match header.compression_format() {
+    //         AssetArchiveCompressionFormat::None => {
+    //             buffer.resize(*header.compressed_size() as usize, 0);
+    //             reader.read_exact(&mut buffer).await?;
+    //             Ok(())
+    //         }
+    //         AssetArchiveCompressionFormat::LZ4 => {
+    //             let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+    //             unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+    //             reader.read_exact(&mut temp_buffer).await?;
+    //             buffer.resize(*header.uncompressed_size() as usize, 0);
+    //             decompress_into(&temp_buffer, &mut buffer)?;
+    //             Ok(())
+    //         }
+    //         AssetArchiveCompressionFormat::ZSTD => {
+    //             let mut temp_buffer = Vec::with_capacity(*header.compressed_size() as usize);
+    //             unsafe { temp_buffer.set_len(*header.compressed_size() as usize) };
+    //             reader.read_exact(&mut temp_buffer).await?;
+    //             buffer.resize(*header.uncompressed_size() as usize, 0);
+    //             zstd::bulk::decompress_to_buffer(&temp_buffer, &mut buffer)?;
+    //             Ok(())
+    //         }
+    //     }
+    // }
 
     /// Get a reference to the asset archive's path.
     pub fn path(&self) -> &PathBuf {

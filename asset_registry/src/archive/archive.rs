@@ -1,38 +1,9 @@
 #![allow(unused)]
-use super::header::*;
+use super::{error::*, header::*};
 use serde::{Deserialize, Serialize};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt, SeekFrom};
 use xxhash_rust::*;
 use zstd::bulk::*;
-
-#[derive(Debug)]
-pub enum AssetArchiveError {
-    InvalidHeaderHash,
-    HeaderDeserializationError(serde_cbor::Error),
-    IO(tokio::io::Error),
-}
-
-impl std::error::Error for AssetArchiveError {}
-impl std::fmt::Display for AssetArchiveError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            AssetArchiveError::InvalidHeaderHash => f.write_str("Invalid header hash detected."),
-            AssetArchiveError::IO(e) => e.fmt(f),
-            AssetArchiveError::HeaderDeserializationError(e) => e.fmt(f),
-        }
-    }
-}
-
-impl From<serde_cbor::Error> for AssetArchiveError {
-    fn from(e: serde_cbor::Error) -> Self {
-        Self::HeaderDeserializationError(e)
-    }
-}
-impl From<tokio::io::Error> for AssetArchiveError {
-    fn from(e: tokio::io::Error) -> Self {
-        Self::IO(e)
-    }
-}
 
 /// MemoryLayout:
 /// - magic value               - 4 bytes u32 (LE)
@@ -142,6 +113,36 @@ impl AssetArchive {
         writer.write_all(&compressed_header_hash).await?;
         // Write compressed header size.
         writer.write_all(&compressed_header_size).await?;
+
+        Ok(())
+    }
+
+    /// Writes the file from the reader into the provided buffer.
+    /// Will only write up to `file_header.byte_count()` bytes.
+    pub async fn read_file_into_buffer(
+        file_header: &FileHeader,
+        mut reader: impl AsyncBufReadExt + AsyncSeekExt + Unpin,
+        buffer: &mut [u8],
+    ) -> Result<(), AssetArchiveError> {
+        if buffer.len() as u64 > file_header.byte_count() {
+            return Err(AssetArchiveError::BufferTooSmall);
+        }
+        // Set the reader to the appropriate offset.
+        reader.seek(SeekFrom::Start(file_header.offset())).await?;
+        match file_header.compressed_format() {
+            ArchiveCompressionFormat::None => {
+                reader
+                    .read_exact(&mut buffer[0..(file_header.byte_count() as usize)])
+                    .await?;
+            }
+            ArchiveCompressionFormat::ZSTD => {
+                use async_compression::tokio::bufread::ZstdDecoder;
+                let mut decoder = ZstdDecoder::new(&mut reader);
+                decoder
+                    .read_exact(&mut buffer[0..(file_header.byte_count() as usize)])
+                    .await?;
+            }
+        }
 
         Ok(())
     }

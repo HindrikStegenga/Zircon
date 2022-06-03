@@ -1,5 +1,9 @@
 mod archive;
-mod manager;
+mod ids;
+mod loader;
+mod registry;
 
 pub use archive::*;
-pub use manager::*;
+pub use ids::*;
+pub use loader::*;
+pub use registry::*;

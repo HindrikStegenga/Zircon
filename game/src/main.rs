@@ -3,6 +3,7 @@ use engine::{engine_stages::*, *};
 use graphics::*;
 use math::*;
 use scripting::*;
+use std::num::NonZeroUsize;
 use std::{sync::Arc, vec};
 use utils::*;
 use winit_platform::WinitPlatform;
@@ -128,6 +129,12 @@ fn main() {
             asset_system
         })),
         application_info,
+        concurrency_settings: EngineConcurrencySettings {
+            max_async_threads: None,
+            max_worker_thread: None,
+            fallback_worker_threads: NonZeroUsize::new(8).unwrap(),
+            fallback_async_threads: NonZeroUsize::new(2).unwrap(),
+        },
     };
     let engine = Engine::from(create_info);
     let mut platform = WinitPlatform::default();

@@ -1,7 +1,4 @@
-use super::{
-    archive::{AssetArchive, AssetArchiveError},
-    header::*,
-};
+use super::{archive::*, error::*, header::*};
 use arrayvec::ArrayString;
 use tokio::io::AsyncWriteExt;
 use xxhash_rust::xxh3::xxh3_64;
@@ -57,7 +54,7 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
         identifier: &str,
         format: AssetSerializationFormat,
         blob: &[u8],
-        version: u32,
+        version: u16,
         compression_format: ArchiveCompressionFormat,
     ) -> Result<(), ArchiveBuildError> {
         if identifier.len() > FileHeader::FILE_HEADER_NAME_LEN {

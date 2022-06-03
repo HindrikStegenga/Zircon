@@ -31,7 +31,13 @@ impl EngineStateMachine<Uninitialized> {
 
         let instant = Instant::now();
         let resources = EngineResourceManager::default();
-        let dispatch_system = Dispatcher::new(None);
+        let dispatch_system = Dispatcher::new(
+            info.concurrency_settings.max_async_threads,
+            info.concurrency_settings.fallback_async_threads,
+            info.concurrency_settings.max_worker_thread,
+            info.concurrency_settings.fallback_worker_threads,
+        )
+        .expect("Dispatch System is required!");
         let asset_system = match info.asset_system {
             Some(ref v) => (v)(),
             None => Default::default(),

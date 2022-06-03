@@ -49,7 +49,7 @@ pub struct FileHeader {
     #[serde(rename = "f")]
     format: AssetSerializationFormat,
     #[serde(rename = "v")]
-    version: u32,
+    version: u16,
     #[serde(rename = "o")]
     offset: u64,
     #[serde(rename = "bc")]
@@ -64,11 +64,49 @@ pub struct FileHeader {
 }
 
 impl FileHeader {
+    pub fn identifier(&self) -> ArrayString<{ FileHeader::FILE_HEADER_NAME_LEN }> {
+        self.identifier
+    }
+
+    pub fn id(&self) -> u64 {
+        self.id
+    }
+
+    pub fn format(&self) -> &AssetSerializationFormat {
+        &self.format
+    }
+
+    pub fn version(&self) -> u16 {
+        self.version
+    }
+
+    pub fn offset(&self) -> u64 {
+        self.offset
+    }
+
+    pub fn byte_count(&self) -> u64 {
+        self.byte_count
+    }
+
+    pub fn compressed_byte_count(&self) -> u64 {
+        self.compressed_byte_count
+    }
+
+    pub fn compressed_hash(&self) -> u64 {
+        self.compressed_hash
+    }
+
+    pub fn compressed_format(&self) -> &ArchiveCompressionFormat {
+        &self.compressed_format
+    }
+}
+
+impl FileHeader {
     pub const fn new(
         identifier: ArrayString<{ FileHeader::FILE_HEADER_NAME_LEN }>,
         id: u64,
         format: AssetSerializationFormat,
-        version: u32,
+        version: u16,
         offset: u64,
         byte_count: u64,
         compressed_byte_count: u64,

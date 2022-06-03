@@ -49,9 +49,6 @@ impl EngineStateMachine<Running> {
             });
         }
 
-        // Tick the async executor so it executes stuff on a thread.
-        self.state.dispatch_system.tick_async_executor();
-
         // Trigger the update thread if necessary.
         let mut n_loops = 0;
         while self.shared.internal_resources.timings.accumulated_time >= fixed_update_step_duration

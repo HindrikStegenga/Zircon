@@ -7,9 +7,6 @@ pub mod slot_maps;
 pub mod split_view;
 pub mod squirre13;
 
-pub use rayon;
-pub use smol;
-
 pub const IDENTIFIER: &'static str = "Utils";
 
 #[macro_use]

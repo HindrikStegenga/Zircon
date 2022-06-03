@@ -1,61 +1,52 @@
-mod async_task;
-
-pub use async_task::*;
-pub use rayon::prelude::*;
-use std::sync::Arc;
-
-use smol::{future::Future, Executor};
-use AsyncTask;
-
-use rayon::*;
+use rayon_core::{Scope, ScopeFifo, ThreadPool, ThreadPoolBuilder};
+use std::{num::NonZeroUsize, sync::Arc};
+use tokio::runtime::*;
 
 #[derive(Debug)]
 pub struct Dispatcher {
-    thread_pool: rayon::ThreadPool,
-    executor: Executor<'static>,
+    thread_pool: ThreadPool,
+    //runtime: Runtime,
 }
 
 impl Dispatcher {
-    pub fn new(max_worker_thread_count: Option<usize>) -> Dispatcher {
-        let num_cpus = num_cpus::get();
-        let worker_threads = match max_worker_thread_count {
+    pub fn new(
+        max_async_threads: Option<NonZeroUsize>,
+        fallback_async_threads: NonZeroUsize,
+        max_worker_thread: Option<NonZeroUsize>,
+        fallback_worker_threads: NonZeroUsize,
+    ) -> Option<Dispatcher> {
+        let worker_threads = match max_worker_thread {
             Some(v) => v,
-            None => num_cpus - 1,
+            None => std::thread::available_parallelism().unwrap_or(fallback_worker_threads),
         };
-        let thread_pool = ThreadPoolBuilder::new()
-            .num_threads(worker_threads)
-            .build()
-            .unwrap();
 
-        let executor = Executor::new();
+        let thread_pool = ThreadPoolBuilder::new()
+            .num_threads(worker_threads.get())
+            .build()
+            .ok()?;
+
+        let async_threads = match max_async_threads {
+            Some(v) => v,
+            None => fallback_async_threads,
+        };
+
+        // let runtime = Builder::new_multi_thread()
+        //     .thread_name("async")
+        //     .worker_threads(async_threads.get())
+        //     .max_blocking_threads(2 * async_threads.get())
+        //     .thread_stack_size(1024 * 1024 * 2)
+        //     .build()
+        //     .ok()?;
+
         Self {
             thread_pool,
-            executor,
+            //runtime,
         }
+        .into()
     }
 }
 
-unsafe impl Send for Dispatcher {}
-unsafe impl Sync for Dispatcher {}
-
 impl Dispatcher {
-    pub fn tick_async_executor(self: &Arc<Self>) {
-        let another_self = Arc::clone(&self);
-        self.thread_pool
-            .spawn(move || while another_self.executor.try_tick() {});
-    }
-
-    pub fn dispatch_async<T: Send + 'static>(
-        &self,
-        future: impl Future<Output = T> + Send + 'static,
-    ) -> AsyncTask<T> {
-        let (sender, receiver) = smol::channel::bounded(1);
-        self.executor
-            .spawn(async move { sender.send(future.await).await })
-            .detach();
-        AsyncTask::new(receiver)
-    }
-
     #[inline(always)]
     pub fn install<OP, R>(&self, op: OP) -> R
     where
