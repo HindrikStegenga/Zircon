@@ -68,7 +68,7 @@ impl RenderStage for GraphicsStage {
     fn register_message_handlers(&self, mut registerer: RenderMessageRegisterer<'_, Self>) {
         registerer.register::<WindowDidOpen>();
         registerer.register::<WindowDidResize>();
-        registerer.register::<WindowDidClose>();
+        registerer.register::<WindowWillClose>();
     }
 
     fn create_update_thread_handler(
@@ -145,8 +145,8 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for Graphi
         }
     }
 }
-impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidClose> for GraphicsStage {
-    fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowDidClose) {
+impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowWillClose> for GraphicsStage {
+    fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowWillClose) {
         t_info!("WindowDidClose message received!");
         for i in (0..self.render_targets.len()).rev() {
             let target = &self.render_targets[i];

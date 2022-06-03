@@ -2,7 +2,10 @@ use crate::plugin::*;
 use crate::*;
 use engine::*;
 use std::any::TypeId;
+use std::sync::Arc;
+use utils::defer_drop::{DeferDrop, WeakDeferDrop};
 use utils::*;
+use winit::event::StartCause;
 use winit::window::WindowId;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},
@@ -14,8 +17,9 @@ pub struct WinitPlatform {
     pub(crate) window_id_counter: u16,
     pub(crate) windows: Vec<WinitPlatformWindow>,
     pub(crate) window_did_resize_sender: Option<MessageSender<WindowDidResize>>,
-    pub(crate) window_did_close_sender: Option<MessageSender<WindowDidClose>>,
+    pub(crate) window_did_close_sender: Option<MessageSender<WindowWillClose>>,
     pub(crate) plugins: Vec<Box<dyn AnyWinitPlatformPlugin>>,
+    pub(crate) windows_which_close: Vec<WeakDeferDrop>,
 }
 
 impl Default for WinitPlatform {
@@ -26,6 +30,7 @@ impl Default for WinitPlatform {
             window_id_counter: 0,
             window_did_close_sender: None,
             plugins: vec![],
+            windows_which_close: vec![],
         }
     }
 }
@@ -102,6 +107,12 @@ impl Platform for WinitPlatform {
         event_loop.run(move |event, window_target, control_flow| {
             *control_flow = ControlFlow::Poll;
 
+            self.windows_which_close.retain(|e| !e.is_dropped());
+            if self.windows_which_close.is_empty() && self.windows.is_empty() {
+                *control_flow = ControlFlow::Exit;
+                return;
+            }
+
             let mut is_event_captured = false;
             for plugin in &mut self.plugins {
                 if plugin.process_event(&event) {
@@ -142,17 +153,16 @@ impl Platform for WinitPlatform {
                     window_id,
                 } => {
                     find_window(&mut self, window_id, |platform, window_idx| {
-                        if let Some(resize_handler) = &platform.window_did_close_sender {
+                        if let Some(did_close_handler) = &platform.window_did_close_sender {
                             let handle = platform.windows[window_idx].handle;
-                            t_info!("Window closed.");
-                            resize_handler.send(WindowDidClose { window: handle })
+                            t_info!("Window will be closed.");
+                            let window_handle = platform.windows.remove(window_idx);
+                            let defer_drop = DeferDrop::new(window_handle);
+                            let weak_drop = defer_drop.weak();
+                            platform.windows_which_close.push(weak_drop);
+                            did_close_handler.send(WindowWillClose::new(handle, Some(defer_drop)))
                         }
-                        platform.windows.remove(window_idx);
                     });
-                    if self.windows.is_empty() {
-                        *control_flow = ControlFlow::Exit;
-                        return;
-                    }
                 }
                 #[allow(unused_variables)]
                 #[allow(deprecated)]
@@ -190,11 +200,6 @@ impl Platform for WinitPlatform {
                     }
                 }
                 Event::MainEventsCleared => {
-                    if let Some(window) = self.windows.first() {
-                        window.window.request_redraw();
-                    }
-                }
-                Event::RedrawRequested(_) => {
                     let mut result = EngineUpdateResult::Ok;
                     let mut interface = WinitPlatformInterface::new(&mut self, &window_target);
                     controller.as_running(|s| result = s.tick(&mut interface));
@@ -210,10 +215,10 @@ impl Platform for WinitPlatform {
                             controller.initialize(&mut interface);
                             controller.run();
                         }
-                        _ => {}
+                        _ => (),
                     }
                 }
-                _ => {}
+                _ => (),
             }
         });
     }

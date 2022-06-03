@@ -42,7 +42,7 @@ impl PlatformInitalizationHandler for WinitPlatformInterface<'_> {
             .expect("Requires a message bus!");
 
         self.platform.window_did_resize_sender = message_bus.get_sender::<WindowDidResize>();
-        self.platform.window_did_close_sender = message_bus.get_sender::<WindowDidClose>();
+        self.platform.window_did_close_sender = message_bus.get_sender::<WindowWillClose>();
         self.window_open_sender = message_bus.get_sender::<WindowDidOpen>();
         self.platform.plugins = plugins.drain(..).collect();
         EngineUpdateResult::Ok

@@ -1,5 +1,6 @@
 //mod logging;
 pub mod as_any;
+pub mod defer_drop;
 pub mod dispatcher;
 pub mod fnv1a;
 pub mod handles;

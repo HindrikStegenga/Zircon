@@ -259,6 +259,9 @@ impl SwapChain {
 impl Drop for SwapChain {
     fn drop(&mut self) {
         unsafe {
+            if let Err(e) = self.device.device_wait_idle() {
+                t_fatal!("{}", e);
+            };
             destroy_syncronization_primitives(
                 &self.device,
                 &mut self.image_available_semaphores,
@@ -274,6 +277,7 @@ impl Drop for SwapChain {
 
 struct SurfaceInfo {
     surface_caps: vk::SurfaceCapabilitiesKHR,
+    #[allow(unused)]
     surface_formats: Vec<vk::SurfaceFormatKHR>,
     present_modes: Vec<vk::PresentModeKHR>,
 }
@@ -362,7 +366,7 @@ fn select_surface_format(_surface_info: &SurfaceInfo) -> vk::SurfaceFormatKHR {
 }
 
 fn create_swap_chain(
-    device: &Device,
+    _device: &Device,
     swap_loader: &ash::extensions::khr::Swapchain,
     window: &dyn PlatformWindow,
     surface: vk::SurfaceKHR,

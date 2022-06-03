@@ -70,6 +70,14 @@ fn create_native_scripting_stage<'r>(
 
         EngineUpdateResult::Ok
     });
+    stage.add_engine_update_script(|input| {
+        let dispatcher = input.dispatcher.as_ref();
+        dispatcher.spawn_async(async {
+            println!("TICK!");
+        });
+
+        EngineUpdateResult::Ok
+    });
     stage.into()
 }
 

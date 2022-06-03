@@ -1,11 +1,11 @@
 use rayon_core::{Scope, ScopeFifo, ThreadPool, ThreadPoolBuilder};
-use std::{num::NonZeroUsize, sync::Arc};
-use tokio::runtime::*;
+use std::{future::Future, num::NonZeroUsize};
+use tokio::{runtime::*, task::JoinHandle};
 
 #[derive(Debug)]
 pub struct Dispatcher {
     thread_pool: ThreadPool,
-    //runtime: Runtime,
+    runtime: Runtime,
 }
 
 impl Dispatcher {
@@ -30,23 +30,39 @@ impl Dispatcher {
             None => fallback_async_threads,
         };
 
-        // let runtime = Builder::new_multi_thread()
-        //     .thread_name("async")
-        //     .worker_threads(async_threads.get())
-        //     .max_blocking_threads(2 * async_threads.get())
-        //     .thread_stack_size(1024 * 1024 * 2)
-        //     .build()
-        //     .ok()?;
+        let runtime = Builder::new_multi_thread()
+            .thread_name("async")
+            .worker_threads(async_threads.get())
+            .max_blocking_threads(2 * async_threads.get())
+            .thread_stack_size(1024 * 1024 * 2)
+            .build()
+            .ok()?;
 
         Self {
             thread_pool,
-            //runtime,
+            runtime,
         }
         .into()
     }
 }
 
 impl Dispatcher {
+    pub fn spawn_async<F>(&self, future: F) -> JoinHandle<F::Output>
+    where
+        F: Future + Send + 'static,
+        F::Output: Send + 'static,
+    {
+        self.runtime.spawn(future)
+    }
+
+    pub fn spawn_async_blocking<F, R>(&self, func: F) -> JoinHandle<R>
+    where
+        F: FnOnce() -> R + Send + 'static,
+        R: Send + 'static,
+    {
+        self.runtime.spawn_blocking(func)
+    }
+
     #[inline(always)]
     pub fn install<OP, R>(&self, op: OP) -> R
     where
