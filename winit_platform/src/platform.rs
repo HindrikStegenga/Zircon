@@ -2,10 +2,8 @@ use crate::plugin::*;
 use crate::*;
 use engine::*;
 use std::any::TypeId;
-use std::sync::Arc;
 use utils::defer_drop::{DeferDrop, WeakDeferDrop};
 use utils::*;
-use winit::event::StartCause;
 use winit::window::WindowId;
 use winit::{
     event::{ElementState, Event, KeyboardInput, VirtualKeyCode, WindowEvent},

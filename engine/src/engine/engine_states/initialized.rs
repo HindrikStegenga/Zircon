@@ -17,7 +17,7 @@ pub struct Initialized {
 }
 
 impl Into<EngineStateMachine<Running>> for EngineStateMachine<Initialized> {
-    fn into(mut self) -> EngineStateMachine<Running> {
+    fn into(self) -> EngineStateMachine<Running> {
         let dispatch_system = match self.shared.resources.get_resource::<Dispatcher>() {
             Some(v) => Arc::clone(&v),
             None => {

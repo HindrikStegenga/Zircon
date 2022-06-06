@@ -2,7 +2,7 @@ use crate::engine_stages::{
     AnyUpdateStage, EngineDidInitInput, UpdateStage, UpdateStageUpdateInput,
 };
 use crate::message_bus::*;
-use crate::{EngineUpdateResult, RenderStageUpdateInput};
+use crate::EngineUpdateResult;
 use std::any::Any;
 use std::marker::PhantomData;
 

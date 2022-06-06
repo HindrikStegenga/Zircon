@@ -26,17 +26,20 @@ impl Scene {
     }
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub struct SceneDidBecomeCurrent {
-    scene: SceneHandle,
+    pub scene: SceneHandle,
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub struct SceneWasCreated {
-    scene: SceneHandle,
+    pub scene: SceneHandle,
 }
 
+#[allow(unused)]
 #[derive(Clone)]
 pub struct SceneWasDestroyed {
-    scene: SceneHandle,
+    pub scene: SceneHandle,
 }

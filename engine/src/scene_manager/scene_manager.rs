@@ -5,6 +5,7 @@ use utils::handles::Handle;
 pub type SceneHandle = Handle<Scene, u32>;
 
 pub struct SceneManager {
+    #[allow(unused)]
     counter: u32,
     active: SceneHandle,
     scenes: HashMap<SceneHandle, Scene>,

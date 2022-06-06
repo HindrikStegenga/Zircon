@@ -63,7 +63,7 @@ where
         };
         if let Some(err) = err {
             if core::mem::needs_drop::<T>() {
-                for elem in core::array::IntoIter::new(arr).take(cnt_filled) {
+                for elem in IntoIterator::into_iter(arr).take(cnt_filled) {
                     // Safety: `assume_init()` is sound because we did initialize CNT_FILLED
                     // elements. We call it to drop the deserialized values.
                     unsafe {

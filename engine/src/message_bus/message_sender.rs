@@ -1,4 +1,5 @@
 use super::*;
+use asset_library::t_warn;
 use crossbeam::channel::Sender;
 use std::sync::Arc;
 
@@ -22,22 +23,30 @@ impl<M: Message> MessageSender<M> {
 
     pub fn send(&self, message: M) {
         self.senders.0.iter().for_each(|s| {
-            s.send(message.clone());
+            if let Err(e) = s.send(message.clone()) {
+                t_warn!("Could not send message: {}", e);
+            }
         });
         self.senders.1.iter().for_each(|s| {
-            s.send(message.clone());
+            if let Err(e) = s.send(message.clone()) {
+                t_warn!("Could not send message: {}", e);
+            }
         });
     }
 
     pub fn send_to_update_thread(&self, message: M) {
         self.senders.1.iter().for_each(|s| {
-            s.send(message.clone());
+            if let Err(e) = s.send(message.clone()) {
+                t_warn!("Could not send message: {}", e);
+            }
         });
     }
 
     pub fn send_to_render_thread(&self, message: M) {
         self.senders.0.iter().for_each(|s| {
-            s.send(message.clone());
+            if let Err(e) = s.send(message.clone()) {
+                t_warn!("Could not send message: {}", e);
+            }
         });
     }
 }

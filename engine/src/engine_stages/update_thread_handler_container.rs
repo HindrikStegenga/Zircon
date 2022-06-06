@@ -25,7 +25,7 @@ where
         self.stage.register_message_handlers(registerer);
     }
 
-    fn process_events(&mut self, input: UpdateStageUpdateInput) {
+    fn process_events(&mut self, _input: UpdateStageUpdateInput) {
         for receiver in self.receivers.iter_mut() {
             receiver.receive_messages(&mut self.stage, &mut UpdateStageMessageContext::default());
         }
