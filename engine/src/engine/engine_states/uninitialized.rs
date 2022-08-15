@@ -14,38 +14,41 @@ pub struct Uninitialized {}
 
 impl EngineStateMachine<Uninitialized> {
     pub fn new(info: EngineCreateInfo) -> Self {
-        t_info!(
-            "Initializing {:#?} version {:#?}.{:#?}.{:#?}",
-            info.application_info.engine_name,
-            info.application_info.engine_major_version,
-            info.application_info.engine_minor_version,
-            info.application_info.engine_patch_version
-        );
-        t_info!(
-            "Executing application: {:#?} version {:#?}.{:#?}.{:#?}",
-            info.application_info.application_name,
-            info.application_info.application_major_version,
-            info.application_info.application_minor_version,
-            info.application_info.application_patch_version
-        );
-
         let instant = Instant::now();
         let resources = EngineResourceManager::default();
-        let dispatch_system = Dispatcher::new(
+        let dispatcher = Dispatcher::new(
             info.concurrency_settings.max_async_threads,
             info.concurrency_settings.fallback_async_threads,
             info.concurrency_settings.max_worker_thread,
             info.concurrency_settings.fallback_worker_threads,
         )
         .expect("Dispatch System is required!");
-        let asset_system = match info.asset_system {
-            Some(ref v) => (v)(),
-            None => Default::default(),
-        };
+        resources.add_resource(dispatcher);
+        let dispatcher = resources.get_resource::<Dispatcher>().unwrap();
+
+        let asset_registry = (info.asset_registry)(dispatcher);
+        resources.add_resource(asset_registry);
+        let application_info = (info.application_info)(resources.get_resource().unwrap());
+        let asset_system = (info.asset_system)();
+
         resources.add_resource(asset_system);
-        resources.add_resource(dispatch_system);
         resources.add_resource(SceneManager::default());
 
+        t_info!(
+            "Initializing {:#?} version {:#?}.{:#?}.{:#?}",
+            application_info.engine_name,
+            application_info.engine_major_version,
+            application_info.engine_minor_version,
+            application_info.engine_patch_version
+        );
+        t_info!(
+            "Executing application: {:#?} version {:#?}.{:#?}.{:#?}",
+            application_info.application_name,
+            application_info.application_major_version,
+            application_info.application_minor_version,
+            application_info.application_patch_version
+        );
+        resources.add_resource(application_info);
         Self {
             shared: EngineSharedState {
                 resources: Arc::new(resources),

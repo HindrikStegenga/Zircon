@@ -15,8 +15,10 @@ editor = { path = "../editor" }
 math = { path = "../math" }
 mesh = { path = "../mesh" }
 asset_library = { path = "../asset_library" }
+asset_registry = { path = "../asset_registry" }
 serde_yaml = "0.8"
-
 
 [build-dependencies]
 asset_library = { path = "../asset_library" }
+asset_registry = { path = "../asset_registry" }
+tokio = { version = "1.18", features = ["fs", "io-util", "rt"] }

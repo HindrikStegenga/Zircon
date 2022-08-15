@@ -1,5 +1,6 @@
 #[derive(Debug)]
 pub enum AssetArchiveError {
+    InvalidMagicValue,
     InvalidHeaderHash,
     HeaderDeserializationError(serde_cbor::Error),
     IO(tokio::io::Error),
@@ -14,6 +15,7 @@ impl std::fmt::Display for AssetArchiveError {
             AssetArchiveError::IO(e) => e.fmt(f),
             AssetArchiveError::HeaderDeserializationError(e) => e.fmt(f),
             AssetArchiveError::BufferTooSmall => f.write_str("The provided buffer was too small."),
+            AssetArchiveError::InvalidMagicValue => f.write_str("Invalid magic value."),
         }
     }
 }

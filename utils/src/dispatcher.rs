@@ -33,7 +33,7 @@ impl Dispatcher {
         let runtime = Builder::new_multi_thread()
             .thread_name("async")
             .worker_threads(async_threads.get())
-            .max_blocking_threads(2 * async_threads.get())
+            .max_blocking_threads(async_threads.get())
             .thread_stack_size(1024 * 1024 * 2)
             .build()
             .ok()?;
@@ -55,22 +55,26 @@ impl Dispatcher {
         self.runtime.spawn(future)
     }
 
-    pub fn spawn_async_blocking<F, R>(&self, func: F) -> JoinHandle<R>
-    where
-        F: FnOnce() -> R + Send + 'static,
-        R: Send + 'static,
-    {
-        self.runtime.spawn_blocking(func)
+    // pub fn spawn_async_blocking<F, R>(&self, func: F) -> JoinHandle<R>
+    // where
+    //     F: FnOnce() -> R + Send + 'static,
+    //     R: Send + 'static,
+    // {
+    //     self.runtime.spawn_blocking(func)
+    // }
+
+    pub fn spawn_async_and_wait<F: Future>(&self, future: F) -> F::Output {
+        self.runtime.block_on(future)
     }
 
-    #[inline(always)]
-    pub fn install<OP, R>(&self, op: OP) -> R
-    where
-        OP: FnOnce() -> R + Send,
-        R: Send,
-    {
-        self.thread_pool.install(op)
-    }
+    // #[inline(always)]
+    // pub fn install<OP, R>(&self, op: OP) -> R
+    // where
+    //     OP: FnOnce() -> R + Send,
+    //     R: Send,
+    // {
+    //     self.thread_pool.install(op)
+    // }
 
     #[inline(always)]
     pub fn join<A, B, RA, RB>(&self, oper_a: A, oper_b: B) -> (RA, RB)

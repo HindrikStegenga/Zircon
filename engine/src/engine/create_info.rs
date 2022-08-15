@@ -1,9 +1,11 @@
-use std::{ffi::CString, num::NonZeroUsize};
+use std::{ffi::CString, num::NonZeroUsize, sync::Arc};
 
 use crate::engine_stages::{RenderStageConstructor, UpdateStageConstructor};
-use asset_library::asset_system::AssetSystem;
+use asset_library::{asset_system::AssetSystem, dispatcher::Dispatcher};
+use asset_registry::AssetRegistry;
 use serde::*;
 
+/// Information required to configure concurrency settings of the engine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EngineConcurrencySettings {
     pub max_async_threads: Option<NonZeroUsize>,
@@ -14,8 +16,9 @@ pub struct EngineConcurrencySettings {
 
 /// Information required to construct an instance of [`Engine`].
 pub struct EngineCreateInfo {
-    pub asset_system: Option<Box<AssetSystemCreateFn>>,
-    pub application_info: ApplicationInfo,
+    pub asset_system: Box<AssetSystemConstructor>,
+    pub asset_registry: Box<AssetRegistryConstructor>,
+    pub application_info: Box<ApplicationInfoConstructor>,
     pub update_tick_rate: u32,
     pub max_skipped_frames: u32,
     pub max_frame_rate: Option<u32>,
@@ -24,9 +27,11 @@ pub struct EngineCreateInfo {
     pub render_stages: Vec<Box<RenderStageConstructor>>,
 }
 
-pub type AssetSystemCreateFn = dyn Fn() -> AssetSystem;
+pub type ApplicationInfoConstructor = dyn Fn(Arc<AssetRegistry>) -> ApplicationInfo;
+pub type AssetRegistryConstructor = dyn Fn(Arc<Dispatcher>) -> AssetRegistry;
+pub type AssetSystemConstructor = dyn Fn() -> AssetSystem;
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApplicationInfo {
     pub application_name: CString,
     pub engine_name: CString,

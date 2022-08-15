@@ -1,9 +1,11 @@
+use asset_registry::*;
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
 use math::*;
 use scripting::*;
 use std::num::NonZeroUsize;
+use std::path::PathBuf;
 use std::{sync::Arc, vec};
 use utils::*;
 use winit_platform::WinitPlatform;
@@ -70,14 +72,7 @@ fn create_native_scripting_stage<'r>(
 
         EngineUpdateResult::Ok
     });
-    stage.add_engine_update_script(|input| {
-        let dispatcher = input.dispatcher.as_ref();
-        dispatcher.spawn_async(async {
-            println!("TICK!");
-        });
-
-        EngineUpdateResult::Ok
-    });
+    stage.add_engine_update_script(|_input| EngineUpdateResult::Ok);
     stage.into()
 }
 
@@ -112,13 +107,6 @@ fn main() {
     setup_default_logger();
 
     mesh_writing::write_meshes();
-    let asset_system = AssetSystem::default();
-    asset_system
-        .load_archives_from_directory("./game/asset_archives/", "harchive")
-        .unwrap();
-    let application_info = asset_system
-        .load_asset_as_type::<ApplicationInfo, _, _>("assets.config", "game")
-        .unwrap();
 
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
@@ -129,20 +117,21 @@ fn main() {
             Box::new(create_wasm_scripting_stage),
         ],
         render_stages: vec![Box::new(create_graphics_stage)],
-        asset_system: Some(Box::new(|| {
+        asset_system: Box::new(|| {
             let asset_system = AssetSystem::default();
             asset_system
                 .load_archives_from_directory("./game/asset_archives/", "harchive")
                 .unwrap();
             asset_system
-        })),
-        application_info,
+        }),
+        application_info: Box::new(|_registry| ApplicationInfo::default()),
         concurrency_settings: EngineConcurrencySettings {
             max_async_threads: None,
             max_worker_thread: None,
             fallback_worker_threads: NonZeroUsize::new(8).unwrap(),
             fallback_async_threads: NonZeroUsize::new(2).unwrap(),
         },
+        asset_registry: Box::from(|dispatcher| AssetRegistry::new(dispatcher)),
     };
     let engine = Engine::from(create_info);
     let mut platform = WinitPlatform::default();

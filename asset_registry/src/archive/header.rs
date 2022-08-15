@@ -2,7 +2,7 @@ use ::serde::{Deserialize, Serialize};
 use arrayvec::ArrayString;
 use uuid::*;
 
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct ArchiveHeader {
     #[serde(rename = "uid")]
     uuid: Uuid,
@@ -25,22 +25,37 @@ impl ArchiveHeader {
 }
 
 #[repr(u8)]
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Clone, Copy, Hash)]
 pub enum ArchiveCompressionFormat {
     None = 0,
     ZSTD = 1,
 }
 
 #[repr(u8)]
-#[derive(Serialize, Deserialize, Hash)]
+#[derive(Serialize, Deserialize, Clone, Copy, Hash)]
 pub enum AssetSerializationFormat {
     None = 0,
     JSON = 1,
     YAML = 2,
     TOML = 3,
+    Unknown = 255,
 }
 
-#[derive(Serialize, Deserialize, Hash)]
+impl From<&str> for AssetSerializationFormat {
+    fn from(value: &str) -> Self {
+        let value = value.to_lowercase();
+        match value.as_str() {
+            "bin" => AssetSerializationFormat::None,
+            "json" => AssetSerializationFormat::JSON,
+            "yaml" => AssetSerializationFormat::YAML,
+            "yml" => AssetSerializationFormat::YAML,
+            "toml" => AssetSerializationFormat::TOML,
+            _ => AssetSerializationFormat::TOML,
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct FileHeader {
     #[serde(rename = "sid")]
     identifier: ArrayString<{ FileHeader::FILE_HEADER_NAME_LEN }>,
