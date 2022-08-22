@@ -11,7 +11,6 @@ pub mod header;
 pub use builder::*;
 pub use error::*;
 pub use header::*;
-use lz4_flex::decompress_into;
 
 // AssetArchive is a type storing multiple potentially compressed assets into a single archive.
 #[derive(Debug)]

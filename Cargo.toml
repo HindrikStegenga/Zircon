@@ -2,7 +2,6 @@
 default-members = ["game"]
 members = [
     "engine",
-    "editor",
     "game",
     "math",
     "utils",
@@ -11,8 +10,6 @@ members = [
     "asset_registry",
     "asset_library",
     "scripting",
-    "shader",
     "mesh",
     "tools/gltf_extract_meshes",
-    "tools/shader_compiler",
 ]

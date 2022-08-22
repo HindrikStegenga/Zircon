@@ -11,14 +11,11 @@ utils = { path = "../utils" }
 winit_platform = { path = "../winit_platform" }
 graphics = { path = "../graphics" }
 scripting = { path = "../scripting" }
-editor = { path = "../editor" }
 math = { path = "../math" }
 mesh = { path = "../mesh" }
-asset_library = { path = "../asset_library" }
 asset_registry = { path = "../asset_registry" }
-serde_yaml = "0.8"
+serde_yaml = "0.9.9"
 
 [build-dependencies]
-asset_library = { path = "../asset_library" }
 asset_registry = { path = "../asset_registry" }
 tokio = { version = "1.18", features = ["fs", "io-util", "rt"] }

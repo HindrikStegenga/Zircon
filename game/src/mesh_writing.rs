@@ -10,7 +10,8 @@ pub fn write_meshes() {
 
 pub fn write_mesh(mesh: &Mesh, path: &str) {
     let mut file = File::create(path).unwrap();
-    let bytes = serde_yaml::to_vec(&mesh).unwrap();
+    let mut bytes = vec![];
+    serde_yaml::to_writer(&mut bytes, &mesh).unwrap();
     file.write_all(&bytes).unwrap();
     file.flush().unwrap();
 }

@@ -135,6 +135,5 @@ fn main() {
     };
     let engine = Engine::from(create_info);
     let mut platform = WinitPlatform::default();
-    platform.add_plugin(editor::EguiIntegration::new());
     engine.run(platform);
 }

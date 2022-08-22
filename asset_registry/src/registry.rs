@@ -124,15 +124,4 @@ impl AssetRegistry {
     pub fn load_archives_in_directory(&self, path: &impl AsRef<Path>, extension: &impl AsRef<str>) {
     }
 
-    pub fn unload_archive(&self, archive_id: ArchiveId) {}
-
-    pub fn load_blob_async(&self, id: AssetId) {}
-
-    pub fn load_as_type<T: DeserializeOwned>(&self, id: AssetId) {}
-
-    pub fn load_as_type_async<T: DeserializeOwned>(&self, id: AssetId) {}
-
-    pub fn load_as_type_into_buffer(&self) {}
-
-    pub fn load_as_type_into_buffer_async(&self) {}
 }
