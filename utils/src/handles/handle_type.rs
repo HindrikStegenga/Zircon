@@ -1,4 +1,5 @@
 use num_traits::*;
+use serde::{de::DeserializeOwned, Serialize};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::ops::AddAssign;
@@ -19,6 +20,8 @@ pub trait HandleType:
     + Eq
     + PartialEq
     + Hash
+    + Serialize
+    + DeserializeOwned
 {
 }
 

@@ -9,11 +9,9 @@ dashmap = "5.3.4"
 arrayvec = { version = "0.7", features = ["serde"] }
 uuid = { version = "1.1", features = ["v4", "serde"] }
 serde = { version = "1.0", features = ["derive"] }
-serde_yaml = "0.9.9"
 serde_cbor = "0.11"
-serde_json = "1.0"
 toml = "0.5"
-ahash = { version = "0.7", features = ["compile-time-rng"] }
+ahash = "0.8"
 xxhash-rust = { version = "0.8", features = ["xxh3", "const_xxh3"] }
 zstd = "0.11"
 async-compression = { version = "0.3", features = ["tokio", "zstd"] }

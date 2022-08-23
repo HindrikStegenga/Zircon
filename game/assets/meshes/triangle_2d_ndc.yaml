@@ -1,43 +1,42 @@
----
 buffers:
-  - buffer:
-      - 0
-      - 0
-      - 0
-      - 0
-      - 0
-      - 0
-      - 0
-      - 191
-      - 0
-      - 0
-      - 0
-      - 63
-      - 0
-      - 0
-      - 0
-      - 63
-      - 0
-      - 0
-      - 0
-      - 191
-      - 0
-      - 0
-      - 0
-      - 63
+- buffer:
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 0
+  - 191
+  - 0
+  - 0
+  - 0
+  - 63
+  - 0
+  - 0
+  - 0
+  - 63
+  - 0
+  - 0
+  - 0
+  - 191
+  - 0
+  - 0
+  - 0
+  - 63
 views:
-  - buffer_index: 0
-    byte_offset: 0
-    byte_length: 24
-    byte_stride: 8
+- buffer_index: 0
+  byte_offset: 0
+  byte_length: 24
+  byte_stride: 8
 accessors:
-  - buffer_view_index: 0
-    byte_offset: 0
-    element_count: 3
-    format: F32x2
+- buffer_view_index: 0
+  byte_offset: 0
+  element_count: 3
+  format: F32x2
 primitives:
-  - attributes:
-      - accessor_index: 0
-        purpose: Position2D
-    indices: ~
-    mode: Triangles
+- attributes:
+  - accessor_index: 0
+    purpose: Position2D
+  indices: null
+  mode: Triangles

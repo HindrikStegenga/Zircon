@@ -1,5 +1,4 @@
 use ::serde::{Deserialize, Serialize};
-use arrayvec::ArrayString;
 use uuid::*;
 
 #[derive(Serialize, Deserialize, Clone, Hash)]
@@ -34,10 +33,8 @@ pub enum ArchiveCompressionFormat {
 #[repr(u8)]
 #[derive(Serialize, Deserialize, Clone, Copy, Hash)]
 pub enum AssetSerializationFormat {
-    None = 0,
-    JSON = 1,
-    YAML = 2,
-    TOML = 3,
+    Binary = 0,
+    Toml = 3,
     Unknown = 255,
 }
 
@@ -45,12 +42,9 @@ impl From<&str> for AssetSerializationFormat {
     fn from(value: &str) -> Self {
         let value = value.to_lowercase();
         match value.as_str() {
-            "bin" => AssetSerializationFormat::None,
-            "json" => AssetSerializationFormat::JSON,
-            "yaml" => AssetSerializationFormat::YAML,
-            "yml" => AssetSerializationFormat::YAML,
-            "toml" => AssetSerializationFormat::TOML,
-            _ => AssetSerializationFormat::TOML,
+            "bin" => AssetSerializationFormat::Binary,
+            "toml" => AssetSerializationFormat::Toml,
+            _ => AssetSerializationFormat::Toml,
         }
     }
 }
@@ -58,7 +52,8 @@ impl From<&str> for AssetSerializationFormat {
 #[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct FileHeader {
     #[serde(rename = "sid")]
-    identifier: ArrayString<{ FileHeader::FILE_HEADER_NAME_LEN }>,
+    identifier: String,
+    /// Hash of identifier. (Uses xxh3_64)
     #[serde(rename = "id")]
     id: u64,
     #[serde(rename = "f")]
@@ -79,8 +74,8 @@ pub struct FileHeader {
 }
 
 impl FileHeader {
-    pub fn identifier(&self) -> ArrayString<{ FileHeader::FILE_HEADER_NAME_LEN }> {
-        self.identifier
+    pub fn identifier(&self) -> &str {
+        self.identifier.as_str()
     }
 
     pub fn id(&self) -> u64 {
@@ -118,7 +113,7 @@ impl FileHeader {
 
 impl FileHeader {
     pub const fn new(
-        identifier: ArrayString<{ FileHeader::FILE_HEADER_NAME_LEN }>,
+        identifier: String,
         id: u64,
         format: AssetSerializationFormat,
         version: u16,
@@ -141,5 +136,5 @@ impl FileHeader {
         }
     }
 
-    pub const FILE_HEADER_NAME_LEN: usize = 128;
+    pub const MAX_FILE_HEADER_NAME_LEN: usize = 256;
 }

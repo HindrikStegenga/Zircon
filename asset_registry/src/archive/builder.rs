@@ -1,5 +1,4 @@
 use super::{archive::*, error::*, header::*};
-use arrayvec::ArrayString;
 use tokio::io::AsyncWriteExt;
 use xxhash_rust::xxh3::xxh3_64;
 
@@ -57,12 +56,11 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
         version: u16,
         compression_format: ArchiveCompressionFormat,
     ) -> Result<(), ArchiveBuildError> {
-        if identifier.len() > FileHeader::FILE_HEADER_NAME_LEN {
+        if identifier.len() > FileHeader::MAX_FILE_HEADER_NAME_LEN {
             return Err(ArchiveBuildError::IdentifierTooLargeError);
         }
 
-        let identifier =
-            ArrayString::<{ FileHeader::FILE_HEADER_NAME_LEN }>::from(identifier).unwrap();
+        let identifier = identifier;
         let id = xxh3_64(&identifier.as_bytes());
 
         let mut compressed_size = blob.len();
@@ -87,7 +85,7 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
         }
 
         let header = FileHeader::new(
-            identifier,
+            identifier.to_owned(),
             id,
             format,
             version,

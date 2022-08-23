@@ -1,4 +1,5 @@
 use super::HandleType;
+use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use std::{
     fmt::{Debug, Formatter},
@@ -6,14 +7,18 @@ use std::{
 };
 
 /// Opaque handle type storing both the actual integer value as well as versioning information.
+#[derive(Serialize, Deserialize)]
 pub struct VersionedHandle<T, K = u32, G = K>
 where
     K: HandleType,
     G: HandleType,
 {
+    #[serde(deserialize_with = "K::deserialize")]
     pub value: K,
+    #[serde(deserialize_with = "G::deserialize")]
     pub version: G,
     /// Satisfy type check and drop check.
+    #[serde(skip)]
     _phantom: PhantomData<fn(*const T)>,
 }
 

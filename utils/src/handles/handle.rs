@@ -1,14 +1,19 @@
 use super::HandleType;
+use serde::{Deserialize, Serialize};
 use std::{fmt::*, hash::Hash};
 use std::{hash::Hasher, marker::PhantomData};
+
 /// Opaque handle type represented using integer values internally.
+#[derive(Serialize, Deserialize)]
 pub struct Handle<T, K = u32>
 where
     T: Sized,
     K: HandleType,
 {
+    #[serde(deserialize_with = "K::deserialize")]
     pub value: K,
     /// Satisfy type check and drop check.
+    #[serde(skip)]
     _phantom: PhantomData<*const T>,
 }
 

@@ -2,6 +2,7 @@
 #![allow(unused)]
 use super::archive::*;
 use super::builder::*;
+use crate::FileHeader;
 use std::io::Write;
 use std::io::{Cursor, Seek, SeekFrom};
 use tokio::io::AsyncBufReadExt;
@@ -11,7 +12,6 @@ use tokio::test;
 async fn test_builder() {
     let mut cursor = Cursor::new(Vec::<u8>::with_capacity(1024 * 1024 * 10));
     let mut builder = ArchiveBuilder::new(&mut cursor).await.unwrap();
-
     let random_data = (0..64)
         .into_iter()
         .map(|_| rand::random())
@@ -20,7 +20,7 @@ async fn test_builder() {
     builder
         .write_file(
             "asset.test",
-            super::header::AssetSerializationFormat::None,
+            super::header::AssetSerializationFormat::Binary,
             &random_data,
             2334,
             super::header::ArchiveCompressionFormat::ZSTD,
