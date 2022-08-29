@@ -1,21 +1,46 @@
-use crate::registry::AssetSourceHandle;
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
-pub type AssetIdentifier = u64;
+#[repr(transparent)]
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
+pub struct AssetIdentifier(u64);
+
+impl From<u64> for AssetIdentifier {
+    fn from(v: u64) -> Self {
+        Self(v)
+    }
+}
+
+impl From<AssetIdentifier> for u64 {
+    fn from(v: AssetIdentifier) -> Self {
+        v.0
+    }
+}
+
+#[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
+pub enum AssetSourceInfo {
+    Archive(Uuid, usize),
+    MappedFile,
+    MappedDirectory,
+}
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AssetDescriptor {
     identifier: AssetIdentifier,
     version: u16,
-    source: AssetSourceHandle,
+    source_info: AssetSourceInfo,
 }
 
 impl AssetDescriptor {
-    pub const fn new(identifier: AssetIdentifier, version: u16, source: AssetSourceHandle) -> Self {
+    pub const fn new(
+        identifier: AssetIdentifier,
+        version: u16,
+        source_info: AssetSourceInfo,
+    ) -> Self {
         Self {
             identifier,
             version,
-            source,
+            source_info,
         }
     }
 
@@ -27,7 +52,7 @@ impl AssetDescriptor {
         self.version
     }
 
-    pub const fn source(&self) -> &AssetSourceHandle {
-        &self.source
+    pub const fn source_info(&self) -> AssetSourceInfo {
+        self.source_info
     }
 }

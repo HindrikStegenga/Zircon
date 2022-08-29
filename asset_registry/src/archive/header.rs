@@ -1,5 +1,7 @@
+use crate::AssetIdentifier;
 use ::serde::{Deserialize, Serialize};
 use uuid::*;
+use xxhash_rust::xxh3::xxh3_64;
 
 #[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct ArchiveHeader {
@@ -52,10 +54,10 @@ impl From<&str> for AssetSerializationFormat {
 #[derive(Serialize, Deserialize, Clone, Hash)]
 pub struct FileHeader {
     #[serde(rename = "sid")]
-    identifier: String,
+    string_identifier: String,
     /// Hash of identifier. (Uses xxh3_64)
     #[serde(rename = "id")]
-    id: u64,
+    id: AssetIdentifier,
     #[serde(rename = "f")]
     format: AssetSerializationFormat,
     #[serde(rename = "v")]
@@ -75,10 +77,10 @@ pub struct FileHeader {
 
 impl FileHeader {
     pub fn identifier(&self) -> &str {
-        self.identifier.as_str()
+        self.string_identifier.as_str()
     }
 
-    pub fn id(&self) -> u64 {
+    pub fn id(&self) -> AssetIdentifier {
         self.id
     }
 
@@ -112,9 +114,8 @@ impl FileHeader {
 }
 
 impl FileHeader {
-    pub const fn new(
+    pub fn new(
         identifier: String,
-        id: u64,
         format: AssetSerializationFormat,
         version: u16,
         offset: u64,
@@ -123,8 +124,9 @@ impl FileHeader {
         compressed_hash: u64,
         compressed_format: ArchiveCompressionFormat,
     ) -> Self {
+        let id = xxh3_64(&identifier.as_bytes()).into();
         Self {
-            identifier,
+            string_identifier: identifier,
             id,
             format,
             version,

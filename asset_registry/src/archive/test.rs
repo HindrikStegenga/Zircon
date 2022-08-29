@@ -35,16 +35,16 @@ async fn test_builder() {
     cursor.seek(SeekFrom::Start(0));
 
     // Read magic value.
-    AssetArchive::read_magic_value(&mut cursor)
+    read_magic_value(&mut cursor)
         .await
         .expect("Magic value failure.");
 
     // Read header
-    let header = AssetArchive::read_header(&mut cursor).await.unwrap();
+    let header = read_header(&mut cursor).await.unwrap();
     assert_eq!(header.uuid(), uuid);
     // Read the file into the buffer.
     let mut buffer = vec![0; header.files().first().unwrap().byte_count() as usize];
-    AssetArchive::read_file_into_buffer(header.files().first().unwrap(), &mut cursor, &mut buffer)
+    read_file_into_buffer(header.files().first().unwrap(), &mut cursor, &mut buffer)
         .await
         .unwrap();
     assert_eq!(random_data, buffer);

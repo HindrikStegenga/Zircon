@@ -39,7 +39,7 @@ pub struct ArchiveBuilder<'a, F: AsyncWriteExt + Unpin> {
 
 impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
     pub async fn new(mut writer: &'a mut F) -> Result<ArchiveBuilder<'a, F>, ArchiveBuildError> {
-        AssetArchive::write_magic_value(&mut writer).await?;
+        write_magic_value(&mut writer).await?;
         Ok(Self {
             writer,
             files: vec![],
@@ -59,10 +59,6 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
         if identifier.len() > FileHeader::MAX_FILE_HEADER_NAME_LEN {
             return Err(ArchiveBuildError::IdentifierTooLargeError);
         }
-
-        let identifier = identifier;
-        let id = xxh3_64(&identifier.as_bytes());
-
         let mut compressed_size = blob.len();
         let compressed_hash;
         let offset = self.offset;
@@ -86,7 +82,6 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
 
         let header = FileHeader::new(
             identifier.to_owned(),
-            id,
             format,
             version,
             offset,
@@ -103,8 +98,9 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
     /// On succes returns the borrow writer.
     /// If it fails, the written contents should be considered undefined.
     pub async fn finish(mut self, uuid: uuid::Uuid) -> Result<&'a mut F, ArchiveBuildError> {
+        self.files.sort_by_key(|e| -> u64 { e.id().into() });
         let header = ArchiveHeader::new(uuid, self.files);
-        AssetArchive::write_header(header, &mut self.writer).await?;
+        write_header(header, &mut self.writer).await?;
         Ok(self.writer)
     }
 }
