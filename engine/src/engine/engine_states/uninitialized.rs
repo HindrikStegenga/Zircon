@@ -29,9 +29,7 @@ impl EngineStateMachine<Uninitialized> {
         let asset_registry = (info.asset_registry)(dispatcher);
         resources.add_resource(asset_registry);
         let application_info = (info.application_info)(resources.get_resource().unwrap());
-        let asset_system = (info.asset_system)();
 
-        resources.add_resource(asset_system);
         resources.add_resource(SceneManager::default());
 
         t_info!(

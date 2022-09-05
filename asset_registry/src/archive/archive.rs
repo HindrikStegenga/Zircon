@@ -6,7 +6,7 @@ use crate::AssetIdentifier;
 use serde::{Deserialize, Serialize};
 use std::ops::DerefMut;
 use std::path::Path;
-use tokio::fs::File;
+use tokio::fs::{read_dir, File};
 use tokio::io::{AsyncBufReadExt, AsyncReadExt, AsyncSeekExt, AsyncWriteExt, BufReader, SeekFrom};
 use tokio::sync::*;
 use xxhash_rust::*;
@@ -54,6 +54,35 @@ impl<R: AsyncReadExt + AsyncSeekExt + Unpin> AssetArchive<R> {
             header,
             reader: tokio::sync::Mutex::new(buf_reader),
         })
+    }
+}
+
+impl AssetArchive {
+    pub async fn load_from_file(path: impl AsRef<Path>) -> Result<AssetArchive, AssetArchiveError> {
+        let file = File::open(path).await?;
+        Self::load_from_readable(file).await
+    }
+
+    pub async fn load_from_directory(
+        path: impl AsRef<Path>,
+        extension: impl AsRef<str>,
+    ) -> Result<Vec<AssetArchive>, AssetArchiveError> {
+        let mut loaded_archives = vec![];
+        let mut dir_entry = read_dir(path).await?;
+        while let Some(entry) = dir_entry.next_entry().await? {
+            if !entry.file_type().await?.is_file() {
+                continue;
+            }
+            if let Some(file_ext) = entry.path().extension().map(|p| p.to_str()).flatten() {
+                if file_ext == extension.as_ref() {
+                    let archive = Self::load_from_file(entry.path()).await?;
+                    loaded_archives.push(archive);
+                }
+            } else {
+                continue;
+            }
+        }
+        Ok(loaded_archives)
     }
 }
 
@@ -185,5 +214,3 @@ pub async fn read_file_into_buffer<'a, 'b>(
         }
     };
 }
-
-impl AssetArchive {}

@@ -16,7 +16,6 @@ pub struct EngineConcurrencySettings {
 
 /// Information required to construct an instance of [`Engine`].
 pub struct EngineCreateInfo {
-    pub asset_system: Box<AssetSystemConstructor>,
     pub asset_registry: Box<AssetRegistryConstructor>,
     pub application_info: Box<ApplicationInfoConstructor>,
     pub update_tick_rate: u32,
@@ -29,7 +28,6 @@ pub struct EngineCreateInfo {
 
 pub type ApplicationInfoConstructor = dyn Fn(Arc<AssetRegistry>) -> ApplicationInfo;
 pub type AssetRegistryConstructor = dyn Fn(Arc<Dispatcher>) -> AssetRegistry;
-pub type AssetSystemConstructor = dyn Fn() -> AssetSystem;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct ApplicationInfo {

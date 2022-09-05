@@ -84,7 +84,6 @@ pub fn extract_input_state_from_mesh(mesh: &Mesh) -> Option<VertexInputState> {
                             });
                         });
                 });
-            println!("Test");
         }
     }
 

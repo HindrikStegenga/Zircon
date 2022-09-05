@@ -7,10 +7,13 @@ use scripting::*;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::{sync::Arc, vec};
+use utils::dispatcher::Dispatcher;
 use utils::*;
 use winit_platform::WinitPlatform;
 
 mod mesh_writing;
+
+pub const IDENTIFIER: &'static str = "GAME";
 
 fn create_wasm_scripting_stage<'r>(
     input: UpdateStageConstructorInput<'r>,
@@ -117,13 +120,6 @@ fn main() {
             Box::new(create_wasm_scripting_stage),
         ],
         render_stages: vec![Box::new(create_graphics_stage)],
-        asset_system: Box::new(|| {
-            let asset_system = AssetSystem::default();
-            asset_system
-                .load_archives_from_directory("./game/asset_archives/", "harchive")
-                .unwrap();
-            asset_system
-        }),
         application_info: Box::new(|_registry| ApplicationInfo::default()),
         concurrency_settings: EngineConcurrencySettings {
             max_async_threads: None,
@@ -131,7 +127,24 @@ fn main() {
             fallback_worker_threads: NonZeroUsize::new(8).unwrap(),
             fallback_async_threads: NonZeroUsize::new(2).unwrap(),
         },
-        asset_registry: Box::from(|dispatcher| AssetRegistry::new(dispatcher)),
+        asset_registry: Box::from(|dispatcher: Arc<Dispatcher>| {
+            let registry = AssetRegistry::default();
+            dispatcher.spawn_async_and_wait(async move {
+                let archives = AssetArchive::load_from_directory("./game/asset_archives/", "zarc")
+                    .await
+                    .expect("Could not load asset archives.");
+                archives
+                    .into_iter()
+                    .for_each(|a| match registry.register_asset_archive(archive) {
+                        Ok(_result) => {}
+                        Err((e, _)) => {
+                            t_fatal!("Could not load archive {:#?}", e);
+                        }
+                    });
+
+                registry
+            })
+        }),
     };
     let engine = Engine::from(create_info);
     let mut platform = WinitPlatform::default();
