@@ -2,7 +2,7 @@ use std::{ffi::CString, num::NonZeroUsize, sync::Arc};
 
 use crate::engine_stages::{RenderStageConstructor, UpdateStageConstructor};
 use asset_library::{asset_system::AssetSystem, dispatcher::Dispatcher};
-use asset_registry::AssetRegistry;
+use assets::AssetRegistry;
 use serde::*;
 
 /// Information required to configure concurrency settings of the engine.

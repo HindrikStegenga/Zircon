@@ -1,4 +1,4 @@
-use asset_registry::create_archive_from_directory;
+use assets::create_archive_from_directory;
 use std::path::*;
 
 fn main() {
@@ -13,7 +13,7 @@ fn main() {
             path.clone().join("assets"),
             path.clone().join("asset_archives").join("assets.zarc"),
             0,
-            asset_registry::ArchiveCompressionFormat::ZSTD,
+            assets::ArchiveCompressionFormat::ZSTD,
         )
         .await
         .unwrap();

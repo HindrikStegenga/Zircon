@@ -1,0 +1,11 @@
+[package]
+name = "zircon_math"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "math"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }

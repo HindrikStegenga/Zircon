@@ -1,20 +1,18 @@
 [package]
-name = "engine"
+name = "zircon_engine"
 version = "0.1.0"
 edition = "2021"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
-[features]
-default = ["re_export_utils"]
-re_export_utils = []
+[lib]
+name = "engine"
+path = "src/lib.rs"
 
 [dependencies]
 utils = { path = "../utils" }
 asset_library = { path = "../asset_library" }
-asset_registry = { path = "../asset_registry" }
+zircon_assets = { path = "assets" }
 serde = { version = "1.0", features = ["derive"] }
-raw-window-handle = "0.4"
-dashmap = "4.0"
+raw-window-handle = "0.5.0"
+dashmap = "5.4.0"
 shard-ecs = { version = "0.2.6", features = ["derive"] }
 crossbeam = "0.8"

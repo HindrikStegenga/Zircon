@@ -1,37 +1,19 @@
-use asset_registry::*;
+use assets::*;
 use engine::engine_stages::RenderStageContainer;
 use engine::{engine_stages::*, *};
 use graphics::*;
 use math::*;
+use platform_winit::WinitPlatform;
 use scripting::*;
 use std::num::NonZeroUsize;
 use std::path::PathBuf;
 use std::{sync::Arc, vec};
 use utils::dispatcher::Dispatcher;
 use utils::*;
-use winit_platform::WinitPlatform;
 
 mod mesh_writing;
 
 pub const IDENTIFIER: &'static str = "GAME";
-
-fn create_wasm_scripting_stage<'r>(
-    input: UpdateStageConstructorInput<'r>,
-) -> Box<dyn AnyUpdateStage> {
-    let asset_system: Arc<AssetSystem> = match input.resources.get_resource::<AssetSystem>() {
-        Some(v) => v,
-        None => {
-            fatal!("This system requires an asset system to be present!");
-        }
-    };
-    let mut buffer = vec![];
-    let _ = asset_system
-        .load_asset_as_blob_into("assets.wasm", "init_test", &mut buffer)
-        .unwrap();
-    let mut stage = WasmScriptingStage::default();
-    stage.add_engine_init_script(&buffer);
-    stage.into()
-}
 
 fn create_native_scripting_stage<'r>(
     _input: UpdateStageConstructorInput<'r>,
@@ -115,10 +97,7 @@ fn main() {
         update_tick_rate: 20,
         max_skipped_frames: 1,
         max_frame_rate: None,
-        update_stages: vec![
-            Box::new(create_native_scripting_stage),
-            Box::new(create_wasm_scripting_stage),
-        ],
+        update_stages: vec![Box::new(create_native_scripting_stage)],
         render_stages: vec![Box::new(create_graphics_stage)],
         application_info: Box::new(|_registry| ApplicationInfo::default()),
         concurrency_settings: EngineConcurrencySettings {
@@ -133,20 +112,20 @@ fn main() {
                 let archives = AssetArchive::load_from_directory("./game/asset_archives/", "zarc")
                     .await
                     .expect("Could not load asset archives.");
-                archives
-                    .into_iter()
-                    .for_each(|a| match registry.register_asset_archive(archive) {
+                archives.into_iter().for_each(|archive| {
+                    match registry.register_asset_archive(archive) {
                         Ok(_result) => {}
                         Err((e, _)) => {
                             t_fatal!("Could not load archive {:#?}", e);
                         }
-                    });
+                    }
+                });
 
                 registry
             })
         }),
     };
     let engine = Engine::from(create_info);
-    let mut platform = WinitPlatform::default();
+    let platform = WinitPlatform::default();
     engine.run(platform);
 }

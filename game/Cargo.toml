@@ -6,16 +6,16 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-engine = { path = "../engine" }
+zircon_engine = { path = "../engine" }
 utils = { path = "../utils" }
-winit_platform = { path = "../winit_platform" }
+zircon_platform_winit = { path = "../engine/platforms/winit" }
 graphics = { path = "../graphics" }
 scripting = { path = "../scripting" }
-math = { path = "../math" }
+zircon_math = { path = "../engine/math" }
 mesh = { path = "../mesh" }
-asset_registry = { path = "../asset_registry" }
+zircon_assets = { path = "../engine/assets" }
 serde_yaml = "0.9.9"
 
 [build-dependencies]
-asset_registry = { path = "../asset_registry" }
+zircon_assets = { path = "../engine/assets" }
 tokio = { version = "1.18", features = ["fs", "io-util", "rt"] }
