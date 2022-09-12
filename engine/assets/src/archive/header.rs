@@ -1,3 +1,4 @@
+use crate::formats::*;
 use crate::AssetIdentifier;
 use ::serde::{Deserialize, Serialize};
 use uuid::*;
@@ -22,32 +23,6 @@ impl ArchiveHeader {
 
     pub fn files(&self) -> &[FileHeader] {
         self.files.as_ref()
-    }
-}
-
-#[repr(u8)]
-#[derive(Serialize, Deserialize, Clone, Copy, Hash)]
-pub enum ArchiveCompressionFormat {
-    None = 0,
-    ZSTD = 1,
-}
-
-#[repr(u8)]
-#[derive(Serialize, Deserialize, Clone, Copy, Hash)]
-pub enum AssetSerializationFormat {
-    Binary = 0,
-    Toml = 3,
-    Unknown = 255,
-}
-
-impl From<&str> for AssetSerializationFormat {
-    fn from(value: &str) -> Self {
-        let value = value.to_lowercase();
-        match value.as_str() {
-            "bin" => AssetSerializationFormat::Binary,
-            "toml" => AssetSerializationFormat::Toml,
-            _ => AssetSerializationFormat::Toml,
-        }
     }
 }
 
@@ -84,8 +59,8 @@ impl FileHeader {
         self.id
     }
 
-    pub fn format(&self) -> &AssetSerializationFormat {
-        &self.format
+    pub fn format(&self) -> AssetSerializationFormat {
+        self.format
     }
 
     pub fn version(&self) -> u16 {

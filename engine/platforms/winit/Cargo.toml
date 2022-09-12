@@ -11,6 +11,6 @@ path = "src/lib.rs"
 
 [dependencies]
 zircon_engine = { path = "../.." }
-graphics = { path = "../../../graphics" }
+graphics = { path = "../../graphics" }
 utils = { path = "../../../utils" }
 winit = "0.27.2"

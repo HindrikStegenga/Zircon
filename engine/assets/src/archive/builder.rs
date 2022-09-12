@@ -1,4 +1,5 @@
 use super::{archive::*, error::*, header::*};
+use crate::*;
 use tokio::io::AsyncWriteExt;
 use xxhash_rust::xxh3::xxh3_64;
 

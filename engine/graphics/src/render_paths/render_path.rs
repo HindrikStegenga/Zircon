@@ -3,6 +3,7 @@ use crate::{
     Camera, ForwardRenderPath, GraphicsDevice, GraphicsOptions,
 };
 use ash::*;
+use assets::AssetCache;
 use engine::{AssetSystem, RenderStageUpdateInput};
 use serde::{Deserialize, Serialize};
 use std::{
@@ -41,7 +42,7 @@ impl RenderPathDescriptor {
 
 pub(crate) struct RenderPathCreateInfo<'a> {
     pub options: &'a GraphicsOptions,
-    pub asset_system: Arc<AssetSystem>,
+    pub asset_cache: Arc<AssetCache>,
     pub graphics_device: &'a GraphicsDevice,
     pub camera: &'a Camera,
     pub swap_chain: &'a mut SwapChain,

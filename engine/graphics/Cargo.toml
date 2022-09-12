@@ -6,14 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-zircon_engine = { path = "../engine" }
-zircon_math = { path = "../engine/math" }
-utils = { path = "../utils" }
+zircon_engine = { path = ".." }
+zircon_math = { path = "../math" }
+zircon_assets = { path = "../assets" }
+utils = { path = "../../utils" }
 serde = { version = "1.0", features = ["derive"] }
 
 ash = { version = "0.37" }
 gpu-allocator = { version = "0.18", features = ["vulkan"] }
 ash-window = "0.10"
 crossbeam = "0.8"
-mesh = { path = "../mesh" }
+mesh = { path = "../../mesh" }
 hashbrown = "0.12"

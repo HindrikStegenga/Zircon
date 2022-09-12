@@ -5,6 +5,7 @@ use crate::common::update_thread_handler::GraphicsStageUpdateThreadHandler;
 use crate::common::vk_library_wrapper::VkLibraryWrapper;
 use crate::render_target::*;
 use crate::*;
+use assets::AssetCache;
 use engine::{
     engine_stages::{RenderStageMessageContext, RenderStageUpdateThreadHandlerCreateInfo},
     *,
@@ -13,7 +14,7 @@ use std::sync::Arc;
 use utils::*;
 
 pub struct GraphicsStage {
-    asset_system: Arc<AssetSystem>,
+    asset_cache: Arc<AssetCache>,
     update_receiver: Option<UpdateReceivers>,
     available_window_targets: Vec<WindowRenderTarget>,
     render_targets: Vec<WindowRenderTargetBinding>,
@@ -50,7 +51,7 @@ impl GraphicsStage {
             device,
             render_targets: vec![],
             render_plugins: vec![],
-            asset_system: asset_system,
+            asset_cache: asset_system,
         }
         .into()
     }
@@ -104,7 +105,7 @@ impl RenderStage for GraphicsStage {
                         self.vk.instance(),
                         &self.device,
                         &is_bound.camera,
-                        Arc::clone(&self.asset_system),
+                        Arc::clone(&self.asset_cache),
                         input.platform,
                         target,
                         &self.render_plugins,

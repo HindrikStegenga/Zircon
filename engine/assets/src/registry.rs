@@ -82,6 +82,7 @@ impl AssetRegistry {
                                 entry.insert(AssetDescriptor::new(
                                     file_header.id(),
                                     file_header.version(),
+                                    file_header.format(),
                                     AssetSourceInfo::Archive(handle, file_offset),
                                 ));
                             }
@@ -89,6 +90,7 @@ impl AssetRegistry {
                                 entry.insert(AssetDescriptor::new(
                                     file_header.id(),
                                     file_header.version(),
+                                    file_header.format(),
                                     AssetSourceInfo::Archive(handle, file_offset),
                                 ));
                             }

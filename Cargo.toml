@@ -5,7 +5,7 @@ members = [
     "game",
     "engine/math",
     "utils",
-    "graphics",
+    "engine/graphics",
     "engine/platforms/winit",
     "engine/assets",
     "asset_library",

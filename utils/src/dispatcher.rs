@@ -63,7 +63,7 @@ impl Dispatcher {
     //     self.runtime.spawn_blocking(func)
     // }
 
-    pub fn spawn_async_and_wait<F: Future>(&self, future: F) -> F::Output {
+    pub fn spawn_async_blocking<F: Future>(&self, future: F) -> F::Output {
         self.runtime.block_on(future)
     }
 

@@ -62,19 +62,19 @@ fn create_native_scripting_stage<'r>(
 }
 
 fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn AnyRenderStage> {
-    let asset_system: Arc<AssetSystem> = match input.resources.get_resource::<AssetSystem>() {
+    let asset_system: Arc<AssetCache> = match input.resources.get_resource::<AssetCache>() {
         Some(v) => v,
         None => {
-            fatal!("This system requires an asset system to be present!");
+            fatal!("This system requires an asset cache to be present!");
         }
     };
 
-    let options = asset_system
-        .load_asset_as_type::<GraphicsOptions, _, _>("assets.config", "vulkan")
+    let options: GraphicsOptions = asset_system
+        .load_typed_into_blocking(asset_id!(assets.config.vulkan), &mut vec![])
         .unwrap();
 
-    let application_info = asset_system
-        .load_asset_as_type::<ApplicationInfo, _, _>("assets.config", "game")
+    let application_info: ApplicationInfo = asset_system
+        .load_typed_into_blocking(asset_id!(assets.config.game), &mut vec![])
         .unwrap();
 
     let create_info = GraphicsStageCreateInfo {
@@ -108,7 +108,7 @@ fn main() {
         },
         asset_registry: Box::from(|dispatcher: Arc<Dispatcher>| {
             let registry = AssetRegistry::default();
-            dispatcher.spawn_async_and_wait(async move {
+            dispatcher.spawn_async_blocking(async move {
                 let archives = AssetArchive::load_from_directory("./game/asset_archives/", "zarc")
                     .await
                     .expect("Could not load asset archives.");

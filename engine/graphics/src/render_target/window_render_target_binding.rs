@@ -3,6 +3,7 @@ use std::sync::Arc;
 use super::*;
 use crate::*;
 use ash::*;
+use assets::AssetCache;
 use engine::{AssetSystem, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput};
 use utils::*;
 
@@ -189,7 +190,7 @@ impl WindowRenderTargetBinding {
         instance: &Instance,
         graphics_device: &GraphicsDevice,
         camera: &Camera,
-        asset_system: Arc<AssetSystem>,
+        asset_cache: Arc<AssetCache>,
         platform_interface: &mut dyn PlatformInterface,
         mut window_render_target: WindowRenderTarget,
         plugin_descriptors: &[RenderPluginDescriptor],
@@ -220,7 +221,7 @@ impl WindowRenderTargetBinding {
                     camera,
                     swap_chain: &mut swap_chain,
                     window_render_target: &mut window_render_target,
-                    asset_system,
+                    asset_cache,
                 }) {
                     Some(v) => v,
                     None => return Err(window_render_target),

@@ -1,5 +1,14 @@
+use crate::formats::AssetSerializationFormat;
 use serde::{Deserialize, Serialize};
+use std::io::Read;
 use uuid::Uuid;
+
+#[macro_export]
+macro_rules! asset_id {
+    ($val:expr) => {
+        $crate::AssetIdentifier::named(stringify!($val))
+    };
+}
 
 #[repr(transparent)]
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
@@ -17,6 +26,13 @@ impl From<AssetIdentifier> for u64 {
     }
 }
 
+impl AssetIdentifier {
+    pub const fn named(identifier: &str) -> Self {
+        use xxhash_rust::const_xxh3::xxh3_64;
+        Self(xxh3_64(str::as_bytes(identifier)))
+    }
+}
+
 #[derive(Debug, Copy, Clone, Eq, PartialEq, Serialize, Deserialize, Hash)]
 pub enum AssetSourceInfo {
     Archive(Uuid, usize),
@@ -28,6 +44,7 @@ pub enum AssetSourceInfo {
 pub struct AssetDescriptor {
     identifier: AssetIdentifier,
     version: u16,
+    format: AssetSerializationFormat,
     source_info: AssetSourceInfo,
 }
 
@@ -35,13 +52,19 @@ impl AssetDescriptor {
     pub const fn new(
         identifier: AssetIdentifier,
         version: u16,
+        format: AssetSerializationFormat,
         source_info: AssetSourceInfo,
     ) -> Self {
         Self {
             identifier,
             version,
+            format,
             source_info,
         }
+    }
+
+    pub const fn format(&self) -> AssetSerializationFormat {
+        self.format
     }
 
     pub const fn identifier(&self) -> AssetIdentifier {

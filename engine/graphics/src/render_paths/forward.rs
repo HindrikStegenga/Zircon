@@ -3,6 +3,7 @@ use crate::{
     Camera, GraphicsDevice, RenderPath, RenderPathCreateInfo,
 };
 use ash::*;
+use assets::{asset_id, AssetCache, AssetIdentifier};
 use engine::*;
 use std::{ffi::CString, sync::Arc};
 use utils::*;
@@ -13,7 +14,7 @@ struct FrameCommandBuffer {
 }
 
 pub struct ForwardRenderPath {
-    asset_system: Arc<AssetSystem>,
+    asset_cache: Arc<AssetCache>,
     device: Arc<Device>,
     frame_command_buffers: Vec<FrameCommandBuffer>,
     frame_buffers: Vec<vk::Framebuffer>,
@@ -49,7 +50,7 @@ impl ForwardRenderPath {
     fn init_default_resources(
         swap_chain: &mut SwapChain,
         graphics_device: &GraphicsDevice,
-        asset_system: &AssetSystem,
+        asset_cache: &AssetCache,
     ) -> Result<
         (
             vk::RenderPass,
@@ -76,7 +77,7 @@ impl ForwardRenderPath {
             })
         }
 
-        Self::init_default_triangle_shader_modules(asset_system);
+        Self::init_default_triangle_shader_modules(asset_cache);
 
         let frame_buffers =
             Self::init_default_frame_buffers(graphics_device.device(), render_pass, swap_chain)?;
@@ -170,15 +171,15 @@ impl ForwardRenderPath {
         Ok(frame_buffers)
     }
 
-    fn init_default_triangle_shader_modules(asset_system: &AssetSystem) {
+    fn init_default_triangle_shader_modules(asset_cache: &AssetCache) {
         let mut vert_blob = vec![];
         let mut frag_blob = vec![];
 
-        asset_system
-            .load_asset_as_blob_into("assets.shaders", "triangle_vert", &mut vert_blob)
+        let vert_blob = asset_cache
+            .load_blob_into_blocking(asset_id!(assets.shaders.triangle_vert), &mut vert_blob)
             .unwrap();
-        asset_system
-            .load_asset_as_blob_into("assets.shaders", "triangle_frag", &mut frag_blob)
+        let frag_blob = asset_cache
+            .load_blob_into_blocking(asset_id!(assets.sharders.triangle_frag), &mut frag_blob)
             .unwrap();
 
         let vert_blob = ash::util::read_spv(&mut std::io::Cursor::new(&vert_blob[..])).unwrap();
@@ -215,7 +216,7 @@ impl RenderPath for ForwardRenderPath {
         let (render_pass, frame_command_buffers, frame_buffers) = Self::init_default_resources(
             create_info.swap_chain,
             create_info.graphics_device,
-            &create_info.asset_system,
+            &create_info.asset_cache,
         )
         .ok()?;
 
@@ -224,7 +225,7 @@ impl RenderPath for ForwardRenderPath {
             device: Arc::clone(&create_info.graphics_device.device_arc()),
             render_pass,
             frame_buffers,
-            asset_system: create_info.asset_system,
+            asset_cache: create_info.asset_cache,
         }
         .into()
     }
@@ -325,7 +326,7 @@ impl RenderPath for ForwardRenderPath {
         device: &GraphicsDevice,
     ) -> bool {
         let (render_pass, frame_command_buffers, frame_buffers) =
-            match Self::init_default_resources(swap_chain, device, &self.asset_system) {
+            match Self::init_default_resources(swap_chain, device, &self.asset_cache) {
                 Ok(v) => v,
                 Err(e) => {
                     t_error!("Error re-creating resources after swap resize: {}", e);
