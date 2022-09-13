@@ -8,7 +8,6 @@ members = [
     "engine/graphics",
     "engine/platforms/winit",
     "engine/assets",
-    "asset_library",
     "scripting",
     "mesh",
     "tools/gltf_extract_meshes",
