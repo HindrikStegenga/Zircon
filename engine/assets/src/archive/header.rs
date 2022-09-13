@@ -38,11 +38,11 @@ pub struct FileHeader {
     #[serde(rename = "v")]
     version: u16,
     #[serde(rename = "o")]
-    offset: u64,
+    offset: u32,
     #[serde(rename = "bc")]
-    byte_count: u64,
+    byte_count: u32,
     #[serde(rename = "cbc")]
-    compressed_byte_count: u64,
+    compressed_byte_count: u32,
     /// Hash of the compressed file. (Uses xxh3_64)
     #[serde(rename = "ch")]
     compressed_hash: u64,
@@ -67,15 +67,15 @@ impl FileHeader {
         self.version
     }
 
-    pub fn offset(&self) -> u64 {
+    pub fn offset(&self) -> u32 {
         self.offset
     }
 
-    pub fn byte_count(&self) -> u64 {
+    pub fn byte_count(&self) -> u32 {
         self.byte_count
     }
 
-    pub fn compressed_byte_count(&self) -> u64 {
+    pub fn compressed_byte_count(&self) -> u32 {
         self.compressed_byte_count
     }
 
@@ -93,9 +93,9 @@ impl FileHeader {
         identifier: String,
         format: AssetSerializationFormat,
         version: u16,
-        offset: u64,
-        byte_count: u64,
-        compressed_byte_count: u64,
+        offset: u32,
+        byte_count: u32,
+        compressed_byte_count: u32,
         compressed_hash: u64,
         compressed_format: ArchiveCompressionFormat,
     ) -> Self {

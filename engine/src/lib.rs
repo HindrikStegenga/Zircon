@@ -5,7 +5,6 @@ pub mod platform;
 pub mod resource_manager;
 pub mod scene_manager;
 
-pub use asset_library::asset_system::AssetSystem;
 pub use engine::{
     controller::EngineController, create_info::*, result::EngineUpdateResult, Engine,
 };

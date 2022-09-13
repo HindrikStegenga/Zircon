@@ -2,12 +2,13 @@ use super::*;
 use crate::message_bus::{AnyMessageRegisterer, MessageBusBuilder, MessageHandlerType};
 use crate::scene_manager::SceneManager;
 use crate::{engine::gameloop_timer::*, engine_stages::*, resource_manager::*, *};
-use asset_library::split_view::SplitViewMut;
+use assets::AssetCache;
 use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
 use utils::dispatcher::Dispatcher;
+use utils::split_view::SplitViewMut;
 use utils::*;
 
 pub struct Uninitialized {}
@@ -26,8 +27,9 @@ impl EngineStateMachine<Uninitialized> {
         resources.add_resource(dispatcher);
         let dispatcher = resources.get_resource::<Dispatcher>().unwrap();
 
-        let asset_registry = (info.asset_registry)(dispatcher);
-        resources.add_resource(asset_registry);
+        let asset_registry = (info.asset_registry)(Arc::clone(&dispatcher));
+        let asset_cache = AssetCache::new(asset_registry, Arc::clone(&dispatcher));
+        resources.add_resource(asset_cache);
         let application_info = (info.application_info)(resources.get_resource().unwrap());
 
         resources.add_resource(SceneManager::default());

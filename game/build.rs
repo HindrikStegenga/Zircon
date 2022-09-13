@@ -10,6 +10,7 @@ fn main() {
 
     rt.block_on(async {
         create_archive_from_directory(
+            "assets",
             path.clone().join("assets"),
             path.clone().join("asset_archives").join("assets.zarc"),
             0,

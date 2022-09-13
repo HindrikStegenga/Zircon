@@ -192,11 +192,13 @@ pub async fn read_file_into_buffer<'a, 'b>(
     mut reader: impl AsyncBufReadExt + AsyncSeekExt + Unpin,
     buffer: &'b mut [u8],
 ) -> Result<&'b mut [u8], AssetArchiveError> {
-    if buffer.len() as u64 > file_header.byte_count() {
+    if (buffer.len() as u32) < file_header.byte_count() {
         return Err(AssetArchiveError::BufferTooSmall);
     }
     // Set the reader to the appropriate offset.
-    reader.seek(SeekFrom::Start(file_header.offset())).await?;
+    reader
+        .seek(SeekFrom::Start(file_header.offset() as u64))
+        .await?;
     return match file_header.compressed_format() {
         ArchiveCompressionFormat::None => {
             let read_bytes = reader

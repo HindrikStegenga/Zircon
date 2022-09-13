@@ -34,7 +34,7 @@ impl From<tokio::io::Error> for ArchiveBuildError {
 
 pub struct ArchiveBuilder<'a, F: AsyncWriteExt + Unpin> {
     files: Vec<FileHeader>,
-    offset: u64,
+    offset: u32,
     writer: &'a mut F,
 }
 
@@ -44,7 +44,7 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
         Ok(Self {
             writer,
             files: vec![],
-            offset: std::mem::size_of::<u32>() as u64,
+            offset: std::mem::size_of::<u32>() as u32,
         })
     }
 
@@ -68,7 +68,7 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
             ArchiveCompressionFormat::None => {
                 // Write blob as is.
                 self.writer.write_all(blob).await?;
-                self.offset += blob.len() as u64;
+                self.offset += blob.len() as u32;
                 compressed_hash = xxh3_64(&blob);
             }
             ArchiveCompressionFormat::ZSTD => {
@@ -76,7 +76,7 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
                 let compressed = zstd::bulk::compress(blob, 0)?;
                 compressed_size = compressed.len();
                 self.writer.write_all(&compressed).await?;
-                self.offset += compressed.len() as u64;
+                self.offset += compressed.len() as u32;
                 compressed_hash = xxh3_64(&compressed);
             }
         }
@@ -86,8 +86,8 @@ impl<'a, F: AsyncWriteExt + Unpin> ArchiveBuilder<'a, F> {
             format,
             version,
             offset,
-            blob.len() as u64,
-            compressed_size as u64,
+            blob.len() as u32,
+            compressed_size as u32,
             compressed_hash,
             compression_format,
         );

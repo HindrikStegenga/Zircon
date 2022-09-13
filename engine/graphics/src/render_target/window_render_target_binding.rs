@@ -4,7 +4,7 @@ use super::*;
 use crate::*;
 use ash::*;
 use assets::AssetCache;
-use engine::{AssetSystem, PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput};
+use engine::{PlatformInterface, PlatformWindowHandle, RenderStageUpdateInput};
 use utils::*;
 
 pub(crate) struct WindowRenderTargetBinding {

@@ -44,6 +44,7 @@ pub enum AssetSourceInfo {
 pub struct AssetDescriptor {
     identifier: AssetIdentifier,
     version: u16,
+    file_size: u32,
     format: AssetSerializationFormat,
     source_info: AssetSourceInfo,
 }
@@ -52,12 +53,14 @@ impl AssetDescriptor {
     pub const fn new(
         identifier: AssetIdentifier,
         version: u16,
+        file_size: u32,
         format: AssetSerializationFormat,
         source_info: AssetSourceInfo,
     ) -> Self {
         Self {
             identifier,
             version,
+            file_size,
             format,
             source_info,
         }
@@ -65,6 +68,10 @@ impl AssetDescriptor {
 
     pub const fn format(&self) -> AssetSerializationFormat {
         self.format
+    }
+
+    pub const fn file_size(&self) -> u32 {
+        self.file_size
     }
 
     pub const fn identifier(&self) -> AssetIdentifier {

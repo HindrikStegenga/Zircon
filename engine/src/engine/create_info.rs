@@ -1,9 +1,9 @@
 use std::{ffi::CString, num::NonZeroUsize, sync::Arc};
 
 use crate::engine_stages::{RenderStageConstructor, UpdateStageConstructor};
-use asset_library::{asset_system::AssetSystem, dispatcher::Dispatcher};
-use assets::AssetRegistry;
+use assets::{AssetCache, AssetRegistry};
 use serde::*;
+use utils::dispatcher::*;
 
 /// Information required to configure concurrency settings of the engine.
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -26,7 +26,7 @@ pub struct EngineCreateInfo {
     pub render_stages: Vec<Box<RenderStageConstructor>>,
 }
 
-pub type ApplicationInfoConstructor = dyn Fn(Arc<AssetRegistry>) -> ApplicationInfo;
+pub type ApplicationInfoConstructor = dyn Fn(Arc<AssetCache>) -> ApplicationInfo;
 pub type AssetRegistryConstructor = dyn Fn(Arc<Dispatcher>) -> AssetRegistry;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]

@@ -5,6 +5,7 @@ use tokio::fs::*;
 use tokio::io::*;
 
 pub async fn create_archive_from_directory(
+    initial_prefix: impl AsRef<str>,
     path: impl AsRef<Path>,
     out: impl AsRef<Path>,
     version: u16,
@@ -15,7 +16,7 @@ pub async fn create_archive_from_directory(
     let mut buf_writer = BufWriter::new(out_file);
     let mut builder = ArchiveBuilder::new(&mut buf_writer).await?;
     add_dir_to_archive(
-        String::new(),
+        String::from(initial_prefix.as_ref()),
         directory,
         &mut builder,
         version,
@@ -71,6 +72,12 @@ pub async fn add_dir_to_archive<F: AsyncWriteExt + Unpin + Send>(
                     None => return,
                 },
                 None => return,
+            };
+
+            let fname = if current_subdir.is_empty() {
+                String::from(fname)
+            } else {
+                String::from(current_subdir.clone()) + &(String::from(".") + &fname)
             };
 
             files.push((dir, name, md, fname))

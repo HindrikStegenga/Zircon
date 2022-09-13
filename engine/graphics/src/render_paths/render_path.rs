@@ -4,7 +4,7 @@ use crate::{
 };
 use ash::*;
 use assets::AssetCache;
-use engine::{AssetSystem, RenderStageUpdateInput};
+use engine::RenderStageUpdateInput;
 use serde::{Deserialize, Serialize};
 use std::{
     ffi::{CStr, CString},

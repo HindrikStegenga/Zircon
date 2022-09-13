@@ -1,7 +1,7 @@
 use super::*;
-use asset_library::t_warn;
 use crossbeam::channel::Sender;
 use std::sync::Arc;
+use utils::t_warn;
 
 #[derive(Debug)]
 pub struct MessageSender<M: Message> {

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use ash::*;
-use engine::AssetSystem;
+use assets::AssetCache;
 use hashbrown::*;
 
 #[derive(PartialEq, Eq, Hash)]
@@ -16,7 +16,7 @@ pub struct ShaderManager {
 
 impl ShaderManager {
     /// Creates a new [`ShaderManager`].
-    pub fn new(asset_system: Arc<AssetSystem>) -> Self {
+    pub fn new(asset_cache: Arc<AssetCache>) -> Self {
         Self {
             loaded_modules: Default::default(),
         }

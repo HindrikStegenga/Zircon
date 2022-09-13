@@ -12,6 +12,7 @@ pub enum ArchiveCompressionFormat {
 pub enum AssetSerializationFormat {
     Binary = 0,
     Toml = 1,
+    Yaml = 2,
     Unknown = 255,
 }
 
@@ -21,6 +22,8 @@ impl From<&str> for AssetSerializationFormat {
         match value.as_str() {
             "bin" => AssetSerializationFormat::Binary,
             "toml" => AssetSerializationFormat::Toml,
+            "yaml" => AssetSerializationFormat::Yaml,
+            "yml" => AssetSerializationFormat::Yaml,
             _ => AssetSerializationFormat::Binary,
         }
     }

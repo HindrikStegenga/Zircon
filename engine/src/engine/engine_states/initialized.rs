@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use asset_library::dispatcher::Dispatcher;
+use utils::dispatcher::Dispatcher;
 
 use super::*;
 use crate::engine_stages::*;

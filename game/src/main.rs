@@ -68,13 +68,14 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
             fatal!("This system requires an asset cache to be present!");
         }
     };
-
+    let mut buffer = Vec::with_capacity(8192);
+    buffer.resize(8192, 0);
     let options: GraphicsOptions = asset_system
-        .load_typed_into_blocking(asset_id!(assets.config.vulkan), &mut vec![])
+        .load_typed_into_blocking(asset_id!(assets.config.vulkan), &mut buffer)
         .unwrap();
 
     let application_info: ApplicationInfo = asset_system
-        .load_typed_into_blocking(asset_id!(assets.config.game), &mut vec![])
+        .load_typed_into_blocking(asset_id!(assets.config.game), &mut buffer)
         .unwrap();
 
     let create_info = GraphicsStageCreateInfo {
@@ -114,7 +115,9 @@ fn main() {
                     .expect("Could not load asset archives.");
                 archives.into_iter().for_each(|archive| {
                     match registry.register_asset_archive(archive) {
-                        Ok(_result) => {}
+                        Ok(_result) => {
+                            t_info!("Loaded archive: {:#?}", _result);
+                        }
                         Err((e, _)) => {
                             t_fatal!("Could not load archive {:#?}", e);
                         }
