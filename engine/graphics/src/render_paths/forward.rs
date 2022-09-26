@@ -178,10 +178,10 @@ impl ForwardRenderPath {
         frag_blob.resize(8192, 0);
 
         let vert_blob = asset_cache
-            .load_blob_into_blocking(asset_id!(assets.shaders.triangle_vert), &mut vert_blob)
+            .load_blob_into(asset_id!(assets.shaders.triangle_vert), &mut vert_blob)
             .unwrap();
         let frag_blob = asset_cache
-            .load_blob_into_blocking(asset_id!(assets.shaders.triangle_frag), &mut frag_blob)
+            .load_blob_into(asset_id!(assets.shaders.triangle_frag), &mut frag_blob)
             .unwrap();
 
         let vert_blob = ash::util::read_spv(&mut std::io::Cursor::new(&vert_blob[..])).unwrap();

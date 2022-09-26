@@ -1,0 +1,5 @@
+quality_preset = "default"
+
+windows = [
+    { title = "default", width = 800, height = 600, resizable = false }
+]

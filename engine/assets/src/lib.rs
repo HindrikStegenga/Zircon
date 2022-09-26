@@ -1,6 +1,7 @@
 mod archive;
 #[macro_use]
 mod asset_descriptor;
+mod asset_buffer;
 mod cache;
 mod formats;
 mod registry;
@@ -11,6 +12,7 @@ mod tests;
 pub(crate) const IDENTIFIER: &'static str = "AssetRegistry";
 
 pub use archive::*;
+pub use asset_buffer::*;
 pub use asset_descriptor::*;
 pub use cache::*;
 pub use formats::*;

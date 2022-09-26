@@ -1,5 +1,5 @@
 use crate::NativeScriptSet;
-use engine::engine_stages::{EngineDidInitInput, RenderStageUpdateThreadHandlerCreateInfo};
+use engine::engine_stages::EngineDidInitInput;
 use engine::*;
 
 pub struct NativeScriptingStage {

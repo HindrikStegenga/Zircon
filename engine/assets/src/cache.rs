@@ -1,181 +1,240 @@
 use crate::registry::*;
-use crate::{AssetDescriptor, AssetIdentifier, AssetSerializationFormat};
-use async_channel::{SendError, TryRecvError, TrySendError};
+use crate::{AssetBuffer, AssetDescriptor, AssetIdentifier, AssetSerializationFormat};
+use crossbeam::queue::ArrayQueue;
 use dashmap::DashMap;
 use serde::de::DeserializeOwned;
-use serde::Deserialize;
-use std::future::Future;
+use std::fmt::{Display, Formatter};
 use std::sync::Arc;
 use utils::dispatcher::Dispatcher;
-use utils::t_warn;
+use utils::{t_info, t_warn};
 
-const INITIAL_BUFFER_COUNT: usize = 32;
+const INITIAL_BUFFER_COUNT: usize = 64;
 const INITIAL_BUFFER_SIZE: usize = 8192;
-const FILE_QUEUE_SIZE: usize = 256;
+
+const BUFFER_QUEUE_SIZE: usize = 256;
+const ASSET_QUEUE_SIZE: usize = 256;
+const ERROR_QUEUE_SIZE: usize = 1024;
 
 #[derive(Debug, PartialEq, Eq, Hash)]
 pub enum AssetError {
     InputOutputError,
     DeserializationFailure,
     UnknownAssetIdentifier,
+    NoBufferAvailable,
+}
+
+impl Display for AssetError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AssetError::InputOutputError => f.write_str("InputOutputError"),
+            AssetError::DeserializationFailure => f.write_str("DeserializationFailure"),
+            AssetError::UnknownAssetIdentifier => f.write_str("UnknownAssetIdentifier"),
+            AssetError::NoBufferAvailable => f.write_str("NoBufferAvailable"),
+        }
+    }
 }
 
 #[derive(Debug)]
-pub struct LoadedFileState {
-    buffer: Vec<u8>,
-    len: usize,
-    buf_sender: async_channel::Sender<Vec<u8>>,
+pub struct AvailableAsset {
+    descriptor: AssetDescriptor,
+    buffer: AssetBuffer,
 }
 
-impl Drop for LoadedFileState {
-    fn drop(&mut self) {
-        let mut buffer = vec![];
-        std::mem::swap(&mut self.buffer, &mut buffer);
-        match self.buf_sender.try_send(buffer) {
-            Ok(_) => return,
-            Err(e) => match e {
-                TrySendError::Full(buf) => match self.buf_sender.send_blocking(buf) {
-                    Ok(_) => return,
-                    Err(e) => {
-                        t_warn!("{}", e);
-                    }
-                },
-                TrySendError::Closed(_) => (),
-            },
-        }
+impl AvailableAsset {
+    pub fn buffer(&self) -> &[u8] {
+        self.buffer.as_ref()
     }
+    pub fn descriptor(&self) -> &AssetDescriptor {
+        &self.descriptor
+    }
+}
+
+#[derive(Debug)]
+pub struct UnavailableAsset {
+    asset_id: AssetIdentifier,
+    reason: AssetError,
 }
 
 pub struct AssetCache {
     registry: Arc<AssetRegistry>,
     loading_state: DashMap<AssetIdentifier, bool>,
     dispatcher: Arc<Dispatcher>,
-    buffer_queue_sender: async_channel::Sender<Vec<u8>>,
-    buffer_queue_receiver: async_channel::Receiver<Vec<u8>>,
-    file_queue_sender: tokio::sync::mpsc::Sender<LoadedFileState>,
-    file_queue_receiver: tokio::sync::mpsc::Receiver<LoadedFileState>,
+    available_buffers: Arc<ArrayQueue<Vec<u8>>>,
+    available_assets: Arc<ArrayQueue<AvailableAsset>>,
+    unavailable_assets: Arc<ArrayQueue<UnavailableAsset>>,
 }
 
 impl AssetCache {
-    pub fn new(registry: AssetRegistry, dispatcher: Arc<Dispatcher>) -> Self {
-        // Create queue of completed file states.
-        let (file_sender, file_receiver) =
-            tokio::sync::mpsc::channel::<LoadedFileState>(FILE_QUEUE_SIZE);
-        // Create queue of buffers
-        let (buffers_sender, buffers_receiver) =
-            async_channel::bounded::<Vec<u8>>(INITIAL_BUFFER_COUNT);
-        // Load buffers into the queue
-        (0..INITIAL_BUFFER_COUNT).into_iter().for_each(|_| {
-            buffers_sender
-                .send_blocking(Vec::with_capacity(INITIAL_BUFFER_SIZE))
-                .unwrap();
-        });
-
-        AssetCache {
-            registry: Arc::new(registry),
-            loading_state: Default::default(),
-            dispatcher,
-            buffer_queue_sender: buffers_sender,
-            buffer_queue_receiver: buffers_receiver,
-            file_queue_sender: file_sender,
-            file_queue_receiver: file_receiver,
-        }
-    }
-
-    pub fn request_blob(&self, identifier: AssetIdentifier) {
-        let descriptor = match self.registry.get_asset_descriptor(identifier) {
-            Ok(descriptor) => descriptor,
-            Err(e) => {
-                t_warn!("Could not get descriptor: {:#?}", e);
-                return;
-            }
-        };
-        let registry = Arc::clone(&self.registry);
-        let buffer_receiver = self.buffer_queue_receiver.clone();
-        let buffer_sender = self.buffer_queue_sender.clone();
-        let loaded_sender = self.file_queue_sender.clone();
-        self.dispatcher.spawn_async(async move {
-            let buffer_receiver = buffer_receiver;
-            let mut buffer = match buffer_receiver.try_recv() {
-                Ok(buffer) => buffer,
-                Err(error) => match error {
-                    TryRecvError::Empty => {
-                        t_warn!("Empty file buffer queue. Need to block");
-                        match buffer_receiver.recv().await {
-                            Ok(buffer) => buffer,
-                            Err(e) => {
-                                t_warn!("{}", e);
-                                return;
-                            }
-                        }
-                    }
-                    TryRecvError::Closed => {
-                        t_warn!("Buffer queue failure!");
-                        return;
-                    }
-                },
-            };
-            // Resize the buffer to make sure it's correct size.
-            buffer.resize(descriptor.file_size() as usize, 0);
-            // Start the actual load.
-            match registry.load_asset_into(identifier, &mut buffer).await {
-                Ok(slice) => {
-                    let len = slice.len();
-                    let lfs = LoadedFileState {
-                        buffer,
-                        len,
-                        buf_sender: buffer_sender,
-                    };
-                    match loaded_sender.send(lfs).await {
-                        Ok(_) => (),
-                        Err(e) => {
-                            t_warn!("Could not send loaded file: {:#?}", e);
-                        }
-                    };
-                }
-                Err(e) => {}
-            };
-        });
-    }
-
-    pub fn load_typed_into_blocking<'a, 'b, T>(
-        &'a self,
+    fn request_descriptor_and_buffer(
+        &self,
         identifier: AssetIdentifier,
-        buffer: &'b mut [u8],
+    ) -> Result<(AssetDescriptor, Vec<u8>), AssetError> {
+        let descriptor = match self.registry.get_asset_descriptor(identifier) {
+            Ok(v) => v,
+            Err(_) => return Err(AssetError::UnknownAssetIdentifier),
+        };
+        let buffer = match self.available_buffers.pop() {
+            Some(v) => v,
+            None => return Err(AssetError::NoBufferAvailable),
+        };
+        Ok((descriptor, buffer))
+    }
+
+    fn deserialize_asset_from_buffer<T>(
+        descriptor: &AssetDescriptor,
+        buffer: &[u8],
     ) -> Result<T, AssetError>
     where
         T: DeserializeOwned,
     {
-        let descriptor = match self.registry.get_asset_descriptor(identifier) {
-            Ok(d) => d,
-            Err(e) => return Err(AssetError::UnknownAssetIdentifier),
-        };
-        let buf = self.load_blob_into_blocking(identifier, buffer)?;
-
         match descriptor.format() {
-            AssetSerializationFormat::Binary => {
-                todo!()
-            }
+            AssetSerializationFormat::Binary => Err(AssetError::DeserializationFailure),
             AssetSerializationFormat::Toml => {
-                toml::from_slice(buf).map_err(|e| AssetError::DeserializationFailure)
+                toml::from_slice(buffer).map_err(|_| AssetError::DeserializationFailure)
             }
-            AssetSerializationFormat::Yaml => serde_yaml::from_slice(buf).map_err(|e| {
-                t_warn!("{e}");
-                AssetError::DeserializationFailure
-            }),
             AssetSerializationFormat::Unknown => {
                 todo!()
             }
         }
     }
+}
 
-    pub fn load_blob_into_blocking<'a, 'b>(
+impl AssetCache {
+    pub fn new(registry: AssetRegistry, dispatcher: Arc<Dispatcher>) -> Self {
+        let cache = AssetCache {
+            registry: Arc::new(registry),
+            loading_state: Default::default(),
+            dispatcher,
+            available_buffers: Arc::new(ArrayQueue::new(BUFFER_QUEUE_SIZE)),
+            available_assets: Arc::new((ArrayQueue::new(ASSET_QUEUE_SIZE))),
+            unavailable_assets: Arc::new(ArrayQueue::new(ERROR_QUEUE_SIZE)),
+        };
+        (0..INITIAL_BUFFER_COUNT).into_iter().for_each(|_| {
+            cache
+                .available_buffers
+                .push(Vec::with_capacity(INITIAL_BUFFER_SIZE))
+                .expect("{unreachable}")
+        });
+
+        cache
+    }
+
+    pub fn request_asset(&self, identifier: AssetIdentifier) {
+        let (descriptor, buffer) = match self.request_descriptor_and_buffer(identifier) {
+            Ok(v) => v,
+            Err(e) => {
+                t_warn!("Could not get descriptor/buffer: {e}");
+                self.unavailable_assets
+                    .push(UnavailableAsset {
+                        asset_id: identifier,
+                        reason: e,
+                    })
+                    .expect("Could not make asset unavailable.");
+                return;
+            }
+        };
+        let registry = Arc::clone(&self.registry);
+        let available_bufs = Arc::clone(&self.available_buffers);
+        let available_assets = Arc::clone(&self.available_assets);
+        let unavailable_assets = Arc::clone(&self.unavailable_assets);
+        self.dispatcher.spawn_async(async move {
+            let mut buffer = buffer;
+            buffer.resize(descriptor.byte_count() as usize, 0);
+            let used_size = match registry.load_asset_into(identifier, &mut buffer).await {
+                Ok(result) => result.len(),
+                Err(e) => {
+                    t_warn!("Unable to load: {:#?} | {:#?}", identifier, e);
+                    let _ = unavailable_assets
+                        .push(UnavailableAsset {
+                            asset_id: identifier,
+                            reason: AssetError::InputOutputError,
+                        })
+                        .map_err(|e| t_warn!("Unable to make unavailable: {:#?}", e.asset_id));
+                    return;
+                }
+            };
+            match available_assets.push(AvailableAsset {
+                descriptor,
+                buffer: AssetBuffer::new(buffer, used_size, Arc::clone(&available_bufs)),
+            }) {
+                Ok(_) => {
+                    t_info!("Loaded asset: {identifier}");
+                }
+                Err(mut e) => {
+                    t_warn!("Unable to load: {:#?} | {:#?}", identifier, e);
+                    let mut buf = vec![];
+                    //std::mem::swap(&mut e.buffer, &mut buf);
+                    let _ = available_bufs.push(buf).map_err(|e| {
+                        let _ = unavailable_assets.push(UnavailableAsset {
+                            asset_id: identifier,
+                            reason: AssetError::InputOutputError,
+                        });
+                        let _ = available_bufs.push(e).map_err(|_| {
+                            t_warn!("Could not recycle buffer!");
+                        });
+                    });
+                    let _ = unavailable_assets
+                        .push(UnavailableAsset {
+                            asset_id: identifier,
+                            reason: AssetError::InputOutputError,
+                        })
+                        .map_err(|_| {
+                            t_warn!("Could not make asset unavailable.");
+                            ()
+                        });
+                }
+            }
+        });
+    }
+
+    pub fn load_blob_into<'a, 'b>(
         &'a self,
         identifier: AssetIdentifier,
         buffer: &'b mut [u8],
     ) -> Result<&'b mut [u8], AssetError> {
         self.dispatcher
             .spawn_async_blocking(self.registry.load_asset_into(identifier, buffer))
-            .map_err(|e| AssetError::InputOutputError)
+            .map_err(|_| AssetError::InputOutputError)
+    }
+
+    pub fn load_typed_into<T>(
+        &self,
+        identifier: AssetIdentifier,
+        buffer: &mut [u8],
+    ) -> Result<T, AssetError>
+    where
+        T: DeserializeOwned,
+    {
+        let descriptor = match self.registry.get_asset_descriptor(identifier) {
+            Ok(d) => d,
+            Err(_) => return Err(AssetError::UnknownAssetIdentifier),
+        };
+        let buf = self.load_blob_into(identifier, buffer)?;
+        Self::deserialize_asset_from_buffer(&descriptor, buf)
+    }
+
+    pub fn load_blob(
+        &self,
+        identifier: AssetIdentifier,
+    ) -> Result<(AssetDescriptor, AssetBuffer), AssetError> {
+        let (descriptor, mut buffer) = self.request_descriptor_and_buffer(identifier)?;
+        buffer.resize(descriptor.byte_count() as usize, 0);
+        let byte_count = self
+            .dispatcher
+            .spawn_async_blocking(self.registry.load_asset_into(identifier, &mut buffer))
+            .map_err(|_| AssetError::InputOutputError)
+            .map(|e| e.len())?;
+        Ok((
+            descriptor,
+            AssetBuffer::new(buffer, byte_count, Arc::clone(&self.available_buffers)),
+        ))
+    }
+
+    pub fn load_typed<T>(&self, identifier: AssetIdentifier) -> Result<T, AssetError>
+    where
+        T: DeserializeOwned,
+    {
+        let (descriptor, buffer) = self.load_blob(identifier)?;
+        Self::deserialize_asset_from_buffer(&descriptor, buffer.as_ref())
     }
 }

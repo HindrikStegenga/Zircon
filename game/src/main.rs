@@ -6,8 +6,7 @@ use math::*;
 use platform_winit::WinitPlatform;
 use scripting::*;
 use std::num::NonZeroUsize;
-use std::path::PathBuf;
-use std::{sync::Arc, vec};
+use std::sync::Arc;
 use utils::dispatcher::Dispatcher;
 use utils::*;
 
@@ -62,26 +61,29 @@ fn create_native_scripting_stage<'r>(
 }
 
 fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn AnyRenderStage> {
-    let asset_system: Arc<AssetCache> = match input.resources.get_resource::<AssetCache>() {
+    let asset_cache: Arc<AssetCache> = match input.resources.get_resource::<AssetCache>() {
         Some(v) => v,
         None => {
             fatal!("This system requires an asset cache to be present!");
         }
     };
+
+    asset_cache.request_asset(asset_id!(assets.config.vulkan));
+
     let mut buffer = Vec::with_capacity(8192);
     buffer.resize(8192, 0);
-    let options: GraphicsOptions = asset_system
-        .load_typed_into_blocking(asset_id!(assets.config.vulkan), &mut buffer)
+    let options: GraphicsOptions = asset_cache
+        .load_typed_into(asset_id!(assets.config.vulkan), &mut buffer)
         .unwrap();
 
-    let application_info: ApplicationInfo = asset_system
-        .load_typed_into_blocking(asset_id!(assets.config.game), &mut buffer)
+    let application_info: ApplicationInfo = asset_cache
+        .load_typed_into(asset_id!(assets.config.game), &mut buffer)
         .unwrap();
 
     let create_info = GraphicsStageCreateInfo {
         platform: input.platform_interface,
         application_info,
-        asset_system,
+        asset_system: asset_cache,
         options,
     };
 
@@ -100,7 +102,9 @@ fn main() {
         max_frame_rate: None,
         update_stages: vec![Box::new(create_native_scripting_stage)],
         render_stages: vec![Box::new(create_graphics_stage)],
-        application_info: Box::new(|_registry| ApplicationInfo::default()),
+        application_info: Box::new(|registry| {
+            registry.load_typed(asset_id!(assets.config.game)).unwrap()
+        }),
         concurrency_settings: EngineConcurrencySettings {
             max_async_threads: None,
             max_worker_thread: None,
