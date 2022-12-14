@@ -19,10 +19,10 @@ async fn test_asynchronous_load() {
     builder
         .write_file(
             "asset.test",
-            crate::archive::AssetSerializationFormat::Binary,
+            crate::AssetSerializationFormat::Binary,
             &random_data,
             2334,
-            crate::archive::ArchiveCompressionFormat::ZSTD,
+            crate::ArchiveCompressionFormat::ZSTD,
         )
         .await
         .unwrap();

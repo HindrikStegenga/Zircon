@@ -12,7 +12,12 @@ pub async fn create_archive_from_directory(
     compression_format: ArchiveCompressionFormat,
 ) -> std::result::Result<(), Box<dyn std::error::Error>> {
     let directory = std::fs::read_dir(path)?;
-    let out_file = File::create(out).await?;
+    let out_file = OpenOptions::new()
+        .write(true)
+        .read(false)
+        .create(true)
+        .open(out)
+        .await?;
     let mut buf_writer = BufWriter::new(out_file);
     let mut builder = ArchiveBuilder::new(&mut buf_writer).await?;
     add_dir_to_archive(

@@ -20,10 +20,10 @@ async fn test_builder() {
     builder
         .write_file(
             "asset.test",
-            super::header::AssetSerializationFormat::Binary,
+            crate::AssetSerializationFormat::Binary,
             &random_data,
             2334,
-            super::header::ArchiveCompressionFormat::ZSTD,
+            crate::ArchiveCompressionFormat::ZSTD,
         )
         .await
         .unwrap();

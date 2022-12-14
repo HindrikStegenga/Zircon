@@ -1,10 +1,10 @@
 [package]
-name = "gltf_extract_meshes"
+name = "zr_convert_gltf"
 version = "0.1.0"
 edition = "2021"
 
 [[bin]]
-name = "gltf_extract_meshes"
+name = "zr_convert_gltf"
 path = "src/main.rs"
 
 [dependencies]

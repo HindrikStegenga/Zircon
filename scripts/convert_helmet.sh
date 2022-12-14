@@ -1,0 +1,1 @@
+ cargo run --bin zr_convert_gltf --release -- --input-file ./scripts/resources/DamagedHelmet.glb --output-directory ./scripts/out

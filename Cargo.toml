@@ -1,5 +1,5 @@
 [workspace]
-default-members = ["game"]
+default-members = ["game", "tools/zr_convert_gltf"]
 members = [
     "engine",
     "game",
@@ -10,5 +10,5 @@ members = [
     "engine/assets",
     "scripting",
     "mesh",
-    "tools/gltf_extract_meshes",
+    "tools/zr_convert_gltf"
 ]
