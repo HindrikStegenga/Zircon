@@ -10,5 +10,5 @@ members = [
     "engine/assets",
     "scripting",
     "mesh",
-    "tools/zr_convert_gltf"
+    "tools/zr_mesh_tools"
 ]

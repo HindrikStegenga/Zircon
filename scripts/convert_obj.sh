@@ -1,0 +1,1 @@
+ cd tools/zr_mesh_tools/ && cargo run --bin zr_mesh_tools --release -- --input-file ../../scripts/resources/cylinder.obj --output-file ../../scripts/out/out.toml
