@@ -16,8 +16,8 @@ pub struct VertexInputBinding {
 
 #[derive(Debug, Hash, PartialEq, Eq)]
 pub struct VertexInputAttribute {
-    binding: u32,
     location: u32,
+    binding: u32,
     format: BufferElementFormat,
     offset: u32,
 }
@@ -54,7 +54,7 @@ pub fn extract_input_state_from_mesh(mesh: &Mesh) -> Option<VertexInputState> {
                     (
                         VertexInputBinding {
                             binding: idx as u32,
-                            stride: bv.byte_stride(),
+                            stride: bv.byte_stride().unwrap_or(0), // TODO?
                             input_rate: VertexInputRate::Vertex,
                         },
                         (bv, bv_idx),

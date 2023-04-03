@@ -1,7 +1,7 @@
-use std::{collections::HashMap, io::Write, primitive};
+use std::{collections::HashMap, io::Write};
 
 use clap::*;
-use gltf::buffer::{self, Source, Data};
+use gltf::buffer::{Source, Data};
 use mesh::*;
 
 #[derive(Parser, Debug)]
@@ -35,16 +35,16 @@ fn main() -> std::result::Result<(), Box<dyn std::error::Error>> {
             mesh_count
         );
         let converted = convert_mesh(&document, &mesh, &buffers)?;
-        let value = serde_yaml::to_string(&converted)?;
+        let value = toml::to_vec(&converted)?;
         let filename = &std::format!(
-            "{}/{}-{}.yml",
+            "{}/{}-{}.toml",
             args.output_directory,
             mesh.name().unwrap_or("out"),
             i + 1
         );
         println!("Writing file: {}", filename);
         let mut file = std::fs::File::create(std::path::Path::new(filename))?;
-        file.write(value.as_bytes())?;
+        file.write(value.as_slice())?;
     }
     Ok(())
 }
@@ -98,6 +98,18 @@ fn map_mode(mode: gltf::mesh::Mode) -> mesh::PrimitiveRenderingMode {
         gltf::mesh::Mode::Triangles => PrimitiveRenderingMode::Triangles,
         gltf::mesh::Mode::TriangleStrip => PrimitiveRenderingMode::TriangleStrip,
         gltf::mesh::Mode::TriangleFan => PrimitiveRenderingMode::TriangleFan,
+    }
+}
+
+fn map_semantic(semantic: &gltf::Semantic) -> AttributePurpose {
+    match semantic {
+        gltf::Semantic::Positions => AttributePurpose::Position,
+        gltf::Semantic::Normals => AttributePurpose::Normals,
+        gltf::Semantic::Tangents => AttributePurpose::Tangents,
+        gltf::Semantic::Colors(_) => AttributePurpose::Colors,
+        gltf::Semantic::TexCoords(_) => AttributePurpose::TexCoords,
+        gltf::Semantic::Joints(_) => AttributePurpose::Undefined,
+        gltf::Semantic::Weights(_) => AttributePurpose::Undefined,
     }
 }
 
@@ -190,7 +202,16 @@ fn convert_mesh(
             Some(index_accessor) => Some(add_accessor(&index_accessor)?),
             None => None,
         };
-        primitives.push(Primitive::new(vec![], indices, render_mode));
+        let mut attributes = vec![];
+
+        for (semantic, accessor) in primitive.attributes() {
+            let purpose = map_semantic(&semantic);
+            let accessor_index = add_accessor(&accessor)?;
+            let attribute = Attribute::new(accessor_index, purpose);
+            attributes.push(attribute);
+        }
+
+        primitives.push(Primitive::new(indices, render_mode, attributes));
     }
 
     Ok(mesh::Mesh::new(buffers, views, accessors, primitives))

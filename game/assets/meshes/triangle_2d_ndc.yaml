@@ -35,8 +35,8 @@ accessors:
   element_count: 3
   format: F32x2
 primitives:
-- attributes:
+- indices: null
+  mode: Triangles
+  attributes:
   - accessor_index: 0
     purpose: Position2D
-  indices: null
-  mode: Triangles

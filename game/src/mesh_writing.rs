@@ -29,14 +29,10 @@ pub fn generate_2d_triangle_in_ndc() -> Mesh {
         .collect::<Vec<_>>();
 
     let buffers = vec![Buffer::new(vertex_data)];
-    let buffer_views = vec![BufferView::new(0, 0, buffers[0].buffer().len() as u32, 8)];
+    let buffer_views = vec![BufferView::new(0, 0, buffers[0].buffer().len() as u32, Some(8))];
     let accessors = vec![Accessor::new(0, 0, 3, BufferElementFormat::F32x2)];
     let attributes = vec![Attribute::new(0, AttributePurpose::Position2D)];
-    let primitives = vec![Primitive::new(
-        attributes,
-        None,
-        PrimitiveRenderingMode::Triangles,
-    )];
+    let primitives = vec![Primitive::new(None, PrimitiveRenderingMode::Triangles, attributes)];
 
     let mesh = Mesh::new(buffers, buffer_views, accessors, primitives);
 
