@@ -1,6 +1,6 @@
 use crate::formats::AssetSerializationFormat;
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter, Write};
+use std::fmt::{Display, Formatter};
 use uuid::Uuid;
 
 #[macro_export]

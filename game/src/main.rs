@@ -10,8 +10,6 @@ use std::sync::Arc;
 use utils::dispatcher::Dispatcher;
 use utils::*;
 
-mod mesh_writing;
-
 pub const IDENTIFIER: &'static str = "GAME";
 
 fn create_native_scripting_stage<'r>(
@@ -93,9 +91,6 @@ fn create_graphics_stage<'r>(input: RenderStageConstructorInput<'r>) -> Box<dyn 
 
 fn main() {
     setup_default_logger();
-
-    mesh_writing::write_meshes();
-
     let create_info = EngineCreateInfo {
         update_tick_rate: 20,
         max_skipped_frames: 1,

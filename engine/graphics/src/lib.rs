@@ -5,6 +5,7 @@ mod pipeline;
 
 mod render_paths;
 mod render_target;
+mod resources;
 
 pub use common::*;
 pub use components::*;
@@ -12,8 +13,7 @@ pub use device::*;
 pub use pipeline::*;
 pub use render_paths::*;
 pub use render_target::*;
-
-pub mod vertex_input_layout;
+pub use resources::*;
 
 #[allow(dead_code)]
 pub(crate) const IDENTIFIER: &'static str = "Graphics";

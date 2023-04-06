@@ -12,3 +12,4 @@ clap = { version = "4.2.1", features = ["derive"] }
 serde = { version = "1.0.159", features = ["derive"] }
 obj-rs = "0.7.1"
 toml = "0.7.3"
+mesh = { path = "../../mesh" }
