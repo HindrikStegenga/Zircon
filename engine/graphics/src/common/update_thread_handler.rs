@@ -1,13 +1,12 @@
 use crate::common::update_receivers::UpdateReceivers;
-use crate::{CameraIsBoundToWindow, CameraIsUnbound, CameraManager, CameraStateUpdate};
+use crate::{CameraManager};
 use crossbeam::channel::*;
-use engine::engine_stages::{RenderStageUpdateThreadHandler, UpdateStageMessageContext};
+use engine::engine_stages::{RenderStageUpdateThreadHandler};
 use engine::resource_manager::ThreadLocalResourceManager;
 use engine::{
-    EngineUpdateResult, MessageHandler, UpdateMessageRegisterer, UpdateStageUpdateInput,
-    WindowDidOpen, WindowDidResize,
+    EngineUpdateResult, UpdateMessageRegisterer, UpdateStageUpdateInput,
 };
-use utils::*;
+
 
 pub struct GraphicsStageUpdateThreadHandler {}
 
@@ -33,9 +32,9 @@ impl GraphicsStageUpdateThreadHandler {
 }
 
 impl RenderStageUpdateThreadHandler for GraphicsStageUpdateThreadHandler {
-    fn register_message_handlers(&self, mut registerer: UpdateMessageRegisterer<'_, Self>) {}
+    fn register_message_handlers(&self, _registerer: UpdateMessageRegisterer<'_, Self>) {}
 
-    fn post_update(&mut self, mut input: UpdateStageUpdateInput) -> EngineUpdateResult {
+    fn post_update(&mut self, input: UpdateStageUpdateInput) -> EngineUpdateResult {
         let camera_manager = match input
             .update_thread_resources
             .get_resource_mut::<CameraManager>()

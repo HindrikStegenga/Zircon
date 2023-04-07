@@ -1,4 +1,4 @@
-use crate::{DeletionQueue, Destroyable, SwapChain};
+use crate::{DeletionQueue, Destroyable};
 use ash::extensions::khr::Swapchain;
 use ash::*;
 use std::sync::Arc;

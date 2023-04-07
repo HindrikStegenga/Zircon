@@ -106,7 +106,7 @@ impl AssetCache {
             loading_state: Default::default(),
             dispatcher,
             available_buffers: Arc::new(ArrayQueue::new(BUFFER_QUEUE_SIZE)),
-            available_assets: Arc::new((ArrayQueue::new(ASSET_QUEUE_SIZE))),
+            available_assets: Arc::new(ArrayQueue::new(ASSET_QUEUE_SIZE)),
             unavailable_assets: Arc::new(ArrayQueue::new(ERROR_QUEUE_SIZE)),
         };
         (0..INITIAL_BUFFER_COUNT).into_iter().for_each(|_| {
@@ -160,9 +160,9 @@ impl AssetCache {
                 Ok(_) => {
                     t_info!("Loaded asset: {identifier}");
                 }
-                Err(mut e) => {
+                Err(e) => {
                     t_warn!("Unable to load: {:#?} | {:#?}", identifier, e);
-                    let mut buf = vec![];
+                    let buf = vec![];
                     //std::mem::swap(&mut e.buffer, &mut buf);
                     let _ = available_bufs.push(buf).map_err(|e| {
                         let _ = unavailable_assets.push(UnavailableAsset {

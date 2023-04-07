@@ -74,10 +74,10 @@ impl RenderStage for GraphicsStage {
         handler
     }
 
-    fn update_thread_did_run(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
+    fn update_thread_did_run(&mut self, input: RenderStageUpdateInput) -> EngineUpdateResult {
         if let Some(receiver) = &mut self.update_receiver {
             // is camera unbound?
-            while let Ok(is_unbound) = receiver.camera_is_unbound.try_recv() {}
+            while let Ok(_is_unbound) = receiver.camera_is_unbound.try_recv() {}
 
             // is camera bound?
             while let Ok(is_bound) = receiver.camera_is_bound.try_recv() {
@@ -139,7 +139,7 @@ impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowDidOpen> for Graphi
     }
 }
 impl<'a> MessageHandler<RenderStageMessageContext<'a>, WindowWillClose> for GraphicsStage {
-    fn handle(&mut self, context: &mut RenderStageMessageContext, message: WindowWillClose) {
+    fn handle(&mut self, _context: &mut RenderStageMessageContext, message: WindowWillClose) {
         t_info!("WindowDidClose message received!");
         for i in (0..self.render_targets.len()).rev() {
             let target = &self.render_targets[i];

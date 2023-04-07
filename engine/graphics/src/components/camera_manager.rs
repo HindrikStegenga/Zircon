@@ -90,7 +90,7 @@ impl CameraManager {
                 camera.set_previous_cycle_rotation(transform.rotation());
             }
         }
-        if let Err(e) = self.cameras_updated_sender.send(camera_updates) {
+        if let Err(_e) = self.cameras_updated_sender.send(camera_updates) {
             t_warn!("Camera update failed!");
         }
     }

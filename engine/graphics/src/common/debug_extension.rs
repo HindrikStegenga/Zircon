@@ -1,6 +1,6 @@
 use ash::extensions::ext::DebugUtils;
 use ash::vk::DebugUtilsMessengerEXT;
-use ash::*;
+
 
 pub(super) struct DebugExtension {
     messenger: DebugUtilsMessengerEXT,

@@ -2,11 +2,11 @@ use crate::common::device_feature_utils::meets_required_features;
 use crate::device::queue_types::QueueFamilySelectionInfo;
 use crate::device_feature_utils::combine_features;
 use crate::*;
-use ash::prelude::VkResult;
+
 use ash::*;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr};
 use std::os::raw::c_char;
-use utils::log::*;
+
 
 #[derive(Clone)]
 pub(super) struct DeviceSelectionInfo {

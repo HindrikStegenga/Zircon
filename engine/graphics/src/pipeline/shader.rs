@@ -5,7 +5,7 @@ fn gt_create_shader_module(device: &Device, bytes: &[u32]) -> Result<vk::ShaderM
     unsafe { device.create_shader_module(&create_info, None) }
 }
 
-fn gt_create_pipeline_shader_stage(module: vk::ShaderModule) {}
+fn gt_create_pipeline_shader_stage(_module: vk::ShaderModule) {}
 
 fn gt_create_default_blend_state() {}
 
@@ -22,7 +22,7 @@ fn gt_create_default_viewport_state(extent: vk::Extent2D) {
         .extent(extent)
         .offset(vk::Offset2D::builder().x(0).y(0).build());
 
-    let viewport_state = vk::PipelineViewportStateCreateInfo::builder()
+    let _viewport_state = vk::PipelineViewportStateCreateInfo::builder()
         .viewports(&[*viewport])
         .scissors(&[*scissor])
         .build();
@@ -61,7 +61,7 @@ fn gt_create_default_rasterizer_state() -> vk::PipelineRasterizationStateCreateI
 }
 
 fn create_graphics_pipeline(render_pass: vk::RenderPass, layout: vk::PipelineLayout) {
-    let create_info = vk::GraphicsPipelineCreateInfo::builder()
+    let _create_info = vk::GraphicsPipelineCreateInfo::builder()
         .stages(&[])
         .base_pipeline_handle(vk::Pipeline::null())
         .base_pipeline_index(-1)

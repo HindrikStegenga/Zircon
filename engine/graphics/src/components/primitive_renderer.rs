@@ -1,6 +1,6 @@
 use assets::AssetIdentifier;
 use engine::ecs::Component;
-use mesh::*;
+
 
 #[derive(Component)]
 pub struct PrimitiveRenderer {

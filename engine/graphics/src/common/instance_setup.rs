@@ -1,11 +1,11 @@
 use crate::common::debug_extension::DebugExtension;
 use crate::GraphicsOptions;
-use ash::extensions::ext::DebugUtils;
-use ash::prelude::VkResult;
-use ash::vk::{DebugUtilsMessageSeverityFlagsEXT, DebugUtilsMessengerEXT, Flags};
+
+
+use ash::vk::{DebugUtilsMessageSeverityFlagsEXT};
 use ash::{vk::make_api_version, *};
 use engine::ApplicationInfo;
-use std::ffi::{CStr, CString};
+use std::ffi::{CStr};
 use std::os::raw::c_char;
 use utils::*;
 

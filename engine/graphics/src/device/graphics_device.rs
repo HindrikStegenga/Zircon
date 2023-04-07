@@ -99,7 +99,7 @@ impl GraphicsDevice {
                 .build();
             let created_buffer = unsafe { self.create_buffer(&create_info, None).map_err(|_| ())? };
             let requirements = unsafe { self.get_buffer_memory_requirements(created_buffer) };
-            let allocation = self
+            let _allocation = self
                 .allocator
                 .allocate(&AllocationCreateDesc {
                     name: "Vertex Buffer",

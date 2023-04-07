@@ -21,7 +21,7 @@ pub(super) fn setup_device(
 
     // Set up the graphics queue.
     let graphics_priority = [1.0f32];
-    let mut graphics_family = graphics_device
+    let graphics_family = graphics_device
         .device_queue_info
         .iter()
         .find(|e| e.is_graphics_queue())

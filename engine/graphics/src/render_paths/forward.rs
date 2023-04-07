@@ -177,8 +177,8 @@ impl ForwardRenderPath {
             .load_blob_into(asset_id!(assets.shaders.triangle_frag), &mut frag_blob)
             .unwrap();
 
-        let vert_blob = ash::util::read_spv(&mut std::io::Cursor::new(&vert_blob[..])).unwrap();
-        let frag_blob = ash::util::read_spv(&mut std::io::Cursor::new(&frag_blob[..])).unwrap();
+        let _vert_blob = ash::util::read_spv(&mut std::io::Cursor::new(&vert_blob[..])).unwrap();
+        let _frag_blob = ash::util::read_spv(&mut std::io::Cursor::new(&frag_blob[..])).unwrap();
     }
 }
 
@@ -232,9 +232,9 @@ impl RenderPath for ForwardRenderPath {
 
     fn swapchain_did_resize(
         &mut self,
-        camera: &Camera,
+        _camera: &Camera,
         swap_chain: &mut SwapChain,
-        window_render_target: &mut WindowRenderTarget,
+        _window_render_target: &mut WindowRenderTarget,
         device: &GraphicsDevice,
     ) -> bool {
         let (render_pass, frame_command_buffers, frame_buffers) =

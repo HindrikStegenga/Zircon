@@ -16,7 +16,7 @@ pub struct ShaderManager {
 
 impl ShaderManager {
     /// Creates a new [`ShaderManager`].
-    pub fn new(asset_cache: Arc<AssetCache>) -> Self {
+    pub fn new(_asset_cache: Arc<AssetCache>) -> Self {
         Self {
             loaded_modules: Default::default(),
         }

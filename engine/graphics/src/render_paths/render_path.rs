@@ -1,6 +1,6 @@
 use crate::{
     render_target::{AcquiredFrameInfo, SwapChain, WindowRenderTarget},
-    Camera, ForwardRenderPath, GraphicsDevice, GraphicsOptions,
+    Camera, GraphicsDevice, GraphicsOptions,
 };
 use ash::*;
 use assets::AssetCache;
