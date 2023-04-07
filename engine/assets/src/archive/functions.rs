@@ -28,7 +28,9 @@ pub async fn create_archive_from_directory(
         compression_format,
     )
     .await?;
-    builder.finish(uuid::Uuid::new_v4()).await?;
+    builder
+        .finish(uuid::Uuid::from_u128(1237891273891237))
+        .await?;
     buf_writer.flush().await.unwrap();
     Ok(())
 }

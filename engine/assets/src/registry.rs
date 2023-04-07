@@ -3,7 +3,9 @@ use ahash::RandomState;
 use dashmap::mapref::entry::Entry;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
+use std::ops::Deref;
 use tokio::io;
+use utils::t_info;
 use uuid::Uuid;
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -58,6 +60,15 @@ impl From<AssetArchiveError> for AssetRegistryError {
 }
 
 impl AssetRegistry {
+    pub fn print_available_assets(&self) {
+        t_info!("Following assets are available: ");
+        for entry in &self.assets {
+            let id = entry.key();
+            let descriptor = entry.deref();
+            t_info!("id: {}, descriptor: {:#?}", id, descriptor);
+        }
+    }
+
     pub fn register_asset_archive(
         &self,
         asset_archive: AssetArchive,

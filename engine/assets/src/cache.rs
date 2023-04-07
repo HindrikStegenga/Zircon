@@ -65,6 +65,10 @@ pub struct AssetCache {
 }
 
 impl AssetCache {
+    pub fn print_available_assets(&self) {
+        self.registry.print_available_assets();
+    }
+
     fn request_descriptor_and_buffer(
         &self,
         identifier: AssetIdentifier,

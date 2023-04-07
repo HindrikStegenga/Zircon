@@ -5,15 +5,18 @@ use crate::common::update_thread_handler::GraphicsStageUpdateThreadHandler;
 use crate::common::vk_library_wrapper::VkLibraryWrapper;
 use crate::render_target::*;
 use crate::*;
-use assets::AssetCache;
+use assets::{asset_id, AssetCache};
 use engine::{
     engine_stages::{RenderStageMessageContext, RenderStageUpdateThreadHandlerCreateInfo},
     *,
 };
+
 use std::sync::Arc;
 use utils::*;
 
 pub struct GraphicsStage {
+    temp_renderables: Vec<(PrimitiveRenderer, VkPrimitiveRenderer)>,
+
     asset_cache: Arc<AssetCache>,
     update_receiver: Option<UpdateReceivers>,
     available_window_targets: Vec<WindowRenderTarget>,
@@ -24,9 +27,27 @@ pub struct GraphicsStage {
     graphics_options: GraphicsOptions,
 }
 
+impl Drop for GraphicsStage {
+    fn drop(&mut self) {
+        for (_, mut vpr) in self.temp_renderables.drain(..).rev() {
+            if !vpr.vertex_buffers.is_empty() {
+                for buffer in vpr.vertex_buffers.drain(..).rev() {
+                    unsafe { self.device.destroy_buffer(buffer, None) };
+                }
+            }
+            if let Some(idb) = vpr.index_buffer {
+                unsafe { self.device.destroy_buffer(idb, None) };
+            }
+            for alloc in vpr.allocations.drain(..).rev() {
+                self.device.allocator().free(alloc).unwrap();
+            }
+        }
+    }
+}
+
 impl GraphicsStage {
     pub fn new(create_info: GraphicsStageCreateInfo) -> Option<Self> {
-        let asset_system = Arc::clone(&create_info.asset_system);
+        let asset_cache = Arc::clone(&create_info.asset_system);
 
         let (entry, instance) = {
             let (entry, instance) =
@@ -41,7 +62,21 @@ impl GraphicsStage {
             options: &create_info.options,
         })?;
 
+        let asset_id = asset_id!(assets.meshes.converted_obj);
+        let primitive_renderer = PrimitiveRenderer {
+            id: asset_id,
+            primitive: asset_cache.load_typed(asset_id).ok()?,
+        };
+
         Self {
+            temp_renderables: vec![(
+                primitive_renderer,
+                VkPrimitiveRenderer {
+                    vertex_buffers: vec![],
+                    index_buffer: None,
+                    allocations: vec![],
+                },
+            )],
             update_receiver: None,
             available_window_targets: vec![],
             vk: VkLibraryWrapper::new(instance, entry),
@@ -49,7 +84,7 @@ impl GraphicsStage {
             graphics_options: create_info.options,
             device,
             render_targets: vec![],
-            asset_cache: asset_system,
+            asset_cache,
         }
         .into()
     }
@@ -119,6 +154,20 @@ impl RenderStage for GraphicsStage {
     }
 
     fn render(&mut self, mut input: RenderStageUpdateInput) -> EngineUpdateResult {
+        for (renderer, vk_renderer) in &mut self.temp_renderables {
+            if vk_renderer.vertex_buffers.is_empty() {
+                match self.device.upload_primitive(&renderer.primitive) {
+                    Ok(vkr) => {
+                        *vk_renderer = vkr;
+                    }
+                    Err(_) => {
+                        t_error!("Could not upload to GPU.");
+                        return EngineUpdateResult::Stop;
+                    }
+                };
+            }
+        }
+
         for render_target in &mut self.render_targets {
             if !render_target.render(&self.device, &mut input, &self.graphics_options) {
                 return EngineUpdateResult::Stop;
