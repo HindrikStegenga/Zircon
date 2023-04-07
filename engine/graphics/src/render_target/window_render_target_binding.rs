@@ -13,7 +13,6 @@ pub(crate) struct WindowRenderTargetBinding {
     swap_chain: SwapChain,
     window_render_target: WindowRenderTarget,
     resize_on_sub_optimal: bool,
-    render_plugins: Vec<Box<dyn RenderPlugin>>,
 }
 
 impl WindowRenderTargetBinding {
@@ -111,22 +110,6 @@ impl WindowRenderTargetBinding {
             return true;
         }
 
-        let window_handle = self.window_handle();
-        // Pre-render for the render plugins
-        for plugin in &mut self.render_plugins {
-            plugin.pre_render(RenderPluginRenderInfo {
-                info: &info,
-                context: RenderPluginContext {
-                    interface: input.platform,
-                    graphics_device: device,
-                    options: graphics_options,
-                    camera: &self.camera,
-                    swap_chain: &self.swap_chain,
-                    window_handle,
-                },
-            })
-        }
-
         // Render
         self.render_path.render(
             &self.camera,
@@ -135,21 +118,6 @@ impl WindowRenderTargetBinding {
             device,
             input,
         );
-
-        // Post-render for the render plugins
-        for plugin in &mut self.render_plugins {
-            plugin.post_render(RenderPluginRenderInfo {
-                info: &info,
-                context: RenderPluginContext {
-                    interface: input.platform,
-                    graphics_device: device,
-                    options: graphics_options,
-                    camera: &self.camera,
-                    swap_chain: &self.swap_chain,
-                    window_handle,
-                },
-            })
-        }
 
         // Present the frame to the screen
         match unsafe {
@@ -193,7 +161,6 @@ impl WindowRenderTargetBinding {
         asset_cache: Arc<AssetCache>,
         platform_interface: &mut dyn PlatformInterface,
         mut window_render_target: WindowRenderTarget,
-        plugin_descriptors: &[RenderPluginDescriptor],
         options: &GraphicsOptions,
     ) -> Result<Self, WindowRenderTarget> {
         // Get the window
@@ -229,28 +196,12 @@ impl WindowRenderTargetBinding {
             }
         };
 
-        let render_plugins = plugin_descriptors
-            .into_iter()
-            .filter_map(|e| {
-                (e.create_plugin_fn())(
-                    instance,
-                    graphics_device,
-                    camera,
-                    platform_interface,
-                    &window_render_target,
-                    &swap_chain,
-                    options,
-                )
-            })
-            .collect();
-
         Ok(WindowRenderTargetBinding {
             window_render_target,
             camera: camera.clone(),
             swap_chain,
             render_path: Box::new(render_path),
             resize_on_sub_optimal: options.resize_on_sub_optimal,
-            render_plugins,
         })
     }
 }

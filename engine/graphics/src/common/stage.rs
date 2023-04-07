@@ -22,7 +22,6 @@ pub struct GraphicsStage {
     _debug_messenger: Option<DebugExtension>,
     vk: VkLibraryWrapper,
     graphics_options: GraphicsOptions,
-    render_plugins: Vec<RenderPluginDescriptor>,
 }
 
 impl GraphicsStage {
@@ -50,15 +49,9 @@ impl GraphicsStage {
             graphics_options: create_info.options,
             device,
             render_targets: vec![],
-            render_plugins: vec![],
             asset_cache: asset_system,
         }
         .into()
-    }
-
-    pub fn add_render_plugin<T: RenderPlugin>(&mut self) {
-        self.render_plugins
-            .push(RenderPluginDescriptor::new(T::create_plugin));
     }
 }
 
@@ -108,7 +101,6 @@ impl RenderStage for GraphicsStage {
                         Arc::clone(&self.asset_cache),
                         input.platform,
                         target,
-                        &self.render_plugins,
                         &self.graphics_options,
                     ) {
                         Ok(v) => v,

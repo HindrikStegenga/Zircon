@@ -3,6 +3,9 @@ use crate::device::queue_types::DeviceQueue;
 use crate::{ForwardRenderPath, GraphicsOptions, RenderPathDescriptor};
 use ash::*;
 use gpu_allocator::vulkan::*;
+use gpu_allocator::MemoryLocation;
+use mesh::Primitive;
+use std::ops::Deref;
 use std::sync::Arc;
 use std::vec::Vec;
 use utils::*;
@@ -14,6 +17,14 @@ pub struct GraphicsDevice {
     graphics_queue: DeviceQueue,
     transfer_queues: Vec<DeviceQueue>,
     physical_device: vk::PhysicalDevice,
+}
+
+impl Deref for GraphicsDevice {
+    type Target = Device;
+
+    fn deref(&self) -> &Self::Target {
+        self.device()
+    }
 }
 
 impl GraphicsDevice {
@@ -76,6 +87,31 @@ impl GraphicsDevice {
             allocator,
         }
         .into()
+    }
+
+    pub(crate) fn upload_primitive(&mut self, primitive: &Primitive) -> Result<(), ()> {
+        for buffer in &primitive.buffers {
+            let create_info = vk::BufferCreateInfo::builder()
+                .size(buffer.len() as vk::DeviceSize)
+                .usage(vk::BufferUsageFlags::VERTEX_BUFFER)
+                .sharing_mode(vk::SharingMode::EXCLUSIVE)
+                .queue_family_indices(&[self.graphics_queue.qf_index])
+                .build();
+            let created_buffer = unsafe { self.create_buffer(&create_info, None).map_err(|_| ())? };
+            let requirements = unsafe { self.get_buffer_memory_requirements(created_buffer) };
+            let allocation = self
+                .allocator
+                .allocate(&AllocationCreateDesc {
+                    name: "Vertex Buffer",
+                    requirements,
+                    location: MemoryLocation::CpuToGpu,
+                    linear: true,
+                    allocation_scheme: AllocationScheme::GpuAllocatorManaged,
+                })
+                .map_err(|_| ())?;
+        }
+
+        Ok(())
     }
 }
 

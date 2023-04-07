@@ -1,3 +1,4 @@
+mod device_deletion_queue;
 mod device_selection;
 mod graphics_device;
 mod queue_types;

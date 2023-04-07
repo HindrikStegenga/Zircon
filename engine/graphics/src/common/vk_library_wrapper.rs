@@ -4,11 +4,11 @@ use std::sync::Arc;
 
 pub(super) struct VkLibraryWrapper {
     instance: Arc<Instance>,
-    entry: ash::Entry,
+    entry: Entry,
 }
 
 impl VkLibraryWrapper {
-    pub fn new(instance: Arc<Instance>, entry: ash::Entry) -> Self {
+    pub fn new(instance: Arc<Instance>, entry: Entry) -> Self {
         VkLibraryWrapper { instance, entry }
     }
 }
