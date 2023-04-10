@@ -22,7 +22,7 @@ fn test_asset_cache() {
         .unwrap(),
     );
     let base_dispatcher = Arc::clone(&dispatcher);
-    base_dispatcher.spawn_async_blocking(async {
+    let manager = base_dispatcher.spawn_async_blocking(async {
         let mut cursor = Cursor::new(Vec::<u8>::with_capacity(8 * MB));
         let mut builder = ArchiveBuilder::new(&mut cursor).await.unwrap();
         let blob = (0..2 * MB)
@@ -47,9 +47,14 @@ fn test_asset_cache() {
         registry.register_asset_archive(archive).unwrap();
         let registry = Arc::new(registry);
 
-        let manager = AssetCache::<Cursor<Vec<u8>>>::new(Arc::clone(&registry), dispatcher);
-        manager
-            .request_binary(asset_id!(test))
-            .expect("Could not request binary.");
+        AssetCache::<Cursor<Vec<u8>>>::new(Arc::clone(&registry), dispatcher)
     });
+
+    // manager
+    //     .request_binary(asset_id!(test))
+    //     .expect("Could not request binary.");
+    let handle = manager
+        .request_binary_synchronous(asset_id!(test))
+        .expect("Could not request binary synchronously");
+    assert!(handle.read().is_some());
 }
