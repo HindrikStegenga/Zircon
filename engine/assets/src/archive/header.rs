@@ -4,7 +4,7 @@ use ::serde::{Deserialize, Serialize};
 use uuid::*;
 use xxhash_rust::xxh3::xxh3_64;
 
-#[derive(Serialize, Deserialize, Clone, Hash)]
+#[derive(Serialize, Deserialize, Clone, Hash, Debug)]
 pub struct ArchiveHeader {
     #[serde(rename = "uid")]
     uuid: Uuid,
@@ -26,7 +26,7 @@ impl ArchiveHeader {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone, Hash)]
+#[derive(Serialize, Deserialize, Clone, Hash, Debug)]
 pub struct FileHeader {
     #[serde(rename = "sid")]
     string_identifier: String,

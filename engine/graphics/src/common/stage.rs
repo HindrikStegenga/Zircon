@@ -75,6 +75,7 @@ impl GraphicsStage {
                     vertex_buffers: vec![],
                     index_buffer: None,
                     allocations: vec![],
+                    vertex_description: None,
                 },
             )],
             update_receiver: None,

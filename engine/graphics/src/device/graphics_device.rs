@@ -1,10 +1,13 @@
 use crate::device::device_selection::{collect_compatible_devices, select_device};
 use crate::device::queue_types::DeviceQueue;
-use crate::{ForwardRenderPath, GraphicsOptions, RenderPathDescriptor, VkPrimitiveRenderer};
+use crate::{
+    ForwardRenderPath, GraphicsOptions, RenderPathDescriptor, VertexInputDescription,
+    VkPrimitiveRenderer,
+};
 use ash::*;
 use gpu_allocator::vulkan::*;
 use gpu_allocator::MemoryLocation;
-use mesh::Primitive;
+use mesh::*;
 use std::mem::ManuallyDrop;
 use std::ops::Deref;
 use std::sync::Arc;
@@ -154,6 +157,7 @@ impl GraphicsDevice {
             vertex_buffers,
             index_buffer,
             allocations,
+            vertex_description: Some(VertexInputDescription::new(primitive)),
         })
     }
 }

@@ -19,12 +19,13 @@ use zstd::bulk::*;
 /// - decompressed header size  - 8 bytes u64 (LE)
 /// - compressed header hash    - 8 bytes xxh3 hash (LE)
 /// - compressed header size    - 8 bytes u64 (LE)
-pub struct AssetArchive<R: AsyncReadExt + AsyncSeekExt + Unpin = File> {
+#[derive(Debug)]
+pub struct AssetArchive<R: AsyncReadExt + AsyncSeekExt + Unpin + Send = File> {
     header: ArchiveHeader,
     reader: Mutex<BufReader<R>>,
 }
 
-impl<R: AsyncReadExt + AsyncSeekExt + Unpin> AssetArchive<R> {
+impl<R: AsyncReadExt + AsyncSeekExt + Unpin + Send> AssetArchive<R> {
     pub const fn header(&self) -> &ArchiveHeader {
         &self.header
     }
@@ -113,7 +114,7 @@ pub async fn write_magic_value(
 /// If successful, the reader is guaranteed to be positioned at the end of the compressed header block.
 /// Otherwise the reader is at an unspecified position.
 pub async fn read_header(
-    mut reader: impl AsyncReadExt + AsyncSeekExt + Unpin,
+    mut reader: impl AsyncReadExt + AsyncSeekExt + Unpin + Send,
 ) -> Result<ArchiveHeader, AssetArchiveError> {
     let mut compressed_header_size: [u8; 8] = [0; 8];
     let mut decompressed_size: [u8; 8] = [0; 8];

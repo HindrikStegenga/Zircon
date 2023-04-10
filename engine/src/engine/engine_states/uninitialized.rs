@@ -28,7 +28,7 @@ impl EngineStateMachine<Uninitialized> {
         let dispatcher = resources.get_resource::<Dispatcher>().unwrap();
 
         let asset_registry = (info.asset_registry)(Arc::clone(&dispatcher));
-        let asset_cache = AssetCache::new(asset_registry, Arc::clone(&dispatcher));
+        let asset_cache = AssetCache::new(Arc::new(asset_registry), Arc::clone(&dispatcher));
         resources.add_resource(asset_cache);
         let application_info = (info.application_info)(resources.get_resource().unwrap());
 

@@ -4,7 +4,9 @@ use dashmap::mapref::entry::Entry;
 use dashmap::DashMap;
 use serde::{Deserialize, Serialize};
 use std::ops::Deref;
+use tokio::fs::File;
 use tokio::io;
+use tokio::io::{AsyncReadExt, AsyncSeekExt};
 use utils::t_info;
 use uuid::Uuid;
 
@@ -18,8 +20,8 @@ pub enum AssetSourceHandle {
 struct MappedFile {}
 struct MappedDirectory {}
 
-pub struct AssetRegistry {
-    registered_archives: DashMap<Uuid, AssetArchive>,
+pub struct AssetRegistry<R: AsyncReadExt + AsyncSeekExt + Unpin + Send = File> {
+    registered_archives: DashMap<Uuid, AssetArchive<R>>,
     registered_files: DashMap<u64, MappedFile>,
     registered_directory_mappings: DashMap<u64, MappedDirectory>,
     assets: DashMap<AssetIdentifier, AssetDescriptor, RandomState>,
@@ -35,7 +37,7 @@ pub enum AssetRegistryError {
     InputOutput(io::Error),
 }
 
-impl Default for AssetRegistry {
+impl<R: AsyncReadExt + AsyncSeekExt + Unpin + Send> Default for AssetRegistry<R> {
     fn default() -> Self {
         Self {
             registered_archives: Default::default(),
@@ -59,20 +61,20 @@ impl From<AssetArchiveError> for AssetRegistryError {
     }
 }
 
-impl AssetRegistry {
+impl<R: AsyncReadExt + AsyncSeekExt + Unpin + Send> AssetRegistry<R> {
     pub fn print_available_assets(&self) {
-        t_info!("Following assets are available: ");
+        println!("Following assets are available: ");
         for entry in &self.assets {
             let id = entry.key();
             let descriptor = entry.deref();
-            t_info!("id: {}, descriptor: {:#?}", id, descriptor);
+            println!("id: {}, descriptor: {:#?}", id, descriptor);
         }
     }
 
     pub fn register_asset_archive(
         &self,
-        asset_archive: AssetArchive,
-    ) -> Result<AssetSourceHandle, (AssetRegistryError, AssetArchive)> {
+        asset_archive: AssetArchive<R>,
+    ) -> Result<AssetSourceHandle, (AssetRegistryError, AssetArchive<R>)> {
         let handle: Uuid = asset_archive.header().uuid();
         return match self.registered_archives.entry(handle) {
             Entry::Vacant(vacant) => {
